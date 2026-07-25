@@ -5,7 +5,7 @@ from typing import List, Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import select
+from sqlalchemy import select, func, or_
 from pydantic import BaseModel, EmailStr
 from app.core.database import get_db
 from app.auth.deps import get_current_active_user
@@ -35,6 +35,7 @@ class UserUpdateSchema(BaseModel):
 class RoleOutSchema(BaseModel):
     id: UUID
     name: str
+    slug: Optional[str] = None
     description: Optional[str] = None
 
     class Config:
@@ -53,6 +54,44 @@ class UserOutSchema(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+def get_or_create_role(db: Session, tenant_id: Optional[UUID], role_name: str) -> Optional[Role]:
+    if not role_name:
+        return None
+    
+    clean_name = role_name.strip()
+    clean_slug = clean_name.lower().replace(" ", "_")
+
+    # Match tenant role or system role case-insensitively
+    stmt = select(Role).where(
+        or_(
+            func.lower(Role.slug) == clean_slug,
+            func.lower(Role.name) == clean_name.lower(),
+            func.lower(Role.name) == clean_slug
+        )
+    )
+    
+    if tenant_id:
+        stmt = stmt.where(or_(Role.tenant_id == tenant_id, Role.tenant_id == None))
+    
+    role = db.scalars(stmt).first()
+
+    if not role and tenant_id:
+        # Create role if it doesn't exist yet for this tenant
+        role = Role(
+            tenant_id=tenant_id,
+            name=clean_slug.upper(),
+            slug=clean_slug,
+            description=f"{clean_name} role",
+            is_system=False,
+            is_active=True
+        )
+        db.add(role)
+        db.commit()
+        db.refresh(role)
+
+    return role
 
 
 @router.get("", response_model=List[UserOutSchema], summary="List Organization Users")
@@ -93,12 +132,13 @@ def create_user(
     db.commit()
     db.refresh(new_user)
 
-    # Assign role if specified
-    if payload.role_name and current_user.tenant_id:
-        role = db.execute(select(Role).where(Role.tenant_id == current_user.tenant_id, Role.name == payload.role_name)).scalar_one_or_none()
-        if role:
+    # Assign role
+    if payload.role_name:
+        role = get_or_create_role(db, current_user.tenant_id, payload.role_name)
+        if role and role not in new_user.roles:
             new_user.roles.append(role)
             db.commit()
+            db.refresh(new_user)
 
     return new_user
 
@@ -126,8 +166,8 @@ def update_user(
     if payload.is_active is not None:
         user.is_active = payload.is_active
 
-    if payload.role_name and current_user.tenant_id:
-        role = db.execute(select(Role).where(Role.tenant_id == current_user.tenant_id, Role.name == payload.role_name)).scalar_one_or_none()
+    if payload.role_name:
+        role = get_or_create_role(db, current_user.tenant_id or user.tenant_id, payload.role_name)
         if role:
             user.roles = [role]
 

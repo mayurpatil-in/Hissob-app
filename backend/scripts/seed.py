@@ -83,12 +83,12 @@ def seed():
             auditor_perms = [p for p in all_perms if p.action in ["view", "export"]]
             auditor_role.permissions = auditor_perms
 
-        # Collector role (receipts, cash_settlement, donors)
+        # Collector role (receipts, cash_settlement, donors, expenses, festivals)
         collector_role = db.query(Role).filter_by(slug="collector", tenant_id=None).first()
         if collector_role:
             collector_perms = [
                 p for p in all_perms
-                if p.module in ["dashboard", "donors", "receipts", "cash_settlement"]
+                if p.module in ["dashboard", "donors", "receipts", "cash_settlement", "expenses", "festivals", "financial_year"]
                 and p.action in ["view", "create"]
             ]
             collector_role.permissions = collector_perms

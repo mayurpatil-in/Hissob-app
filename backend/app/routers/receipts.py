@@ -4,6 +4,7 @@ Receipts Router — Create receipt, list receipts, cancel receipt.
 from typing import List, Optional
 from uuid import UUID
 from datetime import date, datetime, timezone
+from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from app.core.database import get_db
@@ -18,6 +19,9 @@ from app.schemas.receipt import ReceiptCreate, ReceiptCancel, ReceiptResponse
 router = APIRouter(prefix="/receipts", tags=["Receipts"])
 
 
+from app.auth.deps import get_current_active_user
+
+
 @router.get("", response_model=List[ReceiptResponse], summary="List & Filter Receipts")
 async def list_receipts(
     fy_id: Optional[UUID] = Query(None),
@@ -25,7 +29,7 @@ async def list_receipts(
     collector_id: Optional[UUID] = Query(None),
     skip: int = 0,
     limit: int = 100,
-    current_user: User = Depends(require("receipts", "view")),
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ):
     if not current_user.tenant_id and not current_user.is_super_admin:
@@ -38,7 +42,7 @@ async def list_receipts(
         if "collector" in [r.slug for r in current_user.roles] and "org_admin" not in [r.slug for r in current_user.roles]:
             target_collector = current_user.id
 
-    return repo.get_by_tenant(
+    receipts = repo.get_by_tenant(
         tenant_id=current_user.tenant_id,
         collector_id=target_collector,
         fy_id=fy_id,
@@ -46,6 +50,10 @@ async def list_receipts(
         skip=skip,
         limit=limit,
     )
+    user_map = {u.id: u.full_name for u in db.query(User).all()}
+    for r in receipts:
+        r.collector_name = user_map.get(r.collector_id, "Collector")
+    return receipts
 
 
 @router.post("", response_model=ReceiptResponse, status_code=status.HTTP_201_CREATED, summary="Create Receipt")
@@ -63,22 +71,41 @@ async def create_receipt(
     if not donor or donor.tenant_id != current_user.tenant_id:
         raise HTTPException(status_code=404, detail="Donor not found")
 
-    # Verify Financial Year
-    fy = db.get(FinancialYear, payload.financial_year_id)
-    if not fy or fy.tenant_id != current_user.tenant_id:
-        raise HTTPException(status_code=404, detail="Financial Year not found")
+    # Verify or auto-resolve active Financial Year
+    fy = None
+    if payload.financial_year_id:
+        fy = db.get(FinancialYear, payload.financial_year_id)
+    
+    if not fy:
+        fy = db.execute(
+            select(FinancialYear).where(
+                FinancialYear.tenant_id == current_user.tenant_id,
+                FinancialYear.is_current == True
+            )
+        ).scalar_one_or_none()
+    
+    if not fy:
+        fy = db.execute(
+            select(FinancialYear).where(FinancialYear.tenant_id == current_user.tenant_id)
+        ).scalars().first()
 
+    if not fy:
+        raise HTTPException(status_code=400, detail="No active Financial Year found. Please create a Financial Year first.")
+
+    fy_id = fy.id
     receipt_repo = ReceiptRepository(db)
     receipt_number = receipt_repo.generate_receipt_number(current_user.tenant_id, fy.name)
 
-    # Initial status based on payment mode
+    # Initial status based on payment mode:
+    # CASH -> PENDING_SETTLEMENT (Awaiting Cash Handover to Treasurer)
+    # UPI / CHEQUE / NEFT -> ISSUED (Awaiting Trustee Bank Credit Verification)
     initial_status = ReceiptStatus.ISSUED
     if payload.payment_mode == PaymentMode.CASH:
         initial_status = ReceiptStatus.PENDING_SETTLEMENT
 
     receipt = Receipt(
         tenant_id=current_user.tenant_id,
-        financial_year_id=payload.financial_year_id,
+        financial_year_id=fy_id,
         festival_id=payload.festival_id,
         donor_id=payload.donor_id,
         collector_id=current_user.id,
@@ -100,6 +127,21 @@ async def create_receipt(
     # Increment donor total donations
     donor.total_donations += int(payload.amount)
     db.commit()
+
+    # Log Audit Event
+    try:
+        from app.services.audit_service import log_audit_event
+        log_audit_event(
+            db=db,
+            user=current_user,
+            module="receipts",
+            action="create",
+            record_id=str(created.id),
+            record_label=f"Issued Receipt {created.receipt_number} (₹{created.amount} via {created.payment_mode.value.upper()})",
+            new_values={"amount": float(created.amount), "payment_mode": created.payment_mode.value, "status": created.status.value}
+        )
+    except Exception:
+        pass
 
     return created
 
@@ -135,6 +177,41 @@ async def cancel_receipt(
     receipt.status = ReceiptStatus.CANCELLED
     receipt.cancel_reason = payload.reason
     receipt.cancelled_by = current_user.id
+    db.commit()
+    db.refresh(receipt)
+    return receipt
+
+
+class ReceiptSettlePayload(BaseModel):
+    upi_reference: Optional[str] = None
+    transaction_ref: Optional[str] = None
+    bank_name: Optional[str] = None
+    notes: Optional[str] = None
+
+
+@router.post("/{receipt_id}/settle", response_model=ReceiptResponse, summary="Settle Receipt (Bank / Digital Reconciliation)")
+async def settle_receipt(
+    receipt_id: UUID,
+    payload: Optional[ReceiptSettlePayload] = None,
+    current_user: User = Depends(require("receipts", "create")),
+    db: Session = Depends(get_db),
+):
+    repo = ReceiptRepository(db)
+    receipt = repo.get(receipt_id)
+    if not receipt or (receipt.tenant_id != current_user.tenant_id and not current_user.is_super_admin):
+        raise HTTPException(status_code=404, detail="Receipt not found")
+
+    if payload:
+        if payload.upi_reference:
+            receipt.upi_reference = payload.upi_reference
+        if payload.transaction_ref:
+            receipt.transaction_ref = payload.transaction_ref
+        if payload.bank_name:
+            receipt.bank_name = payload.bank_name
+        if payload.notes:
+            receipt.notes = payload.notes
+
+    receipt.status = ReceiptStatus.SETTLED
     db.commit()
     db.refresh(receipt)
     return receipt

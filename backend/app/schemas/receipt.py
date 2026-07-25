@@ -11,7 +11,7 @@ from app.schemas.donor import DonorResponse
 
 
 class ReceiptBase(BaseModel):
-    financial_year_id: UUID
+    financial_year_id: Optional[UUID] = None
     festival_id: Optional[UUID] = None
     donor_id: UUID
     amount: float = Field(..., gt=0)
@@ -37,6 +37,7 @@ class ReceiptResponse(ReceiptBase):
     id: UUID
     tenant_id: UUID
     collector_id: UUID
+    collector_name: Optional[str] = None
     receipt_number: str
     receipt_date: date
     status: ReceiptStatus

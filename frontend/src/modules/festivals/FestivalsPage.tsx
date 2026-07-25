@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import {
   Table, Button, Tag, Space, Modal, Form, Input, InputNumber,
-  Select, DatePicker, Card, Row, Col, Typography, App
+  Select, DatePicker, Card, Row, Col, Typography, App, Tooltip
 } from 'antd';
 import {
-  PlusOutlined
+  PlusOutlined, UnorderedListOutlined
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getFestivals, createFestival, getFinancialYears } from '../../api/services';
+import FestivalTasksModal from './FestivalTasksModal';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -24,6 +25,7 @@ const FestivalsPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedFy, setSelectedFy] = useState<string | undefined>(undefined);
+  const [selectedTasksFestival, setSelectedTasksFestival] = useState<any | null>(null);
 
   const { data: fiscalYears = [] } = useQuery({
     queryKey: ['financialYears'],
@@ -98,6 +100,23 @@ const FestivalsPage: React.FC = () => {
         const tag = STATUS_TAGS[st] || { color: 'processing', label: st?.toUpperCase() || 'ACTIVE' };
         return <Tag color={tag.color}>{tag.label}</Tag>;
       },
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: (_: any, record: any) => (
+        <Tooltip title="Manage Event Tasks & Member Assignments">
+          <Button
+            type="primary"
+            icon={<UnorderedListOutlined />}
+            size="small"
+            style={{ background: '#0B2347', borderColor: '#0B2347', borderRadius: 6, fontWeight: 600 }}
+            onClick={() => setSelectedTasksFestival(record)}
+          >
+            Plan Tasks & Assign
+          </Button>
+        </Tooltip>
+      ),
     },
   ];
 
@@ -237,6 +256,13 @@ const FestivalsPage: React.FC = () => {
           </Form.Item>
         </Form>
       </Modal>
+
+      {/* ── Festival Event Tasks & Assignments Modal ── */}
+      <FestivalTasksModal
+        open={Boolean(selectedTasksFestival)}
+        onClose={() => setSelectedTasksFestival(null)}
+        festival={selectedTasksFestival}
+      />
     </div>
   );
 };

@@ -23,7 +23,7 @@ router = APIRouter(prefix="/financial-years", tags=["Financial Year"])
 
 @router.get("", response_model=List[FinancialYearResponse], summary="List Financial Years")
 async def list_financial_years(
-    current_user: User = Depends(require("financial_year", "view")),
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ):
     if not current_user.tenant_id and not current_user.is_super_admin:

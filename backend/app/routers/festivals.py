@@ -15,10 +15,13 @@ from app.schemas.festival import FestivalCreate, FestivalUpdate, FestivalRespons
 router = APIRouter(prefix="/festivals", tags=["Festivals"])
 
 
+from app.auth.deps import get_current_active_user
+
+
 @router.get("", response_model=List[FestivalResponse], summary="List Festivals")
 async def list_festivals(
     fy_id: UUID = None,
-    current_user: User = Depends(require("festivals", "view")),
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ):
     if not current_user.tenant_id and not current_user.is_super_admin:

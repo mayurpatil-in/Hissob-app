@@ -86,6 +86,9 @@ export interface AuditLog {
   module: string;
   record_label?: string;
   ip_address?: string;
+  old_values?: any;
+  new_values?: any;
+  notes?: string;
   created_at: string;
 }
 
@@ -105,6 +108,7 @@ export const createDonor = async (data: any) => (await apiClient.post<Donor>('/d
 // ── Receipt API ──
 export const getReceipts = async (params?: any) => (await apiClient.get<Receipt[]>('/receipts', { params })).data;
 export const createReceipt = async (data: any) => (await apiClient.post<Receipt>('/receipts', data)).data;
+export const settleReceipt = async (id: string, data?: any) => (await apiClient.post<Receipt>(`/receipts/${id}/settle`, data)).data;
 
 // ── Expense API ──
 export const getExpenses = async (params?: any) => (await apiClient.get<Expense[]>('/expenses', { params })).data;
@@ -138,3 +142,6 @@ export const getUsers = async () => (await apiClient.get<any[]>('/users')).data;
 export const createUser = async (data: any) => (await apiClient.post<any>('/users', data)).data;
 export const updateUser = async (id: string, data: any) => (await apiClient.put<any>(`/users/${id}`, data)).data;
 export const deleteUser = async (id: string) => (await apiClient.delete<any>(`/users/${id}`)).data;
+
+// ── Dashboard API ──
+export const getDashboardSummary = async () => (await apiClient.get<any>('/dashboard/summary')).data;

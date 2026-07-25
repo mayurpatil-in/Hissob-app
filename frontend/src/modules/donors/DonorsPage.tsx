@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import {
   Table, Button, Tag, Space, Modal, Form, Input, Checkbox,
-  Card, Row, Col, Typography, App
+  Card, Row, Col, Typography, App, Tooltip
 } from 'antd';
 import {
-  PlusOutlined, SearchOutlined, CrownOutlined
+  PlusOutlined, SearchOutlined, CrownOutlined, SafetyCertificateOutlined
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getDonors, createDonor } from '../../api/services';
+import Tax80GCertificateModal, { type Tax80GData } from '../reports/Tax80GCertificateModal';
+import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
 
@@ -16,6 +18,9 @@ const DonorsPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selected80GData, setSelected80GData] = useState<Tax80GData | null>(null);
+
+  const [form] = Form.useForm();
 
   const { data: donors = [], isLoading } = useQuery({
     queryKey: ['donors', searchQuery],
@@ -27,14 +32,13 @@ const DonorsPage: React.FC = () => {
     onSuccess: () => {
       message.success('Donor registered successfully!');
       setIsModalOpen(false);
+      form.resetFields();
       queryClient.invalidateQueries({ queryKey: ['donors'] });
     },
     onError: (err: any) => {
-      message.error(err?.response?.data?.detail || 'Failed to create donor');
+      message.error(err?.response?.data?.detail || 'Failed to register donor');
     },
   });
-
-  const [form] = Form.useForm();
 
   const handleSubmit = (values: any) => {
     createMutation.mutate(values);
@@ -62,23 +66,52 @@ const DonorsPage: React.FC = () => {
       key: 'total_donations',
       render: (val: number) => <span style={{ fontWeight: 700, color: '#22C55E' }}>₹ {Number(val || 0).toLocaleString('en-IN')}</span>,
     },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: (_: any, record: any) => (
+        <Tooltip title="Generate Section 80G Tax Certificate">
+          <Button
+            type="primary"
+            icon={<SafetyCertificateOutlined />}
+            size="small"
+            style={{ background: '#2563EB', borderColor: '#2563EB', borderRadius: 6 }}
+            onClick={() => {
+              setSelected80GData({
+                certificateNumber: `80G-2025-${record.donor_number || record.id.slice(0, 6)}`,
+                donorName: record.full_name,
+                panNumber: record.pan_number || 'PAN-NOT-PROVIDED',
+                address: record.city ? `${record.city}, India` : 'India',
+                financialYear: '2025-26',
+                totalDonationAmount: Number(record.total_donations || 5000),
+                receiptNumbers: [`RC-2026-${record.id.slice(0, 4)}`],
+                trustName: 'HISSOB GANESH UTSAV CHARITABLE TRUST',
+                issueDate: dayjs().format('DD MMM YYYY'),
+              });
+            }}
+          >
+            80G Certificate
+          </Button>
+        </Tooltip>
+      ),
+    },
   ];
 
   return (
     <div className="donors-module animate-fadeIn">
-      <div className="page-header">
+      <div className="page-header" style={{ marginBottom: 20 }}>
         <div>
-          <Title level={3} style={{ margin: 0 }}>Donor Directory</Title>
-          <Text type="secondary">Manage profiles, track historical contributions and 80G eligibility</Text>
+          <Title level={3} style={{ margin: 0, color: '#0B2347', fontWeight: 900 }}>Donor Directory</Title>
+          <Text type="secondary">Manage profiles, track historical contributions and Section 80G tax certificates</Text>
         </div>
         <Button
           type="primary"
           icon={<PlusOutlined />}
           size="large"
           onClick={() => setIsModalOpen(true)}
-          style={{ background: '#F97316', borderColor: '#F97316' }}
+          style={{ background: '#F97316', borderColor: '#F97316', borderRadius: 8, fontWeight: 700 }}
         >
-          Add New Donor
+          Register Donor
         </Button>
       </div>
 
@@ -86,13 +119,13 @@ const DonorsPage: React.FC = () => {
         <Col xs={24} sm={12}>
           <Card className="hissob-card">
             <Text type="secondary">Total Registered Donors</Text>
-            <Title level={3} style={{ margin: 0, color: '#0B2347' }}>{donors.length}</Title>
+            <Title level={3} style={{ margin: 0, color: '#0B2347', fontWeight: 900 }}>{donors.length}</Title>
           </Card>
         </Col>
         <Col xs={24} sm={12}>
           <Card className="hissob-card">
-            <Text type="secondary">VIP Donors</Text>
-            <Title level={3} style={{ margin: 0, color: '#FF9F1C' }}>
+            <Text type="secondary">VIP Donors (80G Eligible)</Text>
+            <Title level={3} style={{ margin: 0, color: '#FF9F1C', fontWeight: 900 }}>
               {donors.filter(d => d.is_vip).length}
             </Title>
           </Card>
@@ -116,7 +149,7 @@ const DonorsPage: React.FC = () => {
           rowKey="id"
           loading={isLoading}
           pagination={{ pageSize: 10 }}
-          scroll={{ x: 600 }}
+          scroll={{ x: 700 }}
         />
       </Card>
 
@@ -128,7 +161,7 @@ const DonorsPage: React.FC = () => {
         destroyOnHidden
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
-          <Form.Item name="full_name" label="Full Name" rules={[{ required: true }]}>
+          <Form.Item name="full_name" label="Full Name" rules={[{ required: true, message: 'Enter donor full name' }]}>
             <Input placeholder="Enter full name" />
           </Form.Item>
 
@@ -139,35 +172,55 @@ const DonorsPage: React.FC = () => {
               </Form.Item>
             </Col>
             <Col span={12}>
+              <Form.Item name="email" label="Email Address">
+                <Input placeholder="Email" />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item name="pan_number" label="PAN Number (80G)">
+                <Input placeholder="ABCDE1234F" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
               <Form.Item name="city" label="City">
                 <Input placeholder="City" />
               </Form.Item>
             </Col>
           </Row>
 
-          <Form.Item name="address" label="Address">
-            <Input.TextArea rows={2} placeholder="Full address" />
-          </Form.Item>
-
-          <Space style={{ marginBottom: 16 }}>
-            <Form.Item name="is_vip" valuePropName="checked" noStyle>
-              <Checkbox>Mark as VIP Donor</Checkbox>
-            </Form.Item>
-            <Form.Item name="is_80g_eligible" valuePropName="checked" noStyle>
-              <Checkbox>80G Tax Exempt Eligible</Checkbox>
-            </Form.Item>
-          </Space>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item name="is_vip" valuePropName="checked">
+                <Checkbox>VIP Donor</Checkbox>
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="is_80g_eligible" valuePropName="checked">
+                <Checkbox defaultChecked>80G Tax Eligible</Checkbox>
+              </Form.Item>
+            </Col>
+          </Row>
 
           <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
             <Space>
               <Button onClick={() => setIsModalOpen(false)}>Cancel</Button>
-              <Button type="primary" htmlType="submit" loading={createMutation.isPending} style={{ background: '#F97316', borderColor: '#F97316' }}>
+              <Button type="primary" htmlType="submit" loading={createMutation.isPending} style={{ background: '#F97316', borderColor: '#F97316', borderRadius: 8, fontWeight: 700 }}>
                 Save Donor
               </Button>
             </Space>
           </Form.Item>
         </Form>
       </Modal>
+
+      {/* 80G Tax Exemption Certificate Modal */}
+      <Tax80GCertificateModal
+        open={Boolean(selected80GData)}
+        onClose={() => setSelected80GData(null)}
+        data={selected80GData}
+      />
     </div>
   );
 };

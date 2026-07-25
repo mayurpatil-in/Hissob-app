@@ -4,10 +4,12 @@ import {
   Select, Card, Row, Col, Typography, App, Tooltip
 } from 'antd';
 import {
-  PlusOutlined, PrinterOutlined, RobotOutlined
+  PlusOutlined, PrinterOutlined, RobotOutlined, CheckCircleOutlined, WhatsAppOutlined
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getReceipts, createReceipt, getDonors, getFinancialYears } from '../../api/services';
+import { getReceipts, createReceipt, settleReceipt, getDonors, getFinancialYears } from '../../api/services';
+import { useAuthStore } from '../../store/authStore';
+import { generateWhatsAppReceiptLink } from '../../utils/whatsapp';
 import AIVoiceAssistantModal from '../ai/AIVoiceAssistantModal';
 import dayjs from 'dayjs';
 
@@ -24,10 +26,15 @@ const STATUS_TAGS: Record<string, { color: string; label: string }> = {
 const ReceiptsPage: React.FC = () => {
   const { message } = App.useApp();
   const queryClient = useQueryClient();
+  const { user, can } = useAuthStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [printReceipt, setPrintReceipt] = useState<any>(null);
   const [filterStatus, setFilterStatus] = useState<string>('');
+
+  const canSettle = user?.is_super_admin || can('receipts', 'approve') || can('cash_settlement', 'approve') || (user as any)?.roles?.some((r: any) =>
+    ['treasurer', 'org_admin', 'admin', 'president', 'trustee'].includes((r.name || r.slug || '').toLowerCase())
+  );
 
   // Queries
   const { data: receipts = [], isLoading } = useQuery({
@@ -52,7 +59,32 @@ const ReceiptsPage: React.FC = () => {
     },
   });
 
+  const settleMutation = useMutation({
+    mutationFn: settleReceipt,
+    onSuccess: () => {
+      message.success('Receipt status updated to SETTLED!');
+      queryClient.invalidateQueries({ queryKey: ['receipts'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
+    },
+    onError: (err: any) => {
+      message.error(err?.response?.data?.detail || 'Failed to settle receipt');
+    },
+  });
+
   const [form] = Form.useForm();
+
+  const handleOpenModal = () => {
+    const activeFy = fiscalYears.find((fy: any) => fy.is_current) || fiscalYears[0];
+    form.resetFields();
+    if (activeFy) {
+      form.setFieldsValue({
+        financial_year_id: activeFy.id,
+        payment_mode: 'cash',
+        receipt_date: dayjs()
+      });
+    }
+    setIsModalOpen(true);
+  };
 
   const handleSubmit = (values: any) => {
     createMutation.mutate({
@@ -84,6 +116,16 @@ const ReceiptsPage: React.FC = () => {
       render: (donor: any) => donor?.full_name || 'N/A',
     },
     {
+      title: 'Collector',
+      dataIndex: 'collector_name',
+      key: 'collector_name',
+      render: (name: string, record: any) => (
+        <Tag color="orange" style={{ borderRadius: 10, fontWeight: 600 }}>
+          👤 {name || record.collector?.full_name || 'Collector'}
+        </Tag>
+      ),
+    },
+    {
       title: 'Amount (₹)',
       dataIndex: 'amount',
       key: 'amount',
@@ -109,6 +151,24 @@ const ReceiptsPage: React.FC = () => {
       key: 'actions',
       render: (_: any, record: any) => (
         <Space>
+          <Tooltip title="Share Voucher on WhatsApp">
+            <Button
+              icon={<WhatsAppOutlined style={{ color: '#25D366' }} />}
+              size="small"
+              onClick={() => {
+                const link = generateWhatsAppReceiptLink({
+                  receiptNumber: record.receipt_number,
+                  donorName: record.donor?.full_name || 'Donor',
+                  donorPhone: record.donor?.phone,
+                  amount: record.amount,
+                  paymentMode: record.payment_mode,
+                  receiptDate: record.receipt_date,
+                  purpose: record.purpose,
+                });
+                window.open(link, '_blank');
+              }}
+            />
+          </Tooltip>
           <Tooltip title="Print Receipt">
             <Button
               icon={<PrinterOutlined />}
@@ -116,6 +176,16 @@ const ReceiptsPage: React.FC = () => {
               onClick={() => setPrintReceipt(record)}
             />
           </Tooltip>
+          {record.status !== 'settled' && record.status !== 'cancelled' && canSettle && (
+            <Tooltip title="Verify Credit & Mark Settled (Trustee / Treasurer)">
+              <Button
+                icon={<CheckCircleOutlined />}
+                size="small"
+                style={{ color: '#22C55E' }}
+                onClick={() => settleMutation.mutate(record.id)}
+              />
+            </Tooltip>
+          )}
         </Space>
       ),
     },
@@ -142,7 +212,7 @@ const ReceiptsPage: React.FC = () => {
             type="primary"
             icon={<PlusOutlined />}
             size="large"
-            onClick={() => setIsModalOpen(true)}
+            onClick={handleOpenModal}
             style={{ background: '#F97316', borderColor: '#F97316' }}
           >
             New Receipt
@@ -255,6 +325,61 @@ const ReceiptsPage: React.FC = () => {
             </Col>
           </Row>
 
+          <Form.Item noStyle shouldUpdate={(prev, current) => prev.payment_mode !== current.payment_mode}>
+            {({ getFieldValue }) => {
+              const mode = getFieldValue('payment_mode');
+              if (mode === 'upi') {
+                return (
+                  <Form.Item
+                    name="upi_reference"
+                    label="UPI Reference / UTR Number (Optional)"
+                  >
+                    <Input placeholder="Optional: e.g. 420519847120 or UPI/998877665544" prefix={<Tag color="cyan">UPI UTR</Tag>} />
+                  </Form.Item>
+                );
+              }
+              if (mode === 'neft') {
+                return (
+                  <Row gutter={16}>
+                    <Col span={12}>
+                      <Form.Item
+                        name="transaction_ref"
+                        label="NEFT / UTR Reference (Optional)"
+                      >
+                        <Input placeholder="Optional: e.g. NEFT/HDFC20260725" />
+                      </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                      <Form.Item name="bank_name" label="Remitting Bank Name">
+                        <Input placeholder="e.g. HDFC Bank, SBI, ICICI" />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                );
+              }
+              if (mode === 'cheque') {
+                return (
+                  <Row gutter={16}>
+                    <Col span={12}>
+                      <Form.Item
+                        name="cheque_number"
+                        label="Cheque Number (Optional)"
+                      >
+                        <Input placeholder="Optional: e.g. CHQ-445566" />
+                      </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                      <Form.Item name="bank_name" label="Drawn Bank Name">
+                        <Input placeholder="e.g. State Bank of India" />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                );
+              }
+              return null;
+            }}
+          </Form.Item>
+
           <Form.Item name="purpose" label="Purpose / Cause">
             <Input placeholder="e.g. Festival Collection, Pooja, General Donation" />
           </Form.Item>
@@ -278,6 +403,25 @@ const ReceiptsPage: React.FC = () => {
           title="Print Receipt Voucher"
           footer={[
             <Button key="close" onClick={() => setPrintReceipt(null)}>Close</Button>,
+            <Button
+              key="whatsapp"
+              icon={<WhatsAppOutlined />}
+              style={{ background: '#25D366', borderColor: '#25D366', color: '#FFF', fontWeight: 600 }}
+              onClick={() => {
+                const link = generateWhatsAppReceiptLink({
+                  receiptNumber: printReceipt.receipt_number,
+                  donorName: printReceipt.donor?.full_name || 'Donor',
+                  donorPhone: printReceipt.donor?.phone,
+                  amount: printReceipt.amount,
+                  paymentMode: printReceipt.payment_mode,
+                  receiptDate: printReceipt.receipt_date,
+                  purpose: printReceipt.purpose,
+                });
+                window.open(link, '_blank');
+              }}
+            >
+              Share on WhatsApp
+            </Button>,
             <Button key="print" type="primary" icon={<PrinterOutlined />} onClick={() => window.print()} style={{ background: '#F97316' }}>
               Print Voucher
             </Button>

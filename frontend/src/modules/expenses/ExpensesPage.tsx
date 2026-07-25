@@ -8,6 +8,7 @@ import {
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getExpenses, createExpense, approveExpense, getFinancialYears } from '../../api/services';
+import { useAuthStore } from '../../store/authStore';
 import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
@@ -23,8 +24,13 @@ const STATUS_TAGS: Record<string, { color: string; label: string }> = {
 const ExpensesPage: React.FC = () => {
   const { message } = App.useApp();
   const queryClient = useQueryClient();
+  const { user, can } = useAuthStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>('');
+
+  const canApprove = user?.is_super_admin || can('expenses', 'approve') || (user as any)?.roles?.some((r: any) =>
+    ['treasurer', 'org_admin', 'admin', 'president'].includes((r.name || r.slug || '').toLowerCase())
+  );
 
   const { data: expenses = [], isLoading } = useQuery({
     queryKey: ['expenses', filterStatus],
@@ -58,6 +64,19 @@ const ExpensesPage: React.FC = () => {
 
   const [form] = Form.useForm();
 
+  const handleOpenModal = () => {
+    const activeFy = fiscalYears.find((fy: any) => fy.is_current) || fiscalYears[0];
+    form.resetFields();
+    if (activeFy) {
+      form.setFieldsValue({
+        financial_year_id: activeFy.id,
+        category: 'Decoration',
+        expense_date: dayjs()
+      });
+    }
+    setIsModalOpen(true);
+  };
+
   const handleSubmit = (values: any) => {
     createMutation.mutate({
       ...values,
@@ -73,6 +92,16 @@ const ExpensesPage: React.FC = () => {
     { title: 'Date', dataIndex: 'expense_date', key: 'expense_date' },
     { title: 'Category', dataIndex: 'category', key: 'category', render: (cat: string) => <Tag color="geekblue">{cat}</Tag> },
     { title: 'Vendor', dataIndex: 'vendor_name', key: 'vendor_name', render: (v: string) => v || 'N/A' },
+    {
+      title: 'Requested By',
+      dataIndex: 'requested_by_name',
+      key: 'requested_by_name',
+      render: (name: string) => (
+        <Tag color="cyan" style={{ borderRadius: 10, fontWeight: 600 }}>
+          👤 {name || 'Member'}
+        </Tag>
+      ),
+    },
     {
       title: 'Amount (₹)',
       dataIndex: 'amount',
@@ -93,7 +122,7 @@ const ExpensesPage: React.FC = () => {
       key: 'actions',
       render: (_: any, record: any) => (
         <Space>
-          {record.status === 'pending' && (
+          {record.status === 'pending' && canApprove ? (
             <>
               <Tooltip title="Approve Expense">
                 <Button
@@ -112,8 +141,11 @@ const ExpensesPage: React.FC = () => {
                 />
               </Tooltip>
             </>
-          )}
-          {record.status === 'approved' && (
+          ) : record.status === 'pending' ? (
+            <Tag color="gold" style={{ borderRadius: 10 }}>Awaiting Trustee Review</Tag>
+          ) : null}
+
+          {record.status === 'approved' && canApprove ? (
             <Button
               type="primary"
               size="small"
@@ -122,7 +154,9 @@ const ExpensesPage: React.FC = () => {
             >
               Mark Paid
             </Button>
-          )}
+          ) : record.status === 'approved' ? (
+            <Tag color="blue" style={{ borderRadius: 10 }}>Approved - Awaiting Payout</Tag>
+          ) : null}
         </Space>
       ),
     },
@@ -139,7 +173,7 @@ const ExpensesPage: React.FC = () => {
           type="primary"
           icon={<PlusOutlined />}
           size="large"
-          onClick={() => setIsModalOpen(true)}
+          onClick={handleOpenModal}
           style={{ background: '#F97316', borderColor: '#F97316' }}
         >
           New Expense Request

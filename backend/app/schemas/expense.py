@@ -8,7 +8,7 @@ from datetime import date, datetime
 
 
 class ExpenseBase(BaseModel):
-    financial_year_id: UUID
+    financial_year_id: Optional[UUID] = None
     festival_id: Optional[UUID] = None
     category: str = Field(..., min_length=2, max_length=100)
     vendor_name: Optional[str] = None
@@ -31,6 +31,7 @@ class ExpenseResponse(ExpenseBase):
     id: UUID
     tenant_id: UUID
     requested_by: UUID
+    requested_by_name: Optional[str] = None
     expense_number: str
     expense_date: date
     status: str

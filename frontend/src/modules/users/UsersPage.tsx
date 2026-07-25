@@ -13,6 +13,17 @@ import { getUsers, createUser, updateUser, deleteUser } from '../../api/services
 const { Title, Text } = Typography;
 const { Option } = Select;
 
+const ROLE_COLORS: Record<string, string> = {
+  super_admin: 'gold',
+  org_admin: 'purple',
+  treasurer: 'blue',
+  collector: 'green',
+  president: 'orange',
+  secretary: 'volcano',
+  auditor: 'cyan',
+  volunteer: 'default',
+};
+
 const UsersPage: React.FC = () => {
   const { message } = App.useApp();
   const queryClient = useQueryClient();
@@ -28,7 +39,7 @@ const UsersPage: React.FC = () => {
   const createMutation = useMutation({
     mutationFn: createUser,
     onSuccess: (data) => {
-      message.success(`User "${data.full_name}" created successfully!`);
+      message.success(`User "${data.full_name}" created successfully! 🎉`);
       setIsModalOpen(false);
       form.resetFields();
       queryClient.invalidateQueries({ queryKey: ['users'] });
@@ -41,7 +52,7 @@ const UsersPage: React.FC = () => {
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: any) => updateUser(id, data),
     onSuccess: () => {
-      message.success('User updated successfully!');
+      message.success('User details & role updated successfully! ✨');
       setIsModalOpen(false);
       setEditingUser(null);
       form.resetFields();
@@ -55,7 +66,7 @@ const UsersPage: React.FC = () => {
   const deleteMutation = useMutation({
     mutationFn: deleteUser,
     onSuccess: () => {
-      message.success('User deleted successfully!');
+      message.success('User account removed!');
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },
     onError: (err: any) => {
@@ -71,11 +82,12 @@ const UsersPage: React.FC = () => {
 
   const handleOpenEditModal = (record: any) => {
     setEditingUser(record);
+    const firstRole = record.roles?.[0]?.name?.toLowerCase() || record.roles?.[0]?.slug || 'collector';
     form.setFieldsValue({
       full_name: record.full_name,
       email: record.email,
       phone: record.phone,
-      role_name: record.roles?.[0]?.name || 'collector',
+      role_name: firstRole,
     });
     setIsModalOpen(true);
   };
@@ -96,23 +108,32 @@ const UsersPage: React.FC = () => {
       title: 'Status',
       dataIndex: 'is_active',
       key: 'is_active',
-      render: (active: boolean) => <Tag color={active ? 'green' : 'red'}>{active ? 'ACTIVE' : 'SUSPENDED'}</Tag>,
+      render: (active: boolean) => (
+        <Tag color={active ? 'green' : 'red'} style={{ borderRadius: 10 }}>
+          {active ? 'ACTIVE' : 'SUSPENDED'}
+        </Tag>
+      ),
     },
     {
       title: 'Role / Designation',
       key: 'roles',
       render: (_: any, record: any) => {
         if (record.is_super_admin) {
-          return <Tag color="gold">SUPER ADMIN 👑</Tag>;
+          return <Tag color="gold" style={{ borderRadius: 10, fontWeight: 700 }}>SUPER ADMIN 👑</Tag>;
         }
         if (record.roles && record.roles.length > 0) {
-          return record.roles.map((r: any) => (
-            <Tag color={r.name === 'org_admin' ? 'purple' : 'blue'} key={r.id}>
-              {r.name?.replace('_', ' ')?.toUpperCase()}
-            </Tag>
-          ));
+          return record.roles.map((r: any) => {
+            const roleKey = (r.name || r.slug || 'member').toLowerCase().replace(' ', '_');
+            const color = ROLE_COLORS[roleKey] || 'blue';
+            const label = (r.name || r.slug || 'MEMBER').replace('_', ' ').toUpperCase();
+            return (
+              <Tag color={color} key={r.id || r.name} style={{ borderRadius: 10, fontWeight: 700 }}>
+                {label}
+              </Tag>
+            );
+          });
         }
-        return <Tag color="cyan">MEMBER</Tag>;
+        return <Tag color="cyan" style={{ borderRadius: 10 }}>MEMBER</Tag>;
       },
     },
     {
@@ -120,7 +141,7 @@ const UsersPage: React.FC = () => {
       key: 'actions',
       render: (_: any, record: any) => (
         <Space>
-          <Tooltip title="Edit Member">
+          <Tooltip title="Edit Member Role & Details">
             <Button
               icon={<EditOutlined />}
               size="small"
@@ -156,17 +177,21 @@ const UsersPage: React.FC = () => {
 
   return (
     <div className="users-module animate-fadeIn">
-      <div className="page-header">
+      <div className="page-header" style={{ marginBottom: 20 }}>
         <div>
-          <Title level={3} style={{ margin: 0 }}>Organization User Directory</Title>
-          <Text type="secondary">Manage trustees, treasurers, secretaries, collectors, and volunteers</Text>
+          <Title level={3} style={{ margin: 0, color: '#0B2347', fontWeight: 900 }}>
+            Organization User Directory
+          </Title>
+          <Text type="secondary">
+            Manage trustees, treasurers, secretaries, collectors, and volunteers
+          </Text>
         </div>
         <Button
           type="primary"
           icon={<PlusOutlined />}
           size="large"
           onClick={handleOpenAddModal}
-          style={{ background: '#F97316', borderColor: '#F97316' }}
+          style={{ background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)', borderColor: '#F97316', borderRadius: 10, fontWeight: 700 }}
         >
           Add New User
         </Button>
@@ -175,14 +200,20 @@ const UsersPage: React.FC = () => {
       <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
         <Col xs={24} sm={12}>
           <Card className="hissob-card">
-            <Text type="secondary">Total Organization Members</Text>
-            <Title level={3} style={{ margin: 0, color: '#0B2347' }}>{users.length}</Title>
+            <Text type="secondary" style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase' }}>
+              Total Organization Members
+            </Text>
+            <Title level={3} style={{ margin: 0, color: '#0B2347', fontWeight: 900 }}>
+              {users.length}
+            </Title>
           </Card>
         </Col>
         <Col xs={24} sm={12}>
           <Card className="hissob-card">
-            <Text type="secondary">Active Members</Text>
-            <Title level={3} style={{ margin: 0, color: '#22C55E' }}>
+            <Text type="secondary" style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase' }}>
+              Active Members
+            </Text>
+            <Title level={3} style={{ margin: 0, color: '#22C55E', fontWeight: 900 }}>
               {users.filter((u: any) => u.is_active).length}
             </Title>
           </Card>
@@ -190,12 +221,12 @@ const UsersPage: React.FC = () => {
       </Row>
 
       <Card className="hissob-card">
-        <Table dataSource={users} columns={columns} rowKey="id" loading={isLoading} pagination={{ pageSize: 10 }} />
+        <Table dataSource={users} columns={columns} rowKey="id" loading={isLoading} pagination={{ pageSize: 10 }} scroll={{ x: 600 }} />
       </Card>
 
       {/* Add / Edit User Modal */}
       <Modal
-        title={editingUser ? 'Edit Member User Details' : 'Add New Organization User / Member'}
+        title={editingUser ? 'Edit Member User Role & Details' : 'Add New Organization User / Member'}
         open={isModalOpen}
         onCancel={() => setIsModalOpen(false)}
         footer={null}
@@ -203,18 +234,18 @@ const UsersPage: React.FC = () => {
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit} initialValues={{ role_name: 'collector' }}>
           <Form.Item name="full_name" label="Full Name" rules={[{ required: true, message: 'Enter member full name' }]}>
-            <Input placeholder="e.g. Anand Deshmukh" prefix={<UserAddOutlined />} />
+            <Input placeholder="e.g. Vinay Kumar" prefix={<UserAddOutlined />} size="large" />
           </Form.Item>
 
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item name="email" label="Email Address" rules={[{ required: true, type: 'email' }]}>
-                <Input placeholder="anand@mandal.org" />
+                <Input placeholder="vinay@mandal.org" size="large" />
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item name="phone" label="Phone Number">
-                <Input placeholder="+91 98765 43210" />
+                <Input placeholder="+91 98765 43210" size="large" />
               </Form.Item>
             </Col>
           </Row>
@@ -223,30 +254,35 @@ const UsersPage: React.FC = () => {
             {!editingUser && (
               <Col span={12}>
                 <Form.Item name="password" label="Initial Password" rules={[{ required: true, min: 6 }]}>
-                  <Input.Password placeholder="Password" />
+                  <Input.Password placeholder="Password" size="large" />
                 </Form.Item>
               </Col>
             )}
             <Col span={editingUser ? 24 : 12}>
-              <Form.Item name="role_name" label="Assigned Role" rules={[{ required: true }]}>
-                <Select placeholder="Select Role">
-                  <Option value="org_admin">Org Admin</Option>
-                  <Option value="president">President</Option>
-                  <Option value="treasurer">Treasurer</Option>
-                  <Option value="secretary">Secretary</Option>
-                  <Option value="collector">Collector</Option>
-                  <Option value="auditor">Auditor</Option>
-                  <Option value="volunteer">Volunteer</Option>
+              <Form.Item name="role_name" label="Assigned Organization Role" rules={[{ required: true }]}>
+                <Select placeholder="Select Role" size="large">
+                  <Option value="org_admin">🏢 Org Admin</Option>
+                  <Option value="president">👑 President</Option>
+                  <Option value="treasurer">💰 Treasurer</Option>
+                  <Option value="secretary">📜 Secretary</Option>
+                  <Option value="collector">📲 Collector</Option>
+                  <Option value="auditor">🔍 Auditor</Option>
+                  <Option value="volunteer">🤝 Volunteer</Option>
                 </Select>
               </Form.Item>
             </Col>
           </Row>
 
-          <Form.Item style={{ marginBottom: 0, textAlign: 'right', marginTop: 16 }}>
+          <Form.Item style={{ marginBottom: 0, textAlign: 'right', marginTop: 24 }}>
             <Space>
               <Button onClick={() => setIsModalOpen(false)}>Cancel</Button>
-              <Button type="primary" htmlType="submit" loading={createMutation.isPending || updateMutation.isPending} style={{ background: '#F97316', borderColor: '#F97316' }}>
-                {editingUser ? 'Save User Changes' : 'Create Member User'}
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={createMutation.isPending || updateMutation.isPending}
+                style={{ background: '#F97316', borderColor: '#F97316', borderRadius: 8, fontWeight: 700 }}
+              >
+                {editingUser ? 'Save User & Role Changes' : 'Create Member User'}
               </Button>
             </Space>
           </Form.Item>

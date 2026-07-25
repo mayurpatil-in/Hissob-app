@@ -19,6 +19,7 @@ const RbacPage          = lazy(() => import('../modules/rbac/RbacPage'));
 const SettingsPage       = lazy(() => import('../modules/settings/SettingsPage'));
 const AuditPage         = lazy(() => import('../modules/audit/AuditPage'));
 const SuperAdminPage    = lazy(() => import('../modules/super-admin/SuperAdminPage'));
+const AIInsightsPage    = lazy(() => import('../modules/ai/AIInsightsPage'));
 
 const PageLoader = () => (
   <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}>
@@ -39,6 +40,7 @@ const AppRouter: React.FC = () => (
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 <Route path="/dashboard"      element={<Dashboard />} />
+                <Route path="/ai-insights"    element={<AIInsightsPage />} />
                 <Route path="/financial-year" element={<FinancialYearPage />} />
                 <Route path="/festivals"      element={<FestivalsPage />} />
                 <Route path="/receipts"       element={<ReceiptsPage />} />

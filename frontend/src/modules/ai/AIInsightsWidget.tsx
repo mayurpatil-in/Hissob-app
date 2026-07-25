@@ -50,7 +50,7 @@ const AIInsightsWidget: React.FC = () => {
             type={insight.impact_level === 'high' ? 'warning' : 'info'}
             showIcon
             icon={<BulbOutlined style={{ color: '#F97316' }} />}
-            message={
+            title={
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <b style={{ color: '#0B2347' }}>{insight.title}</b>
                 <Tag color={IMPACT_COLORS[insight.impact_level] || 'default'}>

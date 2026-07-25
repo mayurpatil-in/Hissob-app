@@ -178,7 +178,6 @@
 /* Mobile adjustments */
 @media (max-width: 768px) {
   .app-main { margin-left: 0 !important; }
-  .app-sidebar { transform: translateX(-100%); }
-  .app-sidebar.ant-layout-sider-zero-width { transform: translateX(0); }
-  .app-content { padding: 16px; }
+  .hide-mobile-sider { display: none !important; }
+  .app-content { padding: 10px 8px !important; }
 }

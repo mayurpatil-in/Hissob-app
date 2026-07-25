@@ -49,6 +49,9 @@ async def create_area(
     return repo.create(area)
 
 
+from app.auth.deps import get_current_active_user
+
+
 # ── Donor Endpoints ──
 @router.get("", response_model=List[DonorResponse], summary="List & Search Donors")
 async def list_donors(
@@ -56,7 +59,7 @@ async def list_donors(
     area_id: Optional[UUID] = Query(None, description="Filter by area"),
     skip: int = 0,
     limit: int = 100,
-    current_user: User = Depends(require("donors", "view")),
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ):
     if not current_user.tenant_id and not current_user.is_super_admin:

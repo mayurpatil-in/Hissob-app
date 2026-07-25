@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Layout, Menu, Button, Avatar, Dropdown, Badge, Tooltip } from 'antd';
+import { Layout, Menu, Button, Avatar, Dropdown, Badge, Tooltip, Drawer } from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   DashboardOutlined, FileTextOutlined, DollarOutlined, UserOutlined,
   BankOutlined, CalendarOutlined, TeamOutlined, BarChartOutlined,
   SettingOutlined, BellOutlined, LogoutOutlined, MenuFoldOutlined,
-  MenuUnfoldOutlined, AuditOutlined, GlobalOutlined, SafetyOutlined, CrownOutlined
+  MenuUnfoldOutlined, AuditOutlined, GlobalOutlined, SafetyOutlined, CrownOutlined, RobotOutlined,
+  MenuOutlined
 } from '@ant-design/icons';
 import { useAuthStore } from '../store/authStore';
 import { authService } from '../auth/authService';
@@ -22,6 +23,7 @@ interface NavItem {
 
 const SUPER_ADMIN_NAV: NavItem[] = [
   { key: '/dashboard',   label: 'Platform Overview', icon: <DashboardOutlined /> },
+  { key: '/ai-insights', label: 'AI Insights',       icon: <RobotOutlined style={{ color: '#F97316' }} /> },
   { key: '/super-admin', label: 'Organizations',     icon: <CrownOutlined /> },
   { key: '/audit',       label: 'Global Audit Log',  icon: <AuditOutlined /> },
   { key: '/users',       label: 'Platform Users',    icon: <UserOutlined /> },
@@ -30,6 +32,7 @@ const SUPER_ADMIN_NAV: NavItem[] = [
 
 const ORG_NAV: NavItem[] = [
   { key: '/dashboard',      label: 'Dashboard',       icon: <DashboardOutlined /> },
+  { key: '/ai-insights',    label: 'AI Insights',     icon: <RobotOutlined style={{ color: '#F97316' }} /> },
   { key: '/financial-year', label: 'Financial Year',  icon: <CalendarOutlined />, module: 'financial_year' },
   { key: '/festivals',      label: 'Festivals',       icon: <GlobalOutlined />,   module: 'festivals' },
   { key: '/donors',         label: 'Donors',          icon: <TeamOutlined />,     module: 'donors' },
@@ -49,9 +52,25 @@ interface Props {
 
 const AppShell: React.FC<Props> = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { user, hasModule } = useAuthStore();
+
+  React.useEffect(() => {
+    authService.me().then((freshUser) => {
+      useAuthStore.setState((state) => {
+        const savedLogo = state.user?.avatar_url || localStorage.getItem('hissob_org_logo');
+        return {
+          ...state,
+          user: {
+            ...freshUser,
+            avatar_url: freshUser.avatar_url || savedLogo || null,
+          },
+        };
+      });
+    }).catch(() => {});
+  }, []);
 
   const handleLogout = async () => {
     await authService.logout();
@@ -63,7 +82,12 @@ const AppShell: React.FC<Props> = ({ children }) => {
     : ORG_NAV.filter((item) => !item.module || hasModule(item.module));
 
   const userMenuItems: any[] = [
-    { key: 'profile', label: user?.is_super_admin ? 'Super Admin Profile' : 'Profile', icon: <UserOutlined /> },
+    {
+      key: 'profile',
+      label: user?.is_super_admin ? 'Super Admin Profile' : 'User Profile & Settings',
+      icon: <UserOutlined />,
+      onClick: () => navigate('/settings'),
+    },
   ];
 
   if (user?.is_super_admin) {
@@ -82,11 +106,50 @@ const AppShell: React.FC<Props> = ({ children }) => {
 
   const userMenu = { items: userMenuItems };
 
+  const handleToggleMenu = () => {
+    if (window.innerWidth <= 768) {
+      setMobileOpen(true);
+    } else {
+      setCollapsed(!collapsed);
+    }
+  };
+
   return (
     <Layout className="app-shell">
-      {/* ── Sidebar ── */}
+      {/* ── Mobile Navigation Drawer ── */}
+      <Drawer
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => { setMobileOpen(false); navigate('/dashboard'); }}>
+            <div className="sidebar-logo-icon">H</div>
+            <span style={{ color: '#0B2347', fontWeight: 800, fontSize: 18 }}>Hissob ERP</span>
+          </div>
+        }
+        placement="left"
+        onClose={() => setMobileOpen(false)}
+        open={mobileOpen}
+        width={280}
+        styles={{ body: { padding: 0, background: '#0B2347' }, header: { background: '#FFF' } }}
+      >
+        <Menu
+          mode="inline"
+          theme="dark"
+          selectedKeys={[location.pathname]}
+          className="sidebar-menu"
+          items={visibleNavItems.map((item) => ({
+            key: item.key,
+            icon: item.icon,
+            label: item.label,
+            onClick: () => {
+              setMobileOpen(false);
+              navigate(item.key);
+            },
+          }))}
+        />
+      </Drawer>
+
+      {/* ── Desktop Sidebar ── */}
       <Sider
-        className="app-sidebar"
+        className="app-sidebar hide-mobile-sider"
         width={260}
         collapsedWidth={64}
         collapsed={collapsed}
@@ -131,9 +194,9 @@ const AppShell: React.FC<Props> = ({ children }) => {
           <div className="header-left">
             <Button
               type="text"
-              className="header-menu-btn show-mobile"
-              icon={<MenuUnfoldOutlined />}
-              onClick={() => setCollapsed(!collapsed)}
+              className="header-menu-btn"
+              icon={collapsed ? <MenuUnfoldOutlined /> : <MenuOutlined />}
+              onClick={handleToggleMenu}
             />
           </div>
 
@@ -149,8 +212,8 @@ const AppShell: React.FC<Props> = ({ children }) => {
             <Dropdown menu={userMenu} placement="bottomRight" trigger={['click']}>
               <div className="header-user">
                 <Avatar
-                  src={user?.avatar_url}
-                  style={{ backgroundColor: '#F97316', cursor: 'pointer' }}
+                  src={(user as any)?.avatar_url}
+                  style={{ backgroundColor: '#F97316', cursor: 'pointer', flexShrink: 0 }}
                 >
                   {user?.full_name?.charAt(0)}
                 </Avatar>

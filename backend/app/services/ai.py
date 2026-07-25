@@ -110,7 +110,7 @@ class AIService:
             ).scalar() or 0.0)
 
             tot_exp = float(self.db.execute(
-                select(func.sum(Expense.amount)).where(Receipt.tenant_id == tenant_id, Expense.status == "paid")
+                select(func.sum(Expense.amount)).where(Expense.tenant_id == tenant_id, Expense.status == "paid")
             ).scalar() or 0.0)
 
             if tot_coll > 0:

@@ -1,0 +1,65 @@
+/* ── Financial Year & Festivals Mobile Responsive Styles ── */
+.financial-year-header-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.financial-year-header-title h3 {
+  font-size: 24px;
+  font-weight: 900;
+  color: #0B2347;
+  margin: 0 0 4px 0;
+}
+
+.financial-year-header-title p {
+  color: #64748B;
+  font-size: 13px;
+  margin: 0;
+}
+
+.financial-year-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.fy-action-btn {
+  height: 44px !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* Mobile adjustments (< 768px) */
+@media (max-width: 768px) {
+  .financial-year-header-wrapper {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .financial-year-header-title h3 {
+    font-size: 20px;
+  }
+
+  .financial-year-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .fy-action-btn {
+    width: 100% !important;
+  }
+
+  .hissob-card {
+    padding: 16px !important;
+  }
+}
