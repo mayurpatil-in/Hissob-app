@@ -153,7 +153,7 @@ const FinancialYearPage: React.FC = () => {
       </Row>
 
       {/* Add FY Modal */}
-      <Modal title="Add Financial Year" open={isFyModalOpen} onCancel={() => setIsFyModalOpen(false)} footer={null} destroyOnClose>
+      <Modal title="Add Financial Year" open={isFyModalOpen} onCancel={() => setIsFyModalOpen(false)} footer={null} destroyOnHidden>
         <Form form={fyForm} layout="vertical" onFinish={handleFySubmit} initialValues={{ opening_balance: 0 }}>
           <Form.Item name="name" label="Financial Year Name" rules={[{ required: true, message: 'e.g. 2025-26' }]}>
             <Input placeholder="e.g. 2025-26" />
@@ -174,7 +174,7 @@ const FinancialYearPage: React.FC = () => {
       </Modal>
 
       {/* Add Festival Modal */}
-      <Modal title="Create Festival" open={isFestModalOpen} onCancel={() => setIsFestModalOpen(false)} footer={null} destroyOnClose>
+      <Modal title="Create Festival" open={isFestModalOpen} onCancel={() => setIsFestModalOpen(false)} footer={null} destroyOnHidden>
         <Form form={festForm} layout="vertical" onFinish={handleFestSubmit}>
           <Form.Item name="financial_year_id" label="Financial Year" rules={[{ required: true }]}>
             <Select placeholder="Select Financial Year">

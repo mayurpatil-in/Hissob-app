@@ -12,6 +12,11 @@ const ExpensesPage      = lazy(() => import('../modules/expenses/ExpensesPage'))
 const DonorsPage        = lazy(() => import('../modules/donors/DonorsPage'));
 const ReportsPage       = lazy(() => import('../modules/reports/ReportsPage'));
 const FinancialYearPage = lazy(() => import('../modules/financial-year/FinancialYearPage'));
+const FestivalsPage     = lazy(() => import('../modules/festivals/FestivalsPage'));
+const SettlementsPage   = lazy(() => import('../modules/settlements/SettlementsPage'));
+const UsersPage         = lazy(() => import('../modules/users/UsersPage'));
+const RbacPage          = lazy(() => import('../modules/rbac/RbacPage'));
+const SettingsPage       = lazy(() => import('../modules/settings/SettingsPage'));
 const AuditPage         = lazy(() => import('../modules/audit/AuditPage'));
 const SuperAdminPage    = lazy(() => import('../modules/super-admin/SuperAdminPage'));
 
@@ -35,10 +40,15 @@ const AppRouter: React.FC = () => (
               <Routes>
                 <Route path="/dashboard"      element={<Dashboard />} />
                 <Route path="/financial-year" element={<FinancialYearPage />} />
+                <Route path="/festivals"      element={<FestivalsPage />} />
                 <Route path="/receipts"       element={<ReceiptsPage />} />
+                <Route path="/settlements"    element={<SettlementsPage />} />
                 <Route path="/expenses"       element={<ExpensesPage />} />
                 <Route path="/donors"         element={<DonorsPage />} />
                 <Route path="/reports"        element={<ReportsPage />} />
+                <Route path="/users"          element={<UsersPage />} />
+                <Route path="/rbac"           element={<RbacPage />} />
+                <Route path="/settings"       element={<SettingsPage />} />
                 <Route path="/audit"          element={<AuditPage />} />
                 <Route path="/super-admin"    element={<SuperAdminPage />} />
                 <Route path="*"               element={<Navigate to="/dashboard" replace />} />

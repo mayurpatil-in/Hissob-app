@@ -6,6 +6,7 @@ import {
 } from '@ant-design/icons';
 import { useAuthStore } from '../../store/authStore';
 import SuperAdminPage from '../super-admin/SuperAdminPage';
+import AIInsightsWidget from '../ai/AIInsightsWidget';
 import './dashboard.css';
 
 // Placeholder stats — will be replaced with real API data in Phase 2
@@ -108,6 +109,13 @@ const Dashboard: React.FC = () => {
             </div>
           </Col>
         ))}
+      </Row>
+
+      {/* ── AI Insights Widget ── */}
+      <Row style={{ marginTop: 16 }}>
+        <Col span={24}>
+          <AIInsightsWidget />
+        </Col>
       </Row>
 
       <Row gutter={[16, 16]} style={{ marginTop: 16 }}>

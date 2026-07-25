@@ -85,7 +85,7 @@ const SuperAdminPage: React.FC = () => {
         </Col>
         <Col xs={24} sm={8}>
           <Card className="hissob-card">
-            <Statistic title="Platform MRR (Est ₹)" value={stats.mrr || 0} prefix={<RocketOutlined />} valueStyle={{ color: '#22C55E' }} />
+            <Statistic title="Platform MRR (Est ₹)" value={stats.mrr || 0} prefix={<RocketOutlined />} styles={{ content: { color: '#22C55E' } }} />
           </Card>
         </Col>
       </Row>
@@ -120,7 +120,7 @@ const SuperAdminPage: React.FC = () => {
         open={isModalOpen}
         onCancel={() => setIsModalOpen(false)}
         footer={null}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit} initialValues={{ max_users: 10, storage_limit_mb: 500 }}>
           <Title level={5} style={{ marginTop: 0, color: '#F97316' }}>1. Organization Details</Title>

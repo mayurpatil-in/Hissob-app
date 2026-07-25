@@ -1,5 +1,5 @@
 """
-API v1 router aggregator — includes Phase 1, Phase 2, and Phase 3 module routers.
+API v1 router aggregator — includes Phase 1, Phase 2, Phase 3, and Phase 4 AI module routers.
 """
 from fastapi import APIRouter
 from app.routers.auth import router as auth_router
@@ -13,6 +13,8 @@ from app.routers.expenses import router as expenses_router
 from app.routers.reports import router as reports_router
 from app.routers.audit import router as audit_router
 from app.routers.super_admin import router as super_admin_router
+from app.routers.ai import router as ai_router
+from app.routers.users import router as users_router
 
 router = APIRouter()
 router.include_router(auth_router)
@@ -27,3 +29,5 @@ router.include_router(expenses_router)
 router.include_router(reports_router)
 router.include_router(audit_router)
 router.include_router(super_admin_router)
+router.include_router(ai_router)
+router.include_router(users_router)

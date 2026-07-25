@@ -191,7 +191,7 @@ const ExpensesPage: React.FC = () => {
         open={isModalOpen}
         onCancel={() => setIsModalOpen(false)}
         footer={null}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit} initialValues={{ expense_date: dayjs() }}>
           <Form.Item

@@ -125,7 +125,7 @@ const DonorsPage: React.FC = () => {
         open={isModalOpen}
         onCancel={() => setIsModalOpen(false)}
         footer={null}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
           <Form.Item name="full_name" label="Full Name" rules={[{ required: true }]}>

@@ -123,3 +123,18 @@ export const getAuditLogs = async (module?: string) => (await apiClient.get<Audi
 export const getSuperAdminStats = async () => (await apiClient.get<any>('/super-admin/dashboard-stats')).data;
 export const getOrganizations = async () => (await apiClient.get<any[]>('/organizations')).data;
 export const createOrganization = async (data: any) => (await apiClient.post<any>('/organizations', data)).data;
+
+// ── AI Engine API ──
+export const getAIInsights = async () => (await apiClient.get<any>('/ai/insights')).data;
+export const parseAIReceipt = async (text: string) => (await apiClient.post<any>('/ai/parse-receipt', { text })).data;
+
+// ── Cash Settlement API ──
+export const getSettlements = async (params?: any) => (await apiClient.get<any[]>('/settlements', { params })).data;
+export const submitSettlement = async (data: any) => (await apiClient.post<any>('/settlements', data)).data;
+export const verifySettlement = async (id: string, action: string, rejection_reason?: string, notes?: string) => (await apiClient.post<any>(`/settlements/${id}/verify`, { action, rejection_reason, notes })).data;
+
+// ── User Management API ──
+export const getUsers = async () => (await apiClient.get<any[]>('/users')).data;
+export const createUser = async (data: any) => (await apiClient.post<any>('/users', data)).data;
+export const updateUser = async (id: string, data: any) => (await apiClient.put<any>(`/users/${id}`, data)).data;
+export const deleteUser = async (id: string) => (await apiClient.delete<any>(`/users/${id}`)).data;

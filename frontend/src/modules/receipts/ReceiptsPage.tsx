@@ -4,10 +4,11 @@ import {
   Select, Card, Row, Col, Typography, App, Tooltip
 } from 'antd';
 import {
-  PlusOutlined, PrinterOutlined
+  PlusOutlined, PrinterOutlined, RobotOutlined
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getReceipts, createReceipt, getDonors, getFinancialYears } from '../../api/services';
+import AIVoiceAssistantModal from '../ai/AIVoiceAssistantModal';
 import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
@@ -24,6 +25,7 @@ const ReceiptsPage: React.FC = () => {
   const { message } = App.useApp();
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [printReceipt, setPrintReceipt] = useState<any>(null);
   const [filterStatus, setFilterStatus] = useState<string>('');
 
@@ -127,15 +129,25 @@ const ReceiptsPage: React.FC = () => {
           <Title level={3} style={{ margin: 0 }}>Donation Receipts</Title>
           <Text type="secondary">Manage collections, issue receipts, and print vouchers</Text>
         </div>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          size="large"
-          onClick={() => setIsModalOpen(true)}
-          style={{ background: '#F97316', borderColor: '#F97316' }}
-        >
-          New Receipt
-        </Button>
+        <Space>
+          <Button
+            icon={<RobotOutlined />}
+            size="large"
+            onClick={() => setIsAiModalOpen(true)}
+            style={{ color: '#F97316', borderColor: '#F97316' }}
+          >
+            AI Smart Entry
+          </Button>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            size="large"
+            onClick={() => setIsModalOpen(true)}
+            style={{ background: '#F97316', borderColor: '#F97316' }}
+          >
+            New Receipt
+          </Button>
+        </Space>
       </div>
 
       {/* ── Stats Overview ── */}
@@ -194,7 +206,7 @@ const ReceiptsPage: React.FC = () => {
         open={isModalOpen}
         onCancel={() => setIsModalOpen(false)}
         footer={null}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit} initialValues={{ payment_mode: 'cash', receipt_date: dayjs() }}>
           <Form.Item
@@ -293,6 +305,20 @@ const ReceiptsPage: React.FC = () => {
           </div>
         </Modal>
       )}
+
+      {/* ── AI Voice Assistant Modal ── */}
+      <AIVoiceAssistantModal
+        open={isAiModalOpen}
+        onCancel={() => setIsAiModalOpen(false)}
+        onApplyParsedData={(parsed) => {
+          setIsModalOpen(true);
+          form.setFieldsValue({
+            amount: parsed.amount,
+            payment_mode: parsed.payment_mode || 'cash',
+            purpose: parsed.purpose,
+          });
+        }}
+      />
     </div>
   );
 };
