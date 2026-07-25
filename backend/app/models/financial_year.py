@@ -1,0 +1,53 @@
+"""
+Financial Year model — manages fiscal year lifecycle.
+"""
+import uuid
+import enum
+from datetime import date
+from sqlalchemy import String, Boolean, ForeignKey, Date, Text, Numeric
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.dialects.postgresql import UUID
+from app.core.database import Base
+from app.models.base import UUIDMixin, TimestampMixin
+
+
+class FYStatus(str, enum.Enum):
+    OPEN = "open"
+    ACTIVE = "active"
+    CLOSED = "closed"
+    LOCKED = "locked"
+
+
+class FinancialYear(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "financial_years"
+
+    # Explicit FK — required so Tenant.financial_years relationship can resolve its join
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("tenants.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    name: Mapped[str] = mapped_column(String(50), nullable=False)  # e.g. "2025-26"
+    start_date: Mapped[date] = mapped_column(Date, nullable=False)
+    end_date: Mapped[date] = mapped_column(Date, nullable=False)
+    status: Mapped[FYStatus] = mapped_column(String(20), default=FYStatus.OPEN, nullable=False)
+    is_current: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    opening_balance: Mapped[float] = mapped_column(Numeric(15, 2), default=0.0)
+    closing_balance: Mapped[float] = mapped_column(Numeric(15, 2), default=0.0)
+    carry_forward_amount: Mapped[float] = mapped_column(Numeric(15, 2), default=0.0)
+
+    notes: Mapped[str | None] = mapped_column(Text)
+
+    # Who locked/closed
+    closed_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    locked_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+
+    # Relationships
+    tenant: Mapped["Tenant"] = relationship("Tenant", back_populates="financial_years")
+    festivals: Mapped[list["Festival"]] = relationship("Festival", back_populates="financial_year")
+
+    def __repr__(self) -> str:
+        return f"<FinancialYear {self.name}>"

@@ -1,0 +1,132 @@
+"""
+Cash Settlement Router — Collector submit $\rightarrow$ Treasurer verify & approve.
+"""
+from typing import List, Optional
+from uuid import UUID
+from datetime import date, datetime, timezone
+from fastapi import APIRouter, Depends, HTTPException, status, Query
+from sqlalchemy.orm import Session
+from app.core.database import get_db
+from app.permissions.rbac import require
+from app.models.user import User
+from app.models.receipt import Receipt, ReceiptStatus
+from app.models.finance import CashSettlement, SettlementStatus
+from app.repositories.receipt import CashSettlementRepository, ReceiptRepository
+from app.schemas.receipt import (
+    CashSettlementCreate,
+    CashSettlementVerify,
+    CashSettlementResponse,
+)
+
+router = APIRouter(prefix="/settlements", tags=["Cash Settlements"])
+
+
+@router.get("", response_model=List[CashSettlementResponse], summary="List Cash Settlements")
+async def list_settlements(
+    status: Optional[str] = Query(None),
+    collector_id: Optional[UUID] = Query(None),
+    skip: int = 0,
+    limit: int = 100,
+    current_user: User = Depends(require("cash_settlement", "view")),
+    db: Session = Depends(get_db),
+):
+    if not current_user.tenant_id and not current_user.is_super_admin:
+        raise HTTPException(status_code=400, detail="Tenant context required")
+
+    repo = CashSettlementRepository(db)
+    return repo.get_by_tenant(
+        tenant_id=current_user.tenant_id,
+        status=status,
+        collector_id=collector_id,
+        skip=skip,
+        limit=limit,
+    )
+
+
+@router.post("", response_model=CashSettlementResponse, status_code=status.HTTP_201_CREATED, summary="Collector Submit Cash Settlement")
+async def submit_settlement(
+    payload: CashSettlementCreate,
+    current_user: User = Depends(require("cash_settlement", "create")),
+    db: Session = Depends(get_db),
+):
+    if not current_user.tenant_id:
+        raise HTTPException(status_code=400, detail="Tenant context required")
+
+    if not payload.receipt_ids:
+        raise HTTPException(status_code=400, detail="No receipts selected for settlement")
+
+    # Fetch and validate receipts
+    receipts = db.query(Receipt).filter(
+        Receipt.id.in_(payload.receipt_ids),
+        Receipt.tenant_id == current_user.tenant_id,
+        Receipt.collector_id == current_user.id,
+        Receipt.status.in_([ReceiptStatus.ISSUED, ReceiptStatus.PENDING_SETTLEMENT]),
+    ).all()
+
+    if len(receipts) != len(payload.receipt_ids):
+        raise HTTPException(status_code=400, detail="Some selected receipts are invalid or already settled")
+
+    total_amount = sum(r.amount for r in receipts)
+
+    repo = CashSettlementRepository(db)
+    settlement_num = repo.generate_settlement_number(current_user.tenant_id)
+
+    settlement = CashSettlement(
+        tenant_id=current_user.tenant_id,
+        financial_year_id=payload.financial_year_id,
+        festival_id=payload.festival_id,
+        collector_id=current_user.id,
+        settlement_number=settlement_num,
+        settlement_date=payload.settlement_date or date.today(),
+        total_amount=total_amount,
+        receipt_count=len(receipts),
+        status=SettlementStatus.SUBMITTED,
+        submitted_at=datetime.now(timezone.utc),
+        notes=payload.notes,
+    )
+    created = repo.create(settlement)
+
+    # Link receipts to settlement
+    for r in receipts:
+        r.settlement_id = created.id
+        r.status = ReceiptStatus.PENDING_SETTLEMENT
+
+    db.commit()
+    return created
+
+
+@router.post("/{settlement_id}/verify", response_model=CashSettlementResponse, summary="Treasurer Approve or Reject Settlement")
+async def verify_settlement(
+    settlement_id: UUID,
+    payload: CashSettlementVerify,
+    current_user: User = Depends(require("cash_settlement", "approve")),
+    db: Session = Depends(get_db),
+):
+    repo = CashSettlementRepository(db)
+    settlement = repo.get(settlement_id)
+    if not settlement or (settlement.tenant_id != current_user.tenant_id and not current_user.is_super_admin):
+        raise HTTPException(status_code=404, detail="Settlement not found")
+
+    if settlement.status not in [SettlementStatus.SUBMITTED, SettlementStatus.PENDING]:
+        raise HTTPException(status_code=400, detail="Settlement already processed")
+
+    now = datetime.now(timezone.utc)
+    receipts = db.query(Receipt).filter(Receipt.settlement_id == settlement.id).all()
+
+    if payload.action == "approve":
+        settlement.status = SettlementStatus.APPROVED
+        settlement.approved_by = current_user.id
+        settlement.approved_at = now
+        settlement.notes = payload.notes or settlement.notes
+        for r in receipts:
+            r.status = ReceiptStatus.SETTLED
+    else:
+        settlement.status = SettlementStatus.REJECTED
+        settlement.rejection_reason = payload.rejection_reason
+        for r in receipts:
+            r.status = ReceiptStatus.PENDING_SETTLEMENT
+            r.settlement_id = None
+
+    db.commit()
+    db.refresh(settlement)
+    return settlement

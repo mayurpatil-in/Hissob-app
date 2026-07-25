@@ -1,0 +1,63 @@
+"""
+Hissob ERP — FastAPI Application Entry Point
+"""
+import os
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.openapi.utils import get_openapi
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+
+from app.core.config import settings
+from app.middleware.audit import AuditMiddleware, TenantMiddleware
+from app.routers import auth as auth_router
+from app.api.v1 import router as api_v1_router
+
+# ─── Rate Limiter ──────────────────────────────────────────────
+limiter = Limiter(key_func=get_remote_address, default_limits=[f"{settings.RATE_LIMIT_PER_MINUTE}/minute"])
+
+# ─── App Factory ───────────────────────────────────────────────
+def create_app() -> FastAPI:
+    app = FastAPI(
+        title=settings.APP_NAME,
+        version=settings.APP_VERSION,
+        description="Production ERP for Festival Collection & Financial Management",
+        docs_url="/docs" if settings.DEBUG else None,
+        redoc_url="/redoc" if settings.DEBUG else None,
+        openapi_url="/openapi.json" if settings.DEBUG else None,
+    )
+
+    # Rate limiter
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+    # Middleware (order matters — last added = first executed)
+    app.add_middleware(TenantMiddleware)
+    app.add_middleware(AuditMiddleware)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    # Routes
+    app.include_router(api_v1_router, prefix="/api/v1")
+
+    # Static file uploads
+    upload_dir = settings.UPLOAD_DIR
+    os.makedirs(upload_dir, exist_ok=True)
+    app.mount("/uploads", StaticFiles(directory=upload_dir), name="uploads")
+
+    # Health check
+    @app.get("/health", tags=["Health"])
+    async def health():
+        return {"status": "ok", "app": settings.APP_NAME, "version": settings.APP_VERSION}
+
+    return app
+
+
+app = create_app()
