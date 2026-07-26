@@ -113,7 +113,7 @@
 .app-header {
   background: var(--color-bg-card) !important;
   height: 64px !important;
-  line-height: 64px !important;
+  line-height: normal !important;
   padding: 0 24px !important;
   display: flex !important;
   align-items: center !important;
@@ -125,11 +125,10 @@
   box-shadow: var(--shadow-sm) !important;
 }
 
-.header-left { display: flex; align-items: center; gap: 12px; }
-.header-right { display: flex; align-items: center; gap: 8px; }
+.header-left { display: flex; align-items: center; gap: 12px; line-height: 1; }
+.header-right { display: flex; align-items: center; gap: 12px; line-height: 1; height: 64px; }
 
-.header-menu-btn,
-.header-icon-btn {
+.header-menu-btn {
   color: var(--color-text-secondary) !important;
   border-radius: var(--radius-md) !important;
   width: 36px !important;
@@ -140,32 +139,89 @@
   justify-content: center !important;
 }
 
-.header-icon-btn:hover,
 .header-menu-btn:hover {
   background: var(--color-bg) !important;
   color: var(--color-text-primary) !important;
 }
 
-.header-user {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: var(--radius-md);
-  transition: background var(--transition-fast);
+/* ── Daily Summary Button ── */
+.header-eod-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  height: 36px !important;
+  padding: 0 14px !important;
+  background: #FFF7ED !important;
+  border: 1px solid #FFEDD5 !important;
+  border-radius: 20px !important;
+  color: #EA580C !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  transition: all 0.2s ease !important;
+  white-space: nowrap !important;
+  line-height: 1 !important;
 }
 
-.header-user:hover { background: var(--color-bg); }
+.header-eod-btn:hover {
+  background: #FFEDD5 !important;
+  border-color: #F97316 !important;
+  color: #C2410C !important;
+  transform: translateY(-1px);
+}
+
+/* ── Notification Bell Icon Button ── */
+.header-bell-btn {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 50% !important;
+  background: #F8FAFC !important;
+  border: 1px solid #E2E8F0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #475569 !important;
+  font-size: 16px !important;
+  transition: all 0.2s ease !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+}
+
+.header-bell-btn:hover {
+  background: #F1F5F9 !important;
+  color: #0F172A !important;
+}
+
+/* ── User Profile Capsule Badge ── */
+.header-user {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  cursor: pointer !important;
+  height: 36px !important;
+  padding: 0 12px 0 4px !important;
+  border-radius: 20px !important;
+  background: #F8FAFC !important;
+  border: 1px solid #E2E8F0 !important;
+  transition: all 0.2s ease !important;
+  line-height: 1 !important;
+  box-sizing: border-box !important;
+}
+
+.header-user:hover {
+  background: #F1F5F9 !important;
+  border-color: #CBD5E1 !important;
+  transform: translateY(-1px);
+}
 
 .header-user-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-text-primary);
-  max-width: 140px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: #0F172A !important;
+  max-width: 130px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  line-height: 1 !important;
 }
 
 /* ── Content ── */
@@ -175,9 +231,51 @@
   background: var(--color-bg) !important;
 }
 
+/* Backdrop Overlay for Header Popups (Transparent Click/Touch Catcher) */
+.header-dropdown-backdrop {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  z-index: 1040 !important;
+  background: transparent !important;
+  cursor: pointer !important;
+}
+
+/* Header Popups Container */
+.header-popup-wrapper {
+  position: relative !important;
+}
+
+.header-popup-card {
+  position: absolute !important;
+  top: 46px !important;
+  right: 0 !important;
+  z-index: 1050 !important;
+  animation: fadeIn 0.15s ease forwards !important;
+}
+
 /* Mobile adjustments */
 @media (max-width: 768px) {
   .app-main { margin-left: 0 !important; }
   .hide-mobile-sider { display: none !important; }
   .app-content { padding: 10px 8px !important; }
+  .app-header { padding: 0 12px !important; }
+
+  .header-popup-card {
+    position: fixed !important;
+    top: 58px !important;
+    left: 10px !important;
+    right: 10px !important;
+    width: auto !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+  }
+
+  .notif-dropdown-menu,
+  .user-profile-menu {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
 }

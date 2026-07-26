@@ -13,12 +13,16 @@ import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
 
+import DonorDetailDrawer from './DonorDetailDrawer';
+import { HistoryOutlined } from '@ant-design/icons';
+
 const DonorsPage: React.FC = () => {
   const { message } = App.useApp();
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selected80GData, setSelected80GData] = useState<Tax80GData | null>(null);
+  const [selectedDonorId, setSelectedDonorId] = useState<string | null>(null);
 
   const [form] = Form.useForm();
 
@@ -52,7 +56,15 @@ const DonorsPage: React.FC = () => {
       key: 'full_name',
       render: (name: string, record: any) => (
         <Space>
-          <span>{name}</span>
+          <a
+            style={{ fontWeight: 700, color: '#0B2347' }}
+            onClick={(e) => {
+              e.preventDefault();
+              setSelectedDonorId(record.id);
+            }}
+          >
+            {name}
+          </a>
           {record.is_vip && <Tag color="gold" icon={<CrownOutlined />}>VIP</Tag>}
           {record.is_80g_eligible && <Tag color="green">80G</Tag>}
         </Space>
@@ -70,29 +82,41 @@ const DonorsPage: React.FC = () => {
       title: 'Actions',
       key: 'actions',
       render: (_: any, record: any) => (
-        <Tooltip title="Generate Section 80G Tax Certificate">
-          <Button
-            type="primary"
-            icon={<SafetyCertificateOutlined />}
-            size="small"
-            style={{ background: '#2563EB', borderColor: '#2563EB', borderRadius: 6 }}
-            onClick={() => {
-              setSelected80GData({
-                certificateNumber: `80G-2025-${record.donor_number || record.id.slice(0, 6)}`,
-                donorName: record.full_name,
-                panNumber: record.pan_number || 'PAN-NOT-PROVIDED',
-                address: record.city ? `${record.city}, India` : 'India',
-                financialYear: '2025-26',
-                totalDonationAmount: Number(record.total_donations || 5000),
-                receiptNumbers: [`RC-2026-${record.id.slice(0, 4)}`],
-                trustName: 'HISSOB GANESH UTSAV CHARITABLE TRUST',
-                issueDate: dayjs().format('DD MMM YYYY'),
-              });
-            }}
-          >
-            80G Certificate
-          </Button>
-        </Tooltip>
+        <Space>
+          <Tooltip title="View Comprehensive Donation History">
+            <Button
+              type="default"
+              icon={<HistoryOutlined />}
+              size="small"
+              onClick={() => setSelectedDonorId(record.id)}
+            >
+              History
+            </Button>
+          </Tooltip>
+          <Tooltip title="Generate Section 80G Tax Certificate">
+            <Button
+              type="primary"
+              icon={<SafetyCertificateOutlined />}
+              size="small"
+              style={{ background: '#2563EB', borderColor: '#2563EB', borderRadius: 6 }}
+              onClick={() => {
+                setSelected80GData({
+                  certificateNumber: `80G-2025-${record.donor_number || record.id.slice(0, 6)}`,
+                  donorName: record.full_name,
+                  panNumber: record.pan_number || 'PAN-NOT-PROVIDED',
+                  address: record.city ? `${record.city}, India` : 'India',
+                  financialYear: '2025-26',
+                  totalDonationAmount: Number(record.total_donations || 5000),
+                  receiptNumbers: [`RC-2026-${record.id.slice(0, 4)}`],
+                  trustName: 'HISSOB GANESH UTSAV CHARITABLE TRUST',
+                  issueDate: dayjs().format('DD MMM YYYY'),
+                });
+              }}
+            >
+              80G Certificate
+            </Button>
+          </Tooltip>
+        </Space>
       ),
     },
   ];
@@ -220,6 +244,12 @@ const DonorsPage: React.FC = () => {
         open={Boolean(selected80GData)}
         onClose={() => setSelected80GData(null)}
         data={selected80GData}
+      />
+
+      {/* Donor Detailed Profile & History Drawer */}
+      <DonorDetailDrawer
+        donorId={selectedDonorId}
+        onClose={() => setSelectedDonorId(null)}
       />
     </div>
   );

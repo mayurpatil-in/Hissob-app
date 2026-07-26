@@ -24,6 +24,7 @@ class ReceiptRepository(BaseRepository[Receipt]):
         self,
         tenant_id: UUID,
         collector_id: Optional[UUID] = None,
+        donor_id: Optional[UUID] = None,
         fy_id: Optional[UUID] = None,
         status: Optional[str] = None,
         skip: int = 0,
@@ -36,6 +37,8 @@ class ReceiptRepository(BaseRepository[Receipt]):
         )
         if collector_id:
             stmt = stmt.where(Receipt.collector_id == collector_id)
+        if donor_id:
+            stmt = stmt.where(Receipt.donor_id == donor_id)
         if fy_id:
             stmt = stmt.where(Receipt.financial_year_id == fy_id)
         if status:

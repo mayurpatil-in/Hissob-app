@@ -1,10 +1,12 @@
 """
 Expense Router — Expense requests & approvals.
 """
+import os
+import uuid
 from typing import List, Optional
 from uuid import UUID
 from datetime import date, datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, Body
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from app.core.database import get_db
@@ -186,3 +188,53 @@ async def approve_expense(
         pass
 
     return expense
+
+
+@router.post("/upload-bill", summary="Upload Expense Bill Document / Receipt Image")
+async def upload_expense_bill(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Uploads a bill/receipt document (PNG, JPG, WEBP, PDF) and returns the public asset URL."""
+    ext = os.path.splitext(file.filename or "")[1].lower()
+    allowed_exts = {".jpg", ".jpeg", ".png", ".webp", ".pdf"}
+    if ext not in allowed_exts:
+        raise HTTPException(status_code=400, detail="Invalid file type. Only JPG, PNG, WEBP and PDF files are allowed.")
+
+    upload_dir = os.path.join("uploads", "bills")
+    os.makedirs(upload_dir, exist_ok=True)
+
+    filename = f"bill_{uuid.uuid4().hex}{ext}"
+    filepath = os.path.join(upload_dir, filename)
+
+    contents = await file.read()
+    if len(contents) > 10 * 1024 * 1024:  # 10MB limit
+        raise HTTPException(status_code=400, detail="File size exceeds 10 MB limit.")
+
+    with open(filepath, "wb") as f:
+        f.write(contents)
+
+    return {
+        "url": f"/uploads/bills/{filename}",
+        "filename": file.filename,
+        "size_bytes": len(contents),
+    }
+
+
+@router.post("/{expense_id}/attach-bill", response_model=ExpenseResponse, summary="Attach/Update Expense Bill URL")
+async def attach_expense_bill(
+    expense_id: UUID,
+    bill_url: str = Body(..., embed=True),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    repo = ExpenseRepository(db)
+    expense = repo.get(expense_id)
+    if not expense or (expense.tenant_id != current_user.tenant_id and not current_user.is_super_admin):
+        raise HTTPException(status_code=404, detail="Expense not found")
+
+    expense.bill_url = bill_url
+    db.commit()
+    db.refresh(expense)
+    return expense
+

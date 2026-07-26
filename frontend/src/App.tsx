@@ -2,7 +2,6 @@ import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { ConfigProvider, theme, App as AntApp } from 'antd';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import AppRouter from './routes/AppRouter';
 import './styles/global.css';
 
@@ -46,7 +45,6 @@ const App: React.FC = () => (
         </BrowserRouter>
       </AntApp>
     </ConfigProvider>
-    <ReactQueryDevtools initialIsOpen={false} />
   </QueryClientProvider>
 );
 

@@ -52,6 +52,7 @@ const AppRouter: React.FC = () => (
                 <Route path="/rbac"           element={<RbacPage />} />
                 <Route path="/settings"       element={<SettingsPage />} />
                 <Route path="/audit"          element={<AuditPage />} />
+                <Route path="/audit-logs"     element={<AuditPage />} />
                 <Route path="/super-admin"    element={<SuperAdminPage />} />
                 <Route path="*"               element={<Navigate to="/dashboard" replace />} />
               </Routes>

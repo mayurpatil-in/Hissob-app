@@ -4,15 +4,17 @@ import {
   Select, Card, Row, Col, Typography, App, Tooltip
 } from 'antd';
 import {
-  PlusOutlined, PrinterOutlined, RobotOutlined, CheckCircleOutlined, WhatsAppOutlined, DownloadOutlined
+  PlusOutlined, PrinterOutlined, RobotOutlined, CheckCircleOutlined, WhatsAppOutlined, DownloadOutlined, RocketOutlined
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { getReceipts, createReceipt, settleReceipt, getDonors, getFinancialYears } from '../../api/services';
 import { useAuthStore } from '../../store/authStore';
 import { generateWhatsAppReceiptLink } from '../../utils/whatsapp';
 import { printReceiptWindow } from '../../utils/printReceipt';
 import { exportToCSV, exportToExcel } from '../../utils/exportTable';
 import AIVoiceAssistantModal from '../ai/AIVoiceAssistantModal';
+import CollectorDailySummaryModal from '../settlements/CollectorDailySummaryModal';
 import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
@@ -26,11 +28,13 @@ const STATUS_TAGS: Record<string, { color: string; label: string }> = {
 };
 
 const ReceiptsPage: React.FC = () => {
+  const navigate = useNavigate();
   const { message } = App.useApp();
   const queryClient = useQueryClient();
   const { user, can } = useAuthStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+  const [isEodModalOpen, setIsEodModalOpen] = useState(false);
   const [printReceipt, setPrintReceipt] = useState<any>(null);
   const [filterStatus, setFilterStatus] = useState<string>('');
 
@@ -204,6 +208,14 @@ const ReceiptsPage: React.FC = () => {
           <Text type="secondary">Manage collections, issue receipts, and print vouchers</Text>
         </div>
         <Space>
+          <Button
+            icon={<RocketOutlined style={{ color: '#F97316' }} />}
+            size="large"
+            onClick={() => setIsEodModalOpen(true)}
+            style={{ fontWeight: 600 }}
+          >
+            Daily EOD Summary
+          </Button>
           <Button
             icon={<RobotOutlined />}
             size="large"
@@ -467,6 +479,15 @@ const ReceiptsPage: React.FC = () => {
             payment_mode: parsed.payment_mode || 'cash',
             purpose: parsed.purpose,
           });
+        }}
+      />
+
+      {/* ── Collector Daily EOD Summary Modal ── */}
+      <CollectorDailySummaryModal
+        open={isEodModalOpen}
+        onClose={() => setIsEodModalOpen(false)}
+        onOpenSettlementWithReceipts={(ids) => {
+          navigate('/settlements', { state: { preselectedReceiptIds: ids } });
         }}
       />
     </div>

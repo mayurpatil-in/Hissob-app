@@ -111,6 +111,83 @@ async def get_donor(
     return donor
 
 
+@router.get("/{donor_id}/summary", summary="Get Donor Comprehensive History & Metrics")
+async def get_donor_summary(
+    donor_id: UUID,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    from app.models.receipt import Receipt, ReceiptStatus, PaymentMode
+    from sqlalchemy import func
+
+    repo = DonorRepository(db)
+    donor = repo.get(donor_id)
+    if not donor or (donor.tenant_id != current_user.tenant_id and not current_user.is_super_admin):
+        raise HTTPException(status_code=404, detail="Donor not found")
+
+    # Query receipts for this donor
+    receipts_raw = (
+        db.query(Receipt)
+        .filter(
+            Receipt.tenant_id == current_user.tenant_id,
+            Receipt.donor_id == donor_id,
+            Receipt.status != ReceiptStatus.CANCELLED,
+        )
+        .order_by(Receipt.receipt_date.desc())
+        .all()
+    )
+
+    total_amount = sum(r.amount for r in receipts_raw)
+    receipt_count = len(receipts_raw)
+    avg_donation = (total_amount / receipt_count) if receipt_count > 0 else 0.0
+    cash_total = sum(r.amount for r in receipts_raw if r.payment_mode == PaymentMode.CASH)
+    digital_total = total_amount - cash_total
+
+    first_date = str(receipts_raw[-1].receipt_date) if receipts_raw else None
+    last_date = str(receipts_raw[0].receipt_date) if receipts_raw else None
+
+    user_map = {u.id: u.full_name for u in db.query(User).all()}
+    receipt_list = []
+    for r in receipts_raw:
+        collector_name = user_map.get(r.collector_id, "Collector")
+        receipt_list.append({
+            "id": str(r.id),
+            "receipt_number": r.receipt_number,
+            "receipt_date": str(r.receipt_date),
+            "amount": float(r.amount),
+            "payment_mode": r.payment_mode.value if hasattr(r.payment_mode, "value") else str(r.payment_mode),
+            "status": r.status.value if hasattr(r.status, "value") else str(r.status),
+            "collector_name": collector_name,
+            "purpose": r.purpose or "Festival Donation",
+            "notes": r.notes,
+        })
+
+    return {
+        "donor": {
+            "id": str(donor.id),
+            "donor_number": donor.donor_number,
+            "full_name": donor.full_name,
+            "phone": donor.phone,
+            "email": donor.email,
+            "address": donor.address,
+            "city": donor.city,
+            "pan_number": donor.pan_number,
+            "is_vip": donor.is_vip,
+            "is_80g_eligible": donor.is_80g_eligible,
+        },
+        "metrics": {
+            "total_amount": float(total_amount),
+            "receipt_count": receipt_count,
+            "average_donation": float(avg_donation),
+            "cash_total": float(cash_total),
+            "digital_total": float(digital_total),
+            "first_donation_date": first_date,
+            "last_donation_date": last_date,
+        },
+        "receipts": receipt_list,
+    }
+
+
 @router.put("/{donor_id}", response_model=DonorResponse, summary="Update Donor")
 async def update_donor(
     donor_id: UUID,

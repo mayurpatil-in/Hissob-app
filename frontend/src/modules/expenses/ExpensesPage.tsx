@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
 import {
   Table, Button, Tag, Space, Modal, Form, Input, InputNumber,
-  Select, Card, Row, Col, Typography, App, Tooltip
+  Select, Card, Row, Col, Typography, App, Tooltip, Upload, Image
 } from 'antd';
 import {
-  PlusOutlined, CheckOutlined, CloseOutlined
+  PlusOutlined, CheckOutlined, CloseOutlined, UploadOutlined,
+  EyeOutlined, PaperClipOutlined, FilePdfOutlined
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getExpenses, createExpense, approveExpense, getFinancialYears } from '../../api/services';
+import {
+  getExpenses, createExpense, approveExpense, getFinancialYears,
+  uploadExpenseBill, attachExpenseBill
+} from '../../api/services';
 import { useAuthStore } from '../../store/authStore';
 import dayjs from 'dayjs';
 
@@ -25,8 +29,15 @@ const ExpensesPage: React.FC = () => {
   const { message } = App.useApp();
   const queryClient = useQueryClient();
   const { user, can } = useAuthStore();
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>('');
+  const [uploadingBill, setUploadingBill] = useState(false);
+  const [uploadedBillUrl, setUploadedBillUrl] = useState<string>('');
+
+  // Bill preview & attach modal states
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [attachExpenseId, setAttachExpenseId] = useState<string | null>(null);
 
   const canApprove = user?.is_super_admin || can('expenses', 'approve') || (user as any)?.roles?.some((r: any) =>
     ['treasurer', 'org_admin', 'admin', 'president'].includes((r.name || r.slug || '').toLowerCase())
@@ -42,8 +53,9 @@ const ExpensesPage: React.FC = () => {
   const createMutation = useMutation({
     mutationFn: createExpense,
     onSuccess: () => {
-      message.success('Expense request submitted!');
+      message.success('Expense request submitted with bill voucher!');
       setIsModalOpen(false);
+      setUploadedBillUrl('');
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
     },
     onError: (err: any) => {
@@ -62,24 +74,56 @@ const ExpensesPage: React.FC = () => {
     },
   });
 
+  const attachMutation = useMutation({
+    mutationFn: ({ expenseId, billUrl }: { expenseId: string; billUrl: string }) =>
+      attachExpenseBill(expenseId, billUrl),
+    onSuccess: () => {
+      message.success('Bill document attached successfully!');
+      setAttachExpenseId(null);
+      setUploadedBillUrl('');
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+    },
+    onError: (err: any) => {
+      message.error(err?.response?.data?.detail || 'Failed to attach bill');
+    },
+  });
+
   const [form] = Form.useForm();
 
   const handleOpenModal = () => {
     const activeFy = fiscalYears.find((fy: any) => fy.is_current) || fiscalYears[0];
-    form.resetFields();
-    if (activeFy) {
-      form.setFieldsValue({
-        financial_year_id: activeFy.id,
-        category: 'Decoration',
-        expense_date: dayjs()
-      });
-    }
+    setUploadedBillUrl('');
     setIsModalOpen(true);
+    setTimeout(() => {
+      form.resetFields();
+      if (activeFy) {
+        form.setFieldsValue({
+          financial_year_id: activeFy.id,
+          category: 'Decoration',
+          expense_date: dayjs()
+        });
+      }
+    }, 0);
+  };
+
+  const handleFileUpload = async (file: File) => {
+    try {
+      setUploadingBill(true);
+      const res = await uploadExpenseBill(file);
+      setUploadedBillUrl(res.url);
+      form.setFieldsValue({ bill_url: res.url });
+      message.success(`Bill uploaded successfully: ${res.filename}`);
+    } catch (err: any) {
+      message.error(err?.response?.data?.detail || 'File upload failed');
+    } finally {
+      setUploadingBill(false);
+    }
   };
 
   const handleSubmit = (values: any) => {
     createMutation.mutate({
       ...values,
+      bill_url: uploadedBillUrl || values.bill_url,
       expense_date: values.expense_date ? values.expense_date.format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD'),
     });
   };
@@ -107,6 +151,38 @@ const ExpensesPage: React.FC = () => {
       dataIndex: 'amount',
       key: 'amount',
       render: (val: number) => <span style={{ fontWeight: 700, color: '#EF4444' }}>₹ {Number(val).toLocaleString('en-IN')}</span>,
+    },
+    {
+      title: 'Bill / Voucher',
+      key: 'bill_url',
+      render: (_: any, record: any) => {
+        if (record.bill_url) {
+          const isPdf = record.bill_url.toLowerCase().endsWith('.pdf');
+          return (
+            <Space>
+              <Button
+                size="small"
+                type="primary"
+                ghost
+                icon={isPdf ? <FilePdfOutlined /> : <EyeOutlined />}
+                onClick={() => setPreviewUrl(record.bill_url)}
+              >
+                {isPdf ? 'PDF Bill' : 'View Receipt'}
+              </Button>
+            </Space>
+          );
+        }
+        return (
+          <Button
+            size="small"
+            type="dashed"
+            icon={<PaperClipOutlined />}
+            onClick={() => setAttachExpenseId(record.id)}
+          >
+            Attach Bill
+          </Button>
+        );
+      },
     },
     {
       title: 'Status',
@@ -167,7 +243,7 @@ const ExpensesPage: React.FC = () => {
       <div className="page-header">
         <div>
           <Title level={3} style={{ margin: 0 }}>Expense Management</Title>
-          <Text type="secondary">Track expenditure vouchers, request approvals, and record payments</Text>
+          <Text type="secondary">Track expenditure vouchers, upload bill receipts, and record payouts</Text>
         </div>
         <Button
           type="primary"
@@ -216,10 +292,11 @@ const ExpensesPage: React.FC = () => {
           rowKey="id"
           loading={isLoading}
           pagination={{ pageSize: 10 }}
-          scroll={{ x: 700 }}
+          scroll={{ x: 800 }}
         />
       </Card>
 
+      {/* New Expense Modal */}
       <Modal
         title="Submit Expense Request"
         open={isModalOpen}
@@ -269,16 +346,123 @@ const ExpensesPage: React.FC = () => {
             <Input.TextArea rows={2} placeholder="Add voucher details or invoice notes" />
           </Form.Item>
 
+          {/* Bill Document Upload */}
+          <Form.Item label="Upload Bill / Invoice Document (Audit Proof)">
+            <Upload.Dragger
+              beforeUpload={(file) => {
+                handleFileUpload(file);
+                return false; // prevent default upload submit
+              }}
+              showUploadList={false}
+              multiple={false}
+              accept=".jpg,.jpeg,.png,.webp,.pdf"
+            >
+              <p className="ant-upload-drag-icon">
+                <UploadOutlined style={{ fontSize: 32, color: '#F97316' }} />
+              </p>
+
+              {uploadedBillUrl ? (
+                <div>
+                  <Tag color="green" style={{ fontSize: 13, padding: '4px 12px' }}>
+                    ✓ Bill File Attached ({uploadedBillUrl.split('/').pop()})
+                  </Tag>
+                  <p style={{ fontSize: 11, color: '#666', marginTop: 4 }}>Click or drag another file to replace</p>
+                </div>
+              ) : (
+                <div>
+                  <p className="ant-upload-text">Click or drag bill receipt photo/PDF here to upload</p>
+                  <p className="ant-upload-hint">Supports JPG, PNG, WEBP & PDF (Max 10MB)</p>
+                </div>
+              )}
+            </Upload.Dragger>
+          </Form.Item>
+
           <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
             <Space>
               <Button onClick={() => setIsModalOpen(false)}>Cancel</Button>
-              <Button type="primary" htmlType="submit" loading={createMutation.isPending} style={{ background: '#F97316', borderColor: '#F97316' }}>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={createMutation.isPending || uploadingBill}
+                style={{ background: '#F97316', borderColor: '#F97316' }}
+              >
                 Submit Expense
               </Button>
             </Space>
           </Form.Item>
         </Form>
       </Modal>
+
+      {/* Bill Preview Modal */}
+      {previewUrl && (
+        <Modal
+          open={Boolean(previewUrl)}
+          onCancel={() => setPreviewUrl(null)}
+          title="Expense Bill / Receipt Voucher Preview"
+          footer={[
+            <Button key="close" onClick={() => setPreviewUrl(null)}>Close</Button>,
+            <Button
+              key="open"
+              type="primary"
+              onClick={() => window.open(previewUrl.startsWith('http') ? previewUrl : `${window.location.origin}${previewUrl}`, '_blank')}
+            >
+              Open Original Document
+            </Button>
+          ]}
+          width={700}
+        >
+          <div style={{ textAlign: 'center', padding: 10 }}>
+            {previewUrl.toLowerCase().endsWith('.pdf') ? (
+              <iframe
+                src={previewUrl}
+                style={{ width: '100%', height: 450, border: 'none', borderRadius: 8 }}
+                title="Bill PDF Preview"
+              />
+            ) : (
+              <Image
+                src={previewUrl.startsWith('http') ? previewUrl : `${window.location.origin}${previewUrl}`}
+                style={{ maxHeight: 450, objectFit: 'contain', borderRadius: 8 }}
+                alt="Bill Receipt"
+              />
+            )}
+          </div>
+        </Modal>
+      )}
+
+      {/* Attach Bill to Existing Expense Modal */}
+      {attachExpenseId && (
+        <Modal
+          open={Boolean(attachExpenseId)}
+          onCancel={() => setAttachExpenseId(null)}
+          title="Attach Bill Document to Expense"
+          footer={null}
+        >
+          <div style={{ padding: 10 }}>
+            <Upload.Dragger
+              beforeUpload={async (file) => {
+                try {
+                  setUploadingBill(true);
+                  const res = await uploadExpenseBill(file);
+                  attachMutation.mutate({ expenseId: attachExpenseId, billUrl: res.url });
+                } catch (err: any) {
+                  message.error('File upload failed');
+                } finally {
+                  setUploadingBill(false);
+                }
+                return false;
+              }}
+              showUploadList={false}
+              accept=".jpg,.jpeg,.png,.webp,.pdf"
+            >
+              <p className="ant-upload-drag-icon">
+                <UploadOutlined style={{ fontSize: 36, color: '#F97316' }} />
+              </p>
+              <p className="ant-upload-text">Select Bill photo or PDF to attach</p>
+              <p className="ant-upload-hint">Supports JPG, PNG, WEBP & PDF (Max 10MB)</p>
+            </Upload.Dragger>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };

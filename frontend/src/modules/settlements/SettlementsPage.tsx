@@ -15,6 +15,8 @@ import { useAuthStore } from '../../store/authStore';
 import CashDenominationModal from './CashDenominationModal';
 import PrintHandoverSlipModal, { type HandoverSlipData } from './PrintHandoverSlipModal';
 
+import { useLocation } from 'react-router-dom';
+
 const { Title, Text } = Typography;
 const { Option } = Select;
 
@@ -25,6 +27,7 @@ const STATUS_TAGS: Record<string, { color: string; label: string }> = {
 };
 
 const SettlementsPage: React.FC = () => {
+  const location = useLocation();
   const { message } = App.useApp();
   const queryClient = useQueryClient();
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
@@ -32,6 +35,13 @@ const SettlementsPage: React.FC = () => {
   const [selectedSlipData, setSelectedSlipData] = useState<HandoverSlipData | null>(null);
   const [selectedReceiptKeys, setSelectedReceiptKeys] = useState<React.Key[]>([]);
   const [digitalFilter, setDigitalFilter] = useState<'pending' | 'all'>('pending');
+
+  React.useEffect(() => {
+    if (location.state?.preselectedReceiptIds && location.state.preselectedReceiptIds.length > 0) {
+      setSelectedReceiptKeys(location.state.preselectedReceiptIds);
+      setIsSubmitModalOpen(true);
+    }
+  }, [location.state]);
 
   const [form] = Form.useForm();
 

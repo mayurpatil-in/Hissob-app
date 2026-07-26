@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Layout, Menu, Button, Avatar, Dropdown, Badge, Drawer, List, Empty, Tag, Typography } from 'antd';
+import { Layout, Menu, Button, Avatar, Badge, Drawer, List, Tag, Typography, Tooltip } from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   DashboardOutlined, FileTextOutlined, DollarOutlined, UserOutlined,
   BankOutlined, CalendarOutlined, TeamOutlined, BarChartOutlined,
   SettingOutlined, BellOutlined, LogoutOutlined, MenuFoldOutlined,
   MenuUnfoldOutlined, AuditOutlined, GlobalOutlined, SafetyOutlined, CrownOutlined, RobotOutlined,
-  MenuOutlined, CheckOutlined
+  MenuOutlined, CheckOutlined, CloseOutlined
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getNotifications, markNotificationRead, markAllNotificationsRead } from '../api/services';
@@ -49,6 +49,9 @@ const ORG_NAV: NavItem[] = [
   { key: '/settings',       label: 'Settings',        icon: <SettingOutlined />,  module: 'settings' },
 ];
 
+import CollectorDailySummaryModal from '../modules/settlements/CollectorDailySummaryModal';
+import { RocketOutlined } from '@ant-design/icons';
+
 interface Props {
   children: React.ReactNode;
 }
@@ -57,10 +60,47 @@ const AppShell: React.FC<Props> = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [userOpen, setUserOpen] = useState(false);
+  const [eodModalOpen, setEodModalOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { user, hasModule } = useAuthStore();
   const queryClient = useQueryClient();
+
+  React.useEffect(() => {
+    if (!notifOpen && !userOpen) return;
+
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node;
+      const notifCard = document.getElementById('notif-popup-card');
+      const userCard = document.getElementById('user-popup-card');
+      const bellBtn = document.getElementById('header-bell-btn');
+      const userBtn = document.getElementById('header-user-btn');
+
+      if (
+        notifOpen &&
+        notifCard && !notifCard.contains(target) &&
+        bellBtn && !bellBtn.contains(target)
+      ) {
+        setNotifOpen(false);
+      }
+
+      if (
+        userOpen &&
+        userCard && !userCard.contains(target) &&
+        userBtn && !userBtn.contains(target)
+      ) {
+        setUserOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [notifOpen, userOpen]);
 
   React.useEffect(() => {
     authService.me().then((freshUser) => {
@@ -103,36 +143,59 @@ const AppShell: React.FC<Props> = ({ children }) => {
     settlement: 'blue', expense: 'purple', info: 'default',
   };
 
+  const NOTIF_ICONS: Record<string, string> = {
+    settlement: '🤝',
+    expense: '🧾',
+    receipt: '💰',
+    success: '✅',
+    warning: '⚠️',
+    error: '🚨',
+    info: '🔔',
+  };
+
   const notifDropdown = (
-    <div style={{ width: 360, background: '#fff', borderRadius: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.15)', overflow: 'hidden' }}>
-      <div style={{ padding: '12px 16px', background: '#0B2347', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography.Text style={{ color: '#fff', fontWeight: 700, fontSize: 14 }}>
-          🔔 Notifications {unreadCount > 0 && <Tag color="orange" style={{ marginLeft: 6, fontWeight: 700 }}>{unreadCount} New</Tag>}
+    <div className="notif-dropdown-menu" style={{ width: 360, maxWidth: 'calc(100vw - 20px)', background: '#fff', borderRadius: 12, boxShadow: '0 12px 36px rgba(11,35,71,0.2)', border: '1px solid #E2E8F0', overflow: 'hidden' }}>
+      <div style={{ padding: '12px 16px', background: 'linear-gradient(135deg, #0B2347 0%, #1E40AF 100%)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography.Text style={{ color: '#fff', fontWeight: 800, fontSize: 14 }}>
+          🔔 Notifications {unreadCount > 0 && <Tag color="orange" style={{ marginLeft: 6, fontWeight: 800, borderRadius: 10 }}>{unreadCount} New</Tag>}
         </Typography.Text>
-        {unreadCount > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {unreadCount > 0 && (
+            <Button
+              size="small"
+              icon={<CheckOutlined />}
+              style={{ color: '#EA580C', borderColor: '#FFEDD5', background: '#FFF7ED', fontSize: 11, fontWeight: 700 }}
+              onClick={(e) => { e.stopPropagation(); markAllMutation.mutate(); }}
+            >
+              Mark Read
+            </Button>
+          )}
           <Button
+            type="text"
             size="small"
-            icon={<CheckOutlined />}
-            style={{ color: '#F97316', borderColor: '#F97316', fontSize: 11 }}
-            onClick={() => markAllMutation.mutate()}
-          >
-            Mark All Read
-          </Button>
-        )}
+            icon={<CloseOutlined style={{ color: '#fff', fontSize: 14 }} />}
+            onClick={(e) => { e.stopPropagation(); setNotifOpen(false); }}
+          />
+        </div>
       </div>
-      <div style={{ maxHeight: 360, overflowY: 'auto' }}>
+      <div style={{ maxHeight: 380, overflowY: 'auto' }}>
         {notifications.length === 0 ? (
-          <Empty description="No notifications yet" image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ padding: 32 }} />
+          <div style={{ textAlign: 'center', padding: '36px 20px' }}>
+            <div style={{ fontSize: 32, marginBottom: 8 }}>🎉</div>
+            <Typography.Text style={{ fontWeight: 700, color: '#0B2347', display: 'block', fontSize: 14 }}>All Caught Up!</Typography.Text>
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>You have no unread system notifications right now.</Typography.Text>
+          </div>
         ) : (
           <List
             dataSource={notifications}
             renderItem={(item) => (
               <List.Item
                 style={{
-                  padding: '10px 16px',
+                  padding: '12px 16px',
                   background: item.is_read ? '#fff' : '#FFF7ED',
                   cursor: 'pointer',
-                  borderLeft: item.is_read ? 'none' : '3px solid #F97316',
+                  borderLeft: item.is_read ? '3px solid transparent' : '4px solid #F97316',
+                  transition: 'background 0.2s ease',
                 }}
                 onClick={() => {
                   if (!item.is_read) markReadMutation.mutate(item.id);
@@ -145,25 +208,28 @@ const AppShell: React.FC<Props> = ({ children }) => {
                     size="small"
                     icon={<CheckOutlined />}
                     onClick={(e) => { e.stopPropagation(); markReadMutation.mutate(item.id); }}
-                    style={{ color: '#999', fontSize: 10 }}
+                    style={{ color: '#F97316', fontSize: 12 }}
                   />
                 )}
               >
                 <List.Item.Meta
+                  avatar={<span style={{ fontSize: 20 }}>{NOTIF_ICONS[item.notification_type] || '🔔'}</span>}
                   title={
-                    <span style={{ fontSize: 13, fontWeight: item.is_read ? 500 : 700, color: '#0B2347' }}>
+                    <span style={{ fontSize: 13, fontWeight: item.is_read ? 600 : 800, color: '#0B2347' }}>
                       {item.title}
                     </span>
                   }
                   description={
                     <div>
-                      <div style={{ fontSize: 11, color: '#666', marginBottom: 3, lineHeight: 1.4 }}>{item.message}</div>
-                      <Tag color={NOTIF_TYPE_COLOR[item.notification_type] || 'default'} style={{ fontSize: 10 }}>
-                        {item.notification_type}
-                      </Tag>
-                      <span style={{ fontSize: 10, color: '#aaa', marginLeft: 6 }}>
-                        {new Date(item.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                      </span>
+                      <div style={{ fontSize: 11, color: '#475569', marginBottom: 4, lineHeight: 1.4 }}>{item.message}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <Tag color={NOTIF_TYPE_COLOR[item.notification_type] || 'default'} style={{ fontSize: 10, borderRadius: 4 }}>
+                          {item.notification_type.toUpperCase()}
+                        </Tag>
+                        <span style={{ fontSize: 10, color: '#94A3B8' }}>
+                          {new Date(item.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
                     </div>
                   }
                 />
@@ -185,30 +251,86 @@ const AppShell: React.FC<Props> = ({ children }) => {
     ? SUPER_ADMIN_NAV
     : ORG_NAV.filter((item) => !item.module || hasModule(item.module));
 
-  const userMenuItems: any[] = [
-    {
-      key: 'profile',
-      label: user?.is_super_admin ? 'Super Admin Profile' : 'User Profile & Settings',
-      icon: <UserOutlined />,
-      onClick: () => navigate('/settings'),
-    },
-  ];
+  const userProfilePopup = (
+    <div className="user-profile-menu" style={{ width: 280, maxWidth: 'calc(100vw - 20px)', background: '#fff', borderRadius: 14, boxShadow: '0 12px 36px rgba(11,35,71,0.18)', border: '1px solid #E2E8F0', overflow: 'hidden' }}>
+      {/* User Header Profile Card */}
+      <div style={{ padding: '14px 16px', background: 'linear-gradient(135deg, #0B2347 0%, #1E40AF 100%)', color: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Avatar
+            src={(user as any)?.avatar_url}
+            style={{ backgroundColor: '#F97316', color: '#fff', fontWeight: 900, fontSize: 18, border: '2px solid rgba(255,255,255,0.4)', flexShrink: 0 }}
+            size={46}
+          >
+            {user?.full_name?.charAt(0)}
+          </Avatar>
+          <div style={{ overflow: 'hidden' }}>
+            <div style={{ fontWeight: 800, fontSize: 15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#fff' }}>
+              {user?.full_name || 'User Account'}
+            </div>
+            <div style={{ marginTop: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Tag color={user?.is_super_admin ? 'gold' : 'blue'} style={{ fontSize: 10, fontWeight: 800, margin: 0, borderRadius: 4, textTransform: 'uppercase' }}>
+                {user?.is_super_admin ? '👑 SUPER ADMIN' : (user as any)?.role ? (user as any).role : 'MEMBER'}
+              </Tag>
+            </div>
+          </div>
+        </div>
+        <Button
+          type="text"
+          size="small"
+          icon={<CloseOutlined style={{ color: '#fff', fontSize: 14 }} />}
+          onClick={(e) => { e.stopPropagation(); setUserOpen(false); }}
+        />
+      </div>
 
-  if (user?.is_super_admin) {
-    userMenuItems.push({
-      key: 'superadmin',
-      label: 'Super Admin Center',
-      icon: <CrownOutlined />,
-      onClick: () => navigate('/super-admin'),
-    });
-  }
+      {/* Menu Options */}
+      <div style={{ padding: '8px' }}>
+        <Button
+          type="text"
+          block
+          icon={<UserOutlined style={{ color: '#2563EB', fontSize: 16 }} />}
+          style={{ textAlign: 'left', height: 40, fontWeight: 600, color: '#0F172A', display: 'flex', alignItems: 'center', borderRadius: 8 }}
+          onClick={() => { setUserOpen(false); navigate('/settings'); }}
+        >
+          {user?.is_super_admin ? 'Super Admin Profile' : 'User Profile & Settings'}
+        </Button>
 
-  userMenuItems.push(
-    { key: 'divider', type: 'divider' as const },
-    { key: 'logout', label: 'Logout', icon: <LogoutOutlined />, danger: true, onClick: handleLogout }
+        {user?.is_super_admin && (
+          <Button
+            type="text"
+            block
+            icon={<CrownOutlined style={{ color: '#D97706', fontSize: 16 }} />}
+            style={{ textAlign: 'left', height: 40, fontWeight: 600, color: '#0F172A', display: 'flex', alignItems: 'center', borderRadius: 8 }}
+            onClick={() => { setUserOpen(false); navigate('/super-admin'); }}
+          >
+            Super Admin Center
+          </Button>
+        )}
+
+        <Button
+          type="text"
+          block
+          icon={<AuditOutlined style={{ color: '#059669', fontSize: 16 }} />}
+          style={{ textAlign: 'left', height: 40, fontWeight: 600, color: '#0F172A', display: 'flex', alignItems: 'center', borderRadius: 8 }}
+          onClick={() => { setUserOpen(false); navigate('/audit'); }}
+        >
+          Audit Logs & Activity
+        </Button>
+
+        <div style={{ height: 1, background: '#F1F5F9', margin: '6px 0' }} />
+
+        <Button
+          type="text"
+          danger
+          block
+          icon={<LogoutOutlined style={{ fontSize: 16 }} />}
+          style={{ textAlign: 'left', height: 40, fontWeight: 700, display: 'flex', alignItems: 'center', borderRadius: 8 }}
+          onClick={() => { setUserOpen(false); handleLogout(); }}
+        >
+          Logout Account
+        </Button>
+      </div>
+    </div>
   );
-
-  const userMenu = { items: userMenuItems };
 
   const handleToggleMenu = () => {
     if (window.innerWidth <= 768) {
@@ -305,39 +427,71 @@ const AppShell: React.FC<Props> = ({ children }) => {
               icon={collapsed ? <MenuUnfoldOutlined /> : <MenuOutlined />}
               onClick={handleToggleMenu}
             />
+            <span style={{ fontSize: 16, fontWeight: 800, color: '#0B2347', letterSpacing: '-0.3px' }} className="hide-mobile">
+              HISSOB ERP
+            </span>
           </div>
 
           <div className="header-right">
+            {/* Collector Daily EOD Summary Button */}
+            <Tooltip title="Collector Daily Summary & EOD Handover" trigger={['hover']}>
+              <Button
+                type="text"
+                icon={<RocketOutlined style={{ color: '#EA580C', fontSize: 16 }} />}
+                className="header-eod-btn"
+                onClick={() => setEodModalOpen(true)}
+              >
+                <span className="hide-mobile">Daily Summary</span>
+              </Button>
+            </Tooltip>
+
             {/* Notifications */}
-            <Dropdown
-              open={notifOpen}
-              onOpenChange={setNotifOpen}
-              popupRender={() => notifDropdown}
-              placement="bottomRight"
-              trigger={['click']}
-            >
+            <div className="header-popup-wrapper">
               <Badge count={unreadCount} size="small" offset={[-2, 2]}>
                 <Button
+                  id="header-bell-btn"
                   type="text"
                   icon={<BellOutlined />}
-                  className="header-icon-btn"
-                  style={unreadCount > 0 ? { color: '#F97316' } : {}}
+                  className="header-bell-btn"
+                  style={unreadCount > 0 ? { color: '#F97316', borderColor: '#FFEDD5', background: '#FFF7ED' } : {}}
+                  onClick={() => {
+                    setNotifOpen(!notifOpen);
+                    setUserOpen(false);
+                  }}
                 />
               </Badge>
-            </Dropdown>
+              {notifOpen && (
+                <div id="notif-popup-card" className="header-popup-card">
+                  {notifDropdown}
+                </div>
+              )}
+            </div>
 
             {/* User Menu */}
-            <Dropdown menu={userMenu} placement="bottomRight" trigger={['click']}>
-              <div className="header-user">
+            <div className="header-popup-wrapper">
+              <div
+                id="header-user-btn"
+                className="header-user"
+                onClick={() => {
+                  setUserOpen(!userOpen);
+                  setNotifOpen(false);
+                }}
+              >
                 <Avatar
                   src={(user as any)?.avatar_url}
-                  style={{ backgroundColor: '#F97316', cursor: 'pointer', flexShrink: 0 }}
+                  style={{ backgroundColor: '#F97316', cursor: 'pointer', flexShrink: 0, fontWeight: 700 }}
+                  size="small"
                 >
                   {user?.full_name?.charAt(0)}
                 </Avatar>
                 <span className="header-user-name hide-mobile">{user?.full_name}</span>
               </div>
-            </Dropdown>
+              {userOpen && (
+                <div id="user-popup-card" className="header-popup-card">
+                  {userProfilePopup}
+                </div>
+              )}
+            </div>
           </div>
         </Header>
 
@@ -346,6 +500,15 @@ const AppShell: React.FC<Props> = ({ children }) => {
           {children}
         </Content>
       </Layout>
+
+      {/* EOD Collector Daily Summary & Handover Modal */}
+      <CollectorDailySummaryModal
+        open={eodModalOpen}
+        onClose={() => setEodModalOpen(false)}
+        onOpenSettlementWithReceipts={(receiptIds) => {
+          navigate('/settlements', { state: { preselectedReceiptIds: receiptIds } });
+        }}
+      />
     </Layout>
   );
 };

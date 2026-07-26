@@ -104,16 +104,27 @@ export const createFestival = async (data: any) => (await apiClient.post<Festiva
 // ── Donor API ──
 export const getDonors = async (q?: string) => (await apiClient.get<Donor[]>('/donors', { params: { q } })).data;
 export const createDonor = async (data: any) => (await apiClient.post<Donor>('/donors', data)).data;
+export const getDonorSummary = async (id: string) => (await apiClient.get<any>(`/donors/${id}/summary`)).data;
 
 // ── Receipt API ──
 export const getReceipts = async (params?: any) => (await apiClient.get<Receipt[]>('/receipts', { params })).data;
 export const createReceipt = async (data: any) => (await apiClient.post<Receipt>('/receipts', data)).data;
 export const settleReceipt = async (id: string, data?: any) => (await apiClient.post<Receipt>(`/receipts/${id}/settle`, data)).data;
+export const getCollectorDailySummary = async (params?: any) => (await apiClient.get<any>('/receipts/daily-summary', { params })).data;
 
 // ── Expense API ──
 export const getExpenses = async (params?: any) => (await apiClient.get<Expense[]>('/expenses', { params })).data;
 export const createExpense = async (data: any) => (await apiClient.post<Expense>('/expenses', data)).data;
 export const approveExpense = async (id: string, action: string, rejection_reason?: string) => (await apiClient.post<Expense>(`/expenses/${id}/approve`, { action, rejection_reason })).data;
+export const uploadExpenseBill = async (file: File) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  return (await apiClient.post<{ url: string; filename: string }>('/expenses/upload-bill', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })).data;
+};
+export const attachExpenseBill = async (expenseId: string, billUrl: string) =>
+  (await apiClient.post<Expense>(`/expenses/${expenseId}/attach-bill`, { bill_url: billUrl })).data;
 
 // ── Reports API ──
 export const getDailyCollectionReport = async () => (await apiClient.get<DailyCollection[]>('/reports/daily-collection')).data;

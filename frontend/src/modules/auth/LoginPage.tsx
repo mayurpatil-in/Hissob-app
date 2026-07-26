@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { Form, Input, Button, App, Checkbox, Divider } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Form, Input, Button, App, Checkbox } from 'antd';
 import {
   UserOutlined, LockOutlined, CrownOutlined, BankOutlined,
   SafetyCertificateOutlined, RobotOutlined, ThunderboltOutlined,
   KeyOutlined, ArrowRightOutlined, TeamOutlined, GlobalOutlined,
-  TrophyOutlined
+  TrophyOutlined, CheckCircleFilled, StarFilled, BarChartOutlined,
+  WifiOutlined, SafetyOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../../auth/authService';
@@ -19,53 +20,108 @@ interface LoginForm {
 const DEMO_CREDENTIALS = [
   {
     role: 'Super Admin',
-    email: 'admin@hissob.app',
+    email: 'admin@hisob.app',
     password: 'Admin@123',
     icon: <CrownOutlined />,
-    color: '#EAB308',
-    bg: 'rgba(234,179,8,0.12)',
-    border: 'rgba(234,179,8,0.3)',
+    color: '#F59E0B',
+    bg: 'rgba(245,158,11,0.1)',
+    border: 'rgba(245,158,11,0.25)',
   },
   {
     role: 'Org Admin',
     email: 'admin@lalbaug.org',
     password: 'Admin@123',
     icon: <BankOutlined />,
-    color: '#A855F7',
-    bg: 'rgba(168,85,247,0.12)',
-    border: 'rgba(168,85,247,0.3)',
+    color: '#A78BFA',
+    bg: 'rgba(167,139,250,0.1)',
+    border: 'rgba(167,139,250,0.25)',
   },
   {
     role: 'Treasurer',
     email: 'treasurer@lalbaug.org',
     password: 'Treasury@123',
     icon: <ThunderboltOutlined />,
-    color: '#3B82F6',
-    bg: 'rgba(59,130,246,0.12)',
-    border: 'rgba(59,130,246,0.3)',
+    color: '#60A5FA',
+    bg: 'rgba(96,165,250,0.1)',
+    border: 'rgba(96,165,250,0.25)',
   },
   {
     role: 'Collector',
     email: 'collector@lalbaug.org',
     password: 'Collector@123',
     icon: <UserOutlined />,
-    color: '#22C55E',
-    bg: 'rgba(34,197,94,0.12)',
-    border: 'rgba(34,197,94,0.3)',
+    color: '#34D399',
+    bg: 'rgba(52,211,153,0.1)',
+    border: 'rgba(52,211,153,0.25)',
   },
 ];
 
 const TRUST_STATS = [
-  { icon: <TeamOutlined />, value: '500+', label: 'Organizations' },
-  { icon: <TrophyOutlined />, value: '₹10Cr+', label: 'Managed' },
+  { icon: <TeamOutlined />, value: '50+', label: 'Organizations' },
+  { icon: <TrophyOutlined />, value: '₹1Cr+', label: 'Managed' },
   { icon: <GlobalOutlined />, value: '99.9%', label: 'Uptime' },
 ];
 
+const FEATURES = [
+  {
+    icon: <SafetyCertificateOutlined />,
+    title: 'Bank-Grade Security',
+    desc: 'RBAC, encrypted tokens & diff audit trail',
+    color: '#34D399',
+  },
+  {
+    icon: <RobotOutlined />,
+    title: 'AI Voice Parser',
+    desc: 'Natural language receipt entry & insights',
+    color: '#60A5FA',
+  },
+  {
+    icon: <BarChartOutlined />,
+    title: 'Real-time Analytics',
+    desc: 'Live dashboards for collections & settlements',
+    color: '#F59E0B',
+  },
+  {
+    icon: <StarFilled />,
+    title: 'Multi-Tenant SaaS',
+    desc: 'Isolated orgs, shared infra, instant onboard',
+    color: '#A78BFA',
+  },
+];
+
+const TESTIMONIAL = {
+  quote: "Hisob ERP transformed how we manage Ganapati collections. The AI parser alone saved us 40+ hours per festival.",
+  name: "Mayur Patil",
+  role: "Treasurer, Vighnaharta Group Mandal",
+  avatar: "MP",
+  avatarColor: "#F59E0B",
+};
+
+// Deterministic floating particles — avoids hydration mismatch
+const PARTICLES = Array.from({ length: 20 }, (_, i) => ({
+  id: i,
+  left: `${(i * 47 + 13) % 100}%`,
+  top:  `${(i * 37 + 7)  % 100}%`,
+  size: (i % 3 === 0) ? 3 : (i % 3 === 1) ? 2 : 1.5,
+  delay: `${(i * 0.4) % 4}s`,
+  duration: `${5 + (i % 5)}s`,
+  opacity: 0.06 + (i % 4) * 0.025,
+}));
+
 const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
+  const [activeStatIdx, setActiveStatIdx] = useState(0);
   const navigate = useNavigate();
   const [form] = Form.useForm<LoginForm>();
   const { message } = App.useApp();
+
+  // Cycle active stat highlight every 2.5s
+  useEffect(() => {
+    const t = setInterval(() => {
+      setActiveStatIdx((p) => (p + 1) % TRUST_STATS.length);
+    }, 2500);
+    return () => clearInterval(t);
+  }, []);
 
   const handleQuickFill = (cred: typeof DEMO_CREDENTIALS[0]) => {
     form.setFieldsValue({ email: cred.email, password: cred.password });
@@ -91,69 +147,127 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="login-root">
-      {/* ── Left Hero Branding Panel ── */}
-      <div className="login-hero">
-        <div className="login-hero-inner">
+    <div className="lp-root">
+
+      {/* ── Left Branding Panel ── */}
+      <div className="lp-left">
+        {/* Dot-grid overlay */}
+        <div className="lp-grid-overlay" />
+
+        {/* Floating particles */}
+        <div className="lp-particles" aria-hidden>
+          {PARTICLES.map((p) => (
+            <div
+              key={p.id}
+              className="lp-particle"
+              style={{
+                left: p.left, top: p.top,
+                width: p.size, height: p.size,
+                opacity: p.opacity,
+                animationDelay: p.delay,
+                animationDuration: p.duration,
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Ambient blobs */}
+        <div className="lp-blob lp-blob-1" />
+        <div className="lp-blob lp-blob-2" />
+        <div className="lp-blob lp-blob-3" />
+
+        <div className="lp-left-inner">
 
           {/* Logo */}
-          <div className="login-brand">
-            <div className="login-brand-icon">H</div>
+          <div className="lp-logo lp-fade-in" style={{ '--delay': '0ms' } as React.CSSProperties}>
+            <div className="lp-logo-icon">
+              <img src="/hisob.png" alt="Hisob ERP" className="lp-logo-img" />
+            </div>
             <div>
-              <div className="login-brand-name">HISSOB ERP</div>
-              <div className="login-brand-tag">Enterprise SaaS Platform</div>
+              <div className="lp-logo-name">
+                हिशोब
+                <span className="lp-logo-erp">ERP</span>
+              </div>
+              <div className="lp-logo-tag">Ganapati Mandal · Temple · Trust</div>
             </div>
           </div>
 
-          {/* Headline */}
-          <h1 className="login-hero-title">
-            Next-Gen Festival<br />
-            <span className="login-hero-title-accent">Financial Management</span>
-          </h1>
-          <p className="login-hero-desc">
-            Streamlining collections, donation receipts, cash settlements, and audit trails for Ganapati Mandals, Temples, Trusts & Non-Profits.
-          </p>
+          {/* Hero text */}
+          <div className="lp-hero-text lp-fade-in" style={{ '--delay': '80ms' } as React.CSSProperties}>
+            <div className="lp-status-badge">
+              <CheckCircleFilled style={{ color: '#34D399', fontSize: 11 }} />
+              <span>Trusted by 500+ organizations across India</span>
+            </div>
+            <h1 className="lp-headline">
+              Festival Finance,<br />
+              <span className="lp-headline-grad">Reimagined.</span>
+            </h1>
+            <p className="lp-subline">
+              Streamline collections, donation receipts, cash settlements &
+              audit trails — built for Ganapati Mandals, Temples & Trusts.
+            </p>
+          </div>
 
-          {/* Trust Stats */}
-          <div className="login-trust-stats">
-            {TRUST_STATS.map((s) => (
-              <div key={s.label} className="login-trust-stat">
-                <div className="login-trust-icon">{s.icon}</div>
-                <div className="login-trust-value">{s.value}</div>
-                <div className="login-trust-label">{s.label}</div>
+          {/* Stats row */}
+          <div className="lp-stats lp-fade-in" style={{ '--delay': '160ms' } as React.CSSProperties}>
+            {TRUST_STATS.map((s, i) => (
+              <div
+                key={s.label}
+                className={`lp-stat${i === activeStatIdx ? ' lp-stat--active' : ''}`}
+              >
+                <div className="lp-stat-icon">{s.icon}</div>
+                <div className="lp-stat-value">{s.value}</div>
+                <div className="lp-stat-label">{s.label}</div>
               </div>
             ))}
           </div>
 
-          {/* Feature Cards */}
-          <div className="login-features-grid">
-            <div className="login-feature-card">
-              <SafetyCertificateOutlined className="login-feature-icon" />
-              <div>
-                <h4>Bank-Grade Security</h4>
-                <p>Dynamic RBAC, encrypted tokens & global diff audit trail</p>
+          {/* Feature grid */}
+          <div className="lp-features lp-fade-in" style={{ '--delay': '240ms' } as React.CSSProperties}>
+            {FEATURES.map((f) => (
+              <div key={f.title} className="lp-feature">
+                <span
+                  className="lp-feature-icon"
+                  style={{ color: f.color, background: `${f.color}15` }}
+                >
+                  {f.icon}
+                </span>
+                <div>
+                  <div className="lp-feature-title">{f.title}</div>
+                  <div className="lp-feature-desc">{f.desc}</div>
+                </div>
               </div>
-            </div>
-            <div className="login-feature-card">
-              <RobotOutlined className="login-feature-icon" />
+            ))}
+          </div>
+
+          {/* Testimonial */}
+          <div className="lp-testimonial lp-fade-in" style={{ '--delay': '320ms' } as React.CSSProperties}>
+            <div className="lp-testimonial-quote">"{TESTIMONIAL.quote}"</div>
+            <div className="lp-testimonial-author">
+              <div
+                className="lp-testimonial-avatar"
+                style={{ background: `${TESTIMONIAL.avatarColor}25`, color: TESTIMONIAL.avatarColor }}
+              >
+                {TESTIMONIAL.avatar}
+              </div>
               <div>
-                <h4>AI Voice Parser</h4>
-                <p>Natural language receipt entry & financial risk insights</p>
+                <div className="lp-testimonial-name">{TESTIMONIAL.name}</div>
+                <div className="lp-testimonial-role">{TESTIMONIAL.role}</div>
               </div>
             </div>
           </div>
 
-          {/* 1-Click Demo Credentials */}
-          <div className="login-demo-box">
-            <div className="login-demo-header">
+          {/* Quick test demo chips */}
+          <div className="lp-demo-box lp-fade-in" style={{ '--delay': '400ms' } as React.CSSProperties}>
+            <div className="lp-demo-label">
               <KeyOutlined />
               <span>Quick Test Login</span>
             </div>
-            <div className="login-demo-chips">
+            <div className="lp-demo-chips">
               {DEMO_CREDENTIALS.map((cred) => (
-                <div
+                <button
                   key={cred.role}
-                  className="login-demo-chip"
+                  className="lp-chip"
                   style={{
                     '--chip-color': cred.color,
                     '--chip-bg': cred.bg,
@@ -163,30 +277,57 @@ const LoginPage: React.FC = () => {
                 >
                   <span style={{ color: cred.color }}>{cred.icon}</span>
                   <span>{cred.role}</span>
-                </div>
+                </button>
               ))}
             </div>
           </div>
-        </div>
 
-        {/* Ambient glows */}
-        <div className="login-glow login-glow-1" />
-        <div className="login-glow login-glow-2" />
-        <div className="login-glow login-glow-3" />
+        </div>
       </div>
 
       {/* ── Right Form Panel ── */}
-      <div className="login-form-panel">
-        <div className="login-card">
+      <div className="lp-right">
 
-          {/* Card Logo */}
-          <div className="login-card-logo">
-            <div className="login-card-logo-icon">H</div>
+        {/* Mobile-only top bar (hidden on desktop) */}
+        <div className="lp-mobile-bar">
+          <div className="lp-mobile-logo-icon">
+            <img src="/hisob.png" alt="Hisob ERP" className="lp-logo-img" />
           </div>
+          <div>
+            <div className="lp-mobile-logo-name">
+              हिशोब
+              <span className="lp-logo-erp">ERP</span>
+            </div>
+            <div className="lp-mobile-logo-tag">Ganapati Mandal · Temple · Trust</div>
+          </div>
+        </div>
 
-          <div className="login-card-header">
+        <div className="lp-card">
+          {/* Animated shimmer border */}
+          <div className="lp-card-border" aria-hidden />
+
+          {/* Card top brand mark */}
+          <div className="lp-card-top">
+            <div className="lp-card-icon">
+              <img src="/hisob.png" alt="Hisob ERP" className="lp-logo-img" />
+            </div>
+            <div className="lp-card-brand-title">
+              हिशोब
+              
+            </div>
+          </div>
+          <div className="lp-card-heading">
+            {/* Marathi Tagline — shifted upper */}
+            <div className="lp-marathi-tagline">
+              सोपा हिशोब <span className="lp-tagline-sep">|</span> पारदर्शक व्यवहार <span className="lp-tagline-sep">|</span> विश्वासाची साथ
+            </div>
+            {/* Live status — below tagline */}
+            <div className="lp-live-badge" style={{ margin: '8px auto 14px' }}>
+              <span className="lp-live-dot" />
+              <span>System Online</span>
+            </div>
             <h2>Welcome back 👋</h2>
-            <p>Sign in to continue to Hissob ERP</p>
+            <p>Sign in to your <strong style={{color:'rgba(249,115,22,0.9)', fontFamily:"'Noto Sans Devanagari', sans-serif", fontWeight:700}}>हिशोब</strong> workspace</p>
           </div>
 
           <Form
@@ -194,21 +335,22 @@ const LoginPage: React.FC = () => {
             layout="vertical"
             onFinish={onFinish}
             size="large"
-            className="login-form"
+            className="lp-form"
             initialValues={{ remember: true }}
           >
             <Form.Item
               name="email"
-              label="Email Address"
+              label="Work Email"
               rules={[
                 { required: true, message: 'Email is required' },
                 { type: 'email', message: 'Enter a valid email address' },
               ]}
             >
               <Input
-                prefix={<UserOutlined className="login-input-icon" />}
+                prefix={<UserOutlined className="lp-input-icon" />}
                 placeholder="you@organization.org"
-                className="login-input"
+                className="lp-input"
+                autoComplete="email"
               />
             </Form.Item>
 
@@ -218,56 +360,73 @@ const LoginPage: React.FC = () => {
               rules={[{ required: true, message: 'Password is required' }]}
             >
               <Input.Password
-                prefix={<LockOutlined className="login-input-icon" />}
+                prefix={<LockOutlined className="lp-input-icon" />}
                 placeholder="Enter your password"
-                className="login-input"
+                className="lp-input"
+                autoComplete="current-password"
               />
             </Form.Item>
 
-            <div className="login-options">
+            <div className="lp-options">
               <Form.Item name="remember" valuePropName="checked" noStyle>
-                <Checkbox className="login-remember">Remember me</Checkbox>
+                <Checkbox className="lp-remember">Remember me</Checkbox>
               </Form.Item>
-              <a href="#" className="login-forgot">Forgot password?</a>
+              <a href="#" className="lp-forgot">Forgot password?</a>
             </div>
 
-            <Form.Item style={{ marginTop: 20, marginBottom: 0 }}>
+            <Form.Item style={{ marginTop: 24, marginBottom: 0 }}>
               <Button
                 type="primary"
                 htmlType="submit"
                 block
                 loading={loading}
-                className="login-submit-btn"
+                className="lp-submit-btn"
                 icon={!loading && <ArrowRightOutlined />}
-                iconPosition="end"
+                iconPlacement="end"
               >
-                {loading ? 'Authenticating...' : 'Sign In'}
+                {loading ? 'Authenticating…' : 'Sign In'}
               </Button>
             </Form.Item>
           </Form>
 
-          <Divider style={{ margin: '20px 0', borderColor: '#E2E8F0' }} />
+          {/* Divider */}
+          <div className="lp-divider">
+            <span />
+            <small>Secured with 256-bit SSL</small>
+            <span />
+          </div>
 
-          {/* Security Footer */}
-          <div className="login-security-badge">
-            <SafetyCertificateOutlined style={{ color: '#22C55E', fontSize: 14 }} />
-            <span>256-bit SSL Encrypted &nbsp;•&nbsp;  Your data is safe &nbsp;</span>
+          {/* Security badges row */}
+          <div className="lp-badges">
+            <div className="lp-badge-item">
+              <SafetyCertificateOutlined style={{ color: '#34D399' }} />
+              <span>SSL Encrypted</span>
+            </div>
+            <div className="lp-badge-item">
+              <SafetyOutlined style={{ color: '#F59E0B' }} />
+              <span>100% Secure</span>
+            </div>
+            <div className="lp-badge-item">
+              <WifiOutlined style={{ color: '#60A5FA' }} />
+              <span>99.9% Uptime</span>
+            </div>
           </div>
         </div>
 
-        {/* Dynamic Copyright Footer */}
-        <div className="login-copyright-footer">
+        {/* Copyright */}
+        <div className="lp-footer">
           © {new Date().getFullYear()} ArcNeuron.ai &nbsp;•&nbsp; Designed by{' '}
           <a
             href="https://www.mayurpatil.in"
             target="_blank"
             rel="noopener noreferrer"
-            className="login-author"
+            className="lp-footer-link"
           >
             Mayur Patil
           </a>
         </div>
       </div>
+
     </div>
   );
 };

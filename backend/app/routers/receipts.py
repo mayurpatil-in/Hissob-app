@@ -27,6 +27,7 @@ async def list_receipts(
     fy_id: Optional[UUID] = Query(None),
     status: Optional[str] = Query(None),
     collector_id: Optional[UUID] = Query(None),
+    donor_id: Optional[UUID] = Query(None),
     skip: int = 0,
     limit: int = 100,
     current_user: User = Depends(get_current_active_user),
@@ -45,6 +46,7 @@ async def list_receipts(
     receipts = repo.get_by_tenant(
         tenant_id=current_user.tenant_id,
         collector_id=target_collector,
+        donor_id=donor_id,
         fy_id=fy_id,
         status=status,
         skip=skip,
@@ -54,6 +56,77 @@ async def list_receipts(
     for r in receipts:
         r.collector_name = user_map.get(r.collector_id, "Collector")
     return receipts
+
+
+@router.get("/daily-summary", summary="Collector Daily Collection & Handover Summary")
+async def get_collector_daily_summary(
+    target_date: Optional[date] = Query(None),
+    collector_id: Optional[UUID] = Query(None),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    if not current_user.tenant_id and not current_user.is_super_admin:
+        raise HTTPException(status_code=400, detail="Tenant context required")
+
+    summary_date = target_date or date.today()
+    target_collector_id = collector_id or current_user.id
+
+    collector = db.get(User, target_collector_id)
+    collector_name = collector.full_name if collector else "Collector"
+
+    all_today_receipts = (
+        db.query(Receipt)
+        .filter(
+            Receipt.tenant_id == current_user.tenant_id,
+            Receipt.collector_id == target_collector_id,
+            Receipt.receipt_date == summary_date,
+            Receipt.status != ReceiptStatus.CANCELLED,
+        )
+        .order_by(Receipt.created_at.desc())
+        .all()
+    )
+
+    total_collected = sum(r.amount for r in all_today_receipts)
+    cash_collected = sum(r.amount for r in all_today_receipts if r.payment_mode == PaymentMode.CASH)
+    digital_collected = total_collected - cash_collected
+    receipts_count = len(all_today_receipts)
+
+    unsettled_cash_receipts = [
+        r for r in all_today_receipts
+        if r.payment_mode == PaymentMode.CASH and r.status in [ReceiptStatus.ISSUED, ReceiptStatus.PENDING_SETTLEMENT]
+    ]
+    unsettled_cash_amount = sum(r.amount for r in unsettled_cash_receipts)
+    unsettled_receipt_ids = [str(r.id) for r in unsettled_cash_receipts]
+
+    user_map = {u.id: u.full_name for u in db.query(User).all()}
+    receipt_list = []
+    for r in all_today_receipts:
+        r.collector_name = user_map.get(r.collector_id, "Collector")
+        donor_name = r.donor.full_name if r.donor else "Anonymous"
+        receipt_list.append({
+            "id": str(r.id),
+            "receipt_number": r.receipt_number,
+            "receipt_date": str(r.receipt_date),
+            "donor_name": donor_name,
+            "collector_name": r.collector_name,
+            "amount": float(r.amount),
+            "payment_mode": r.payment_mode.value if hasattr(r.payment_mode, "value") else str(r.payment_mode),
+            "status": r.status.value if hasattr(r.status, "value") else str(r.status),
+            "purpose": r.purpose or "Festival Donation",
+        })
+
+    return {
+        "date": str(summary_date),
+        "collector_id": str(target_collector_id),
+        "collector_name": collector_name,
+        "total_collected": float(total_collected),
+        "cash_collected": float(cash_collected),
+        "digital_collected": float(digital_collected),
+        "receipts_count": receipts_count,
+        "unsettled_cash_amount": float(unsettled_cash_amount),
+        "unsettled_receipt_ids": unsettled_receipt_ids,
+        "receipts": receipt_list,
+    }
 
 
 @router.post("", response_model=ReceiptResponse, status_code=status.HTTP_201_CREATED, summary="Create Receipt")
