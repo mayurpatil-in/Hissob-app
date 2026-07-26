@@ -1,18 +1,77 @@
 import React, { useState } from 'react';
 import {
-  Table, Button, Tabs, Card, Row, Col, Typography, Tag, Space, Select
+  Table, Button, Tabs, Card, Row, Col, Typography, Tag, Space, Select, Dropdown
 } from 'antd';
 import {
-  PrinterOutlined, BarChartOutlined,
-  BookOutlined, DollarOutlined
+  BarChartOutlined,
+  BookOutlined, DollarOutlined, DownloadOutlined, FileExcelOutlined, FilePdfOutlined
 } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import {
   getDailyCollectionReport, getCashBookReport, getIncomeExpenseReport, getFinancialYears
 } from '../../api/services';
+import { exportToCSV, exportToExcel, printTable } from '../../utils/exportTable';
+import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
+
+const DAILY_COLS = [
+  { key: 'date', title: 'Date' },
+  { key: 'receipt_count', title: 'Receipts Count' },
+  { key: 'cash_amount', title: 'Cash (₹)', format: (v: number) => `₹ ${Number(v || 0).toLocaleString('en-IN')}` },
+  { key: 'upi_amount', title: 'UPI (₹)', format: (v: number) => `₹ ${Number(v || 0).toLocaleString('en-IN')}` },
+  { key: 'cheque_amount', title: 'Cheque (₹)', format: (v: number) => `₹ ${Number(v || 0).toLocaleString('en-IN')}` },
+  { key: 'total_amount', title: 'Total Collection (₹)', format: (v: number) => `₹ ${Number(v || 0).toLocaleString('en-IN')}` },
+];
+
+const CASHBOOK_COLS = [
+  { key: 'date', title: 'Date' },
+  { key: 'voucher_number', title: 'Voucher #' },
+  { key: 'entry_type', title: 'Type' },
+  { key: 'particulars', title: 'Particulars' },
+  { key: 'debit_amount', title: 'Debit Inflow (₹)', format: (v: number) => v > 0 ? `+ ₹ ${Number(v).toLocaleString('en-IN')}` : '-' },
+  { key: 'credit_amount', title: 'Credit Outflow (₹)', format: (v: number) => v > 0 ? `- ₹ ${Number(v).toLocaleString('en-IN')}` : '-' },
+  { key: 'running_balance', title: 'Balance (₹)', format: (v: number) => `₹ ${Number(v || 0).toLocaleString('en-IN')}` },
+];
+
+const ExportButtons: React.FC<{
+  data: any[];
+  columns: typeof DAILY_COLS;
+  baseName: string;
+  title: string;
+}> = ({ data, columns, baseName, title }) => {
+  const filename = `${baseName}_${dayjs().format('YYYYMMDD')}`;
+
+  const menuItems = [
+    {
+      key: 'csv',
+      icon: <DownloadOutlined />,
+      label: 'Export CSV',
+      onClick: () => exportToCSV(data, filename, columns),
+    },
+    {
+      key: 'excel',
+      icon: <FileExcelOutlined style={{ color: '#22C55E' }} />,
+      label: 'Export Excel (.xlsx)',
+      onClick: () => exportToExcel(data, filename, columns),
+    },
+    {
+      key: 'print',
+      icon: <FilePdfOutlined style={{ color: '#EF4444' }} />,
+      label: 'Print / Save as PDF',
+      onClick: () => printTable(data, title, columns),
+    },
+  ];
+
+  return (
+    <Dropdown menu={{ items: menuItems }} placement="bottomRight">
+      <Button icon={<DownloadOutlined />} size="small">
+        Export ▾
+      </Button>
+    </Dropdown>
+  );
+};
 
 const ReportsPage: React.FC = () => {
   const [selectedFy, setSelectedFy] = useState<string | undefined>(undefined);
@@ -67,7 +126,10 @@ const ReportsPage: React.FC = () => {
       label: <span><BarChartOutlined /> Daily Collection Summary</span>,
       children: (
         <Card className="hissob-card">
-          <Table dataSource={dailyData} columns={dailyColumns} rowKey="date" loading={isDailyLoading} pagination={{ pageSize: 10 }} />
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+            <ExportButtons data={dailyData} columns={DAILY_COLS} baseName="DailyCollection" title="Daily Collection Summary" />
+          </div>
+          <Table dataSource={dailyData} columns={dailyColumns} rowKey="date" loading={isDailyLoading} pagination={{ pageSize: 10 }} scroll={{ x: 700 }} />
         </Card>
       ),
     },
@@ -76,7 +138,10 @@ const ReportsPage: React.FC = () => {
       label: <span><BookOutlined /> Cash Book Ledger</span>,
       children: (
         <Card className="hissob-card">
-          <Table dataSource={cashBookData} columns={cashBookColumns} rowKey="voucher_number" loading={isCashBookLoading} pagination={{ pageSize: 10 }} />
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+            <ExportButtons data={cashBookData} columns={CASHBOOK_COLS} baseName="CashBook" title="Cash Book Ledger" />
+          </div>
+          <Table dataSource={cashBookData} columns={cashBookColumns} rowKey="voucher_number" loading={isCashBookLoading} pagination={{ pageSize: 10 }} scroll={{ x: 800 }} />
         </Card>
       ),
     },
@@ -85,20 +150,32 @@ const ReportsPage: React.FC = () => {
       label: <span><DollarOutlined /> Income & Expenditure Statement</span>,
       children: (
         <Card className="hissob-card">
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+            <ExportButtons
+              data={[
+                { label: 'Total Income', value: `₹ ${Number(incomeExpenseData?.total_income || 0).toLocaleString('en-IN')}` },
+                { label: 'Total Expenditure', value: `₹ ${Number(incomeExpenseData?.total_expenses || 0).toLocaleString('en-IN')}` },
+                { label: 'Net Surplus / Deficit', value: `₹ ${Number(incomeExpenseData?.net_surplus_deficit || 0).toLocaleString('en-IN')}` },
+              ]}
+              columns={[{ key: 'label', title: 'Particulars' }, { key: 'value', title: 'Amount (₹)' }]}
+              baseName="IncomeExpenseStatement"
+              title="Income & Expenditure Statement"
+            />
+          </div>
           <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
-            <Col span={8}>
+            <Col xs={24} sm={8}>
               <Card style={{ background: '#ECFDF5', border: '1px solid #A7F3D0' }}>
                 <Text type="secondary">Total Income</Text>
                 <Title level={3} style={{ color: '#059669', margin: 0 }}>₹ {Number(incomeExpenseData?.total_income || 0).toLocaleString('en-IN')}</Title>
               </Card>
             </Col>
-            <Col span={8}>
+            <Col xs={24} sm={8}>
               <Card style={{ background: '#FEF2F2', border: '1px solid #FECACA' }}>
                 <Text type="secondary">Total Expenditure</Text>
                 <Title level={3} style={{ color: '#DC2626', margin: 0 }}>₹ {Number(incomeExpenseData?.total_expenses || 0).toLocaleString('en-IN')}</Title>
               </Card>
             </Col>
-            <Col span={8}>
+            <Col xs={24} sm={8}>
               <Card style={{ background: '#EFF6FF', border: '1px solid #BFDBFE' }}>
                 <Text type="secondary">Net Surplus / Deficit</Text>
                 <Title level={3} style={{ color: '#2563EB', margin: 0 }}>₹ {Number(incomeExpenseData?.net_surplus_deficit || 0).toLocaleString('en-IN')}</Title>
@@ -128,7 +205,6 @@ const ReportsPage: React.FC = () => {
               <Option key={fy.id} value={fy.id}>{fy.name}</Option>
             ))}
           </Select>
-          <Button icon={<PrinterOutlined />} onClick={() => window.print()}>Print Report</Button>
         </Space>
       </div>
 

@@ -86,7 +86,27 @@ async def create_expense(
         bill_url=payload.bill_url,
         status="pending",
     )
-    return repo.create(expense)
+    created = repo.create(expense)
+
+    # 🔔 Notify Treasurer about new expense request
+    try:
+        from app.services.notification_service import notify_role
+        notify_role(
+            db=db,
+            tenant_id=current_user.tenant_id,
+            role_slug="treasurer",
+            title=f"📤 New Expense Request — ₹{float(payload.amount):,.2f}",
+            message=f"{current_user.full_name} submitted expense {exp_num} ({payload.category}) for ₹{float(payload.amount):,.2f}. Vendor: {payload.vendor_name or 'N/A'}. Please review and approve.",
+            notification_type="expense",
+            related_module="expenses",
+            related_id=str(created.id),
+            exclude_user_id=current_user.id,
+        )
+        db.commit()
+    except Exception:
+        pass
+
+    return created
 
 
 @router.post("/{expense_id}/approve", response_model=ExpenseResponse, summary="Approve/Reject/Pay Expense")
@@ -121,4 +141,48 @@ async def approve_expense(
 
     db.commit()
     db.refresh(expense)
+
+    # 🔔 Notify the requester about approval/rejection/payment
+    try:
+        from app.services.notification_service import create_notification
+        requester = db.get(User, expense.requested_by)
+        if requester:
+            if payload.action == "approve":
+                create_notification(
+                    db=db,
+                    user_id=expense.requested_by,
+                    title=f"✅ Expense {expense.expense_number} Approved!",
+                    message=f"Your expense request for ₹{float(expense.amount):,.2f} ({expense.category}) has been approved by {current_user.full_name}.",
+                    notification_type="success",
+                    related_module="expenses",
+                    related_id=str(expense.id),
+                    tenant_id=expense.tenant_id,
+                )
+            elif payload.action == "pay":
+                create_notification(
+                    db=db,
+                    user_id=expense.requested_by,
+                    title=f"💸 Expense {expense.expense_number} Paid!",
+                    message=f"Your expense of ₹{float(expense.amount):,.2f} ({expense.category}) has been marked as paid by {current_user.full_name}.",
+                    notification_type="success",
+                    related_module="expenses",
+                    related_id=str(expense.id),
+                    tenant_id=expense.tenant_id,
+                )
+            elif payload.action == "reject":
+                reason = payload.rejection_reason or "No reason provided"
+                create_notification(
+                    db=db,
+                    user_id=expense.requested_by,
+                    title=f"❌ Expense {expense.expense_number} Rejected",
+                    message=f"Your expense request for ₹{float(expense.amount):,.2f} was rejected. Reason: {reason}",
+                    notification_type="error",
+                    related_module="expenses",
+                    related_id=str(expense.id),
+                    tenant_id=expense.tenant_id,
+                )
+            db.commit()
+    except Exception:
+        pass
+
     return expense

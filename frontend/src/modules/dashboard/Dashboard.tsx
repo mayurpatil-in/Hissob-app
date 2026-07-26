@@ -374,8 +374,8 @@ const Dashboard: React.FC = () => {
             </div>
 
             <div className="campaign-progress-list" style={{ marginTop: 16 }}>
-              {festivals.map((f: any) => (
-                <div key={f.name} className="campaign-item">
+              {festivals.map((f: any, idx: number) => (
+                <div key={f.id || `festival-${idx}`} className="campaign-item">
                   <div className="campaign-info">
                     <span className="campaign-name">{f.name}</span>
                     <span className="campaign-stats">

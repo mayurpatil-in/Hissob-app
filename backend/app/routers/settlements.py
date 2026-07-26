@@ -92,6 +92,25 @@ async def submit_settlement(
         r.status = ReceiptStatus.PENDING_SETTLEMENT
 
     db.commit()
+
+    # 🔔 Notify Treasurer role about new cash settlement submission
+    try:
+        from app.services.notification_service import notify_role
+        notify_role(
+            db=db,
+            tenant_id=current_user.tenant_id,
+            role_slug="treasurer",
+            title=f"💰 Cash Settlement Submitted — ₹{total_amount:,.2f}",
+            message=f"Collector {current_user.full_name} submitted settlement {settlement_num} with {len(receipts)} receipts totalling ₹{total_amount:,.2f}. Please review and approve.",
+            notification_type="settlement",
+            related_module="settlements",
+            related_id=str(created.id),
+            exclude_user_id=current_user.id,
+        )
+        db.commit()
+    except Exception:
+        pass
+
     return created
 
 
@@ -129,4 +148,37 @@ async def verify_settlement(
 
     db.commit()
     db.refresh(settlement)
+
+    # 🔔 Notify the collector about approval or rejection
+    try:
+        from app.services.notification_service import create_notification
+        collector = db.get(User, settlement.collector_id)
+        if collector:
+            if payload.action == "approve":
+                create_notification(
+                    db=db,
+                    user_id=settlement.collector_id,
+                    title=f"✅ Settlement {settlement.settlement_number} Approved!",
+                    message=f"Your cash settlement of ₹{float(settlement.total_amount):,.2f} has been approved by {current_user.full_name}.",
+                    notification_type="success",
+                    related_module="settlements",
+                    related_id=str(settlement.id),
+                    tenant_id=settlement.tenant_id,
+                )
+            else:
+                reason = payload.rejection_reason or "No reason provided"
+                create_notification(
+                    db=db,
+                    user_id=settlement.collector_id,
+                    title=f"❌ Settlement {settlement.settlement_number} Rejected",
+                    message=f"Your cash settlement was rejected by {current_user.full_name}. Reason: {reason}",
+                    notification_type="error",
+                    related_module="settlements",
+                    related_id=str(settlement.id),
+                    tenant_id=settlement.tenant_id,
+                )
+            db.commit()
+    except Exception:
+        pass
+
     return settlement

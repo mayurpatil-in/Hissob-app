@@ -4,12 +4,14 @@ import {
   Select, Card, Row, Col, Typography, App, Tooltip
 } from 'antd';
 import {
-  PlusOutlined, PrinterOutlined, RobotOutlined, CheckCircleOutlined, WhatsAppOutlined
+  PlusOutlined, PrinterOutlined, RobotOutlined, CheckCircleOutlined, WhatsAppOutlined, DownloadOutlined
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getReceipts, createReceipt, settleReceipt, getDonors, getFinancialYears } from '../../api/services';
 import { useAuthStore } from '../../store/authStore';
 import { generateWhatsAppReceiptLink } from '../../utils/whatsapp';
+import { printReceiptWindow } from '../../utils/printReceipt';
+import { exportToCSV, exportToExcel } from '../../utils/exportTable';
 import AIVoiceAssistantModal from '../ai/AIVoiceAssistantModal';
 import dayjs from 'dayjs';
 
@@ -169,11 +171,13 @@ const ReceiptsPage: React.FC = () => {
               }}
             />
           </Tooltip>
-          <Tooltip title="Print Receipt">
+          <Tooltip title="Print Professional Receipt">
             <Button
               icon={<PrinterOutlined />}
               size="small"
-              onClick={() => setPrintReceipt(record)}
+              type="primary"
+              style={{ background: '#0B2347', borderColor: '#0B2347' }}
+              onClick={() => printReceiptWindow(record, 'Hissob ERP')}
             />
           </Tooltip>
           {record.status !== 'settled' && record.status !== 'cancelled' && canSettle && (
@@ -257,6 +261,55 @@ const ReceiptsPage: React.FC = () => {
               <Option value="settled">SETTLED</Option>
               <Option value="cancelled">CANCELLED</Option>
             </Select>
+          </Space>
+          <Space>
+            <Button
+              icon={<DownloadOutlined />}
+              size="small"
+              onClick={() => exportToCSV(receipts.map(r => ({
+                receipt_number: r.receipt_number,
+                receipt_date: r.receipt_date,
+                donor: (r as any).donor?.full_name || 'N/A',
+                amount: Number(r.amount).toLocaleString('en-IN'),
+                payment_mode: r.payment_mode?.toUpperCase(),
+                status: r.status?.toUpperCase(),
+                purpose: (r as any).purpose || '',
+              })), `Receipts_${dayjs().format('YYYYMMDD')}`, [
+                { key: 'receipt_number', title: 'Receipt #' },
+                { key: 'receipt_date', title: 'Date' },
+                { key: 'donor', title: 'Donor' },
+                { key: 'amount', title: 'Amount (₹)' },
+                { key: 'payment_mode', title: 'Mode' },
+                { key: 'status', title: 'Status' },
+                { key: 'purpose', title: 'Purpose' },
+              ])}
+            >
+              Export CSV
+            </Button>
+            <Button
+              icon={<DownloadOutlined />}
+              size="small"
+              style={{ color: '#22C55E', borderColor: '#22C55E' }}
+              onClick={() => exportToExcel(receipts.map(r => ({
+                receipt_number: r.receipt_number,
+                receipt_date: r.receipt_date,
+                donor: (r as any).donor?.full_name || 'N/A',
+                amount: Number(r.amount),
+                payment_mode: r.payment_mode?.toUpperCase(),
+                status: r.status?.toUpperCase(),
+                purpose: (r as any).purpose || '',
+              })), `Receipts_${dayjs().format('YYYYMMDD')}`, [
+                { key: 'receipt_number', title: 'Receipt #' },
+                { key: 'receipt_date', title: 'Date' },
+                { key: 'donor', title: 'Donor' },
+                { key: 'amount', title: 'Amount (₹)' },
+                { key: 'payment_mode', title: 'Mode' },
+                { key: 'status', title: 'Status' },
+                { key: 'purpose', title: 'Purpose' },
+              ])}
+            >
+              Export Excel
+            </Button>
           </Space>
         </div>
 
@@ -395,60 +448,13 @@ const ReceiptsPage: React.FC = () => {
         </Form>
       </Modal>
 
-      {/* ── Printable Voucher Preview Modal ── */}
-      {printReceipt && (
-        <Modal
-          open={Boolean(printReceipt)}
-          onCancel={() => setPrintReceipt(null)}
-          title="Print Receipt Voucher"
-          footer={[
-            <Button key="close" onClick={() => setPrintReceipt(null)}>Close</Button>,
-            <Button
-              key="whatsapp"
-              icon={<WhatsAppOutlined />}
-              style={{ background: '#25D366', borderColor: '#25D366', color: '#FFF', fontWeight: 600 }}
-              onClick={() => {
-                const link = generateWhatsAppReceiptLink({
-                  receiptNumber: printReceipt.receipt_number,
-                  donorName: printReceipt.donor?.full_name || 'Donor',
-                  donorPhone: printReceipt.donor?.phone,
-                  amount: printReceipt.amount,
-                  paymentMode: printReceipt.payment_mode,
-                  receiptDate: printReceipt.receipt_date,
-                  purpose: printReceipt.purpose,
-                });
-                window.open(link, '_blank');
-              }}
-            >
-              Share on WhatsApp
-            </Button>,
-            <Button key="print" type="primary" icon={<PrinterOutlined />} onClick={() => window.print()} style={{ background: '#F97316' }}>
-              Print Voucher
-            </Button>
-          ]}
-        >
-          <div style={{ padding: 20, border: '2px solid #0B2347', borderRadius: 8, background: '#FFF' }}>
-            <div style={{ textAlign: 'center', marginBottom: 16, borderBottom: '1px solid #EEE', paddingBottom: 12 }}>
-              <Title level={4} style={{ color: '#0B2347', margin: 0 }}>HISSOB ERP — DONATION RECEIPT</Title>
-              <Text type="secondary">Official Festival Collection Receipt</Text>
-            </div>
-            <Row style={{ marginBottom: 10 }}>
-              <Col span={12}><b>Receipt No:</b> {printReceipt.receipt_number}</Col>
-              <Col span={12} style={{ textAlign: 'right' }}><b>Date:</b> {printReceipt.receipt_date}</Col>
-            </Row>
-            <div style={{ margin: '16px 0', padding: 12, background: '#F8F9FC', borderRadius: 6 }}>
-              <p><b>Received From:</b> {printReceipt.donor?.full_name || 'Donor'}</p>
-              <p><b>Amount:</b> <span style={{ fontSize: 18, color: '#22C55E', fontWeight: 800 }}>₹ {Number(printReceipt.amount).toLocaleString('en-IN')}</span></p>
-              <p><b>Payment Mode:</b> {printReceipt.payment_mode?.toUpperCase()}</p>
-              <p><b>Purpose:</b> {printReceipt.purpose || 'Festival Donation'}</p>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 40 }}>
-              <div><Text type="secondary">Collector Signature</Text></div>
-              <div><Text type="secondary">Authorized Trustee Signature</Text></div>
-            </div>
-          </div>
-        </Modal>
-      )}
+      {/* ── Quick Receipt Preview (auto-print on create) ── */}
+      {printReceipt && (() => {
+        // Auto-trigger professional print on receipt creation
+        printReceiptWindow(printReceipt, 'Hissob ERP');
+        setPrintReceipt(null);
+        return null;
+      })()}
 
       {/* ── AI Voice Assistant Modal ── */}
       <AIVoiceAssistantModal

@@ -251,8 +251,21 @@ const LoginPage: React.FC = () => {
           {/* Security Footer */}
           <div className="login-security-badge">
             <SafetyCertificateOutlined style={{ color: '#22C55E', fontSize: 14 }} />
-            <span>256-bit SSL Encrypted &nbsp;•&nbsp; ISO 27001 Certified &nbsp;•&nbsp; Multi-Tenant SaaS</span>
+            <span>256-bit SSL Encrypted &nbsp;•&nbsp;  Your data is safe &nbsp;</span>
           </div>
+        </div>
+
+        {/* Dynamic Copyright Footer */}
+        <div className="login-copyright-footer">
+          © {new Date().getFullYear()} ArcNeuron.ai &nbsp;•&nbsp; Designed by{' '}
+          <a
+            href="https://www.mayurpatil.in"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="login-author"
+          >
+            Mayur Patil
+          </a>
         </div>
       </div>
     </div>

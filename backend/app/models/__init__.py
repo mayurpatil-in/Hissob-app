@@ -11,6 +11,7 @@ from app.models.donor import Donor, Area
 from app.models.receipt import Receipt, ReceiptStatus, PaymentMode
 from app.models.finance import CashSettlement, SettlementStatus, Expense
 from app.models.audit import AuditLog
+from app.models.notification import Notification
 
 __all__ = [
     "UUIDMixin", "TimestampMixin", "TenantMixin",
@@ -23,4 +24,6 @@ __all__ = [
     "Receipt", "ReceiptStatus", "PaymentMode",
     "CashSettlement", "SettlementStatus", "Expense",
     "AuditLog",
+    "Notification",
 ]
+

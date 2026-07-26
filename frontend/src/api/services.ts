@@ -145,3 +145,30 @@ export const deleteUser = async (id: string) => (await apiClient.delete<any>(`/u
 
 // ── Dashboard API ──
 export const getDashboardSummary = async () => (await apiClient.get<any>('/dashboard/summary')).data;
+
+// ── Notifications API ──
+export interface NotificationItem {
+  id: string;
+  title: string;
+  message: string;
+  notification_type: string;
+  related_module?: string;
+  related_id?: string;
+  is_read: boolean;
+  created_at: string;
+}
+
+export interface NotificationResponse {
+  unread_count: number;
+  notifications: NotificationItem[];
+}
+
+export const getNotifications = async (): Promise<NotificationResponse> =>
+  (await apiClient.get<NotificationResponse>('/notifications')).data;
+
+export const markNotificationRead = async (id: string): Promise<NotificationItem> =>
+  (await apiClient.post<NotificationItem>(`/notifications/${id}/read`)).data;
+
+export const markAllNotificationsRead = async (): Promise<void> =>
+  (await apiClient.post('/notifications/read-all')).data;
+

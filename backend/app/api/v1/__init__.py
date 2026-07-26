@@ -16,6 +16,7 @@ from app.routers.super_admin import router as super_admin_router
 from app.routers.ai import router as ai_router
 from app.routers.users import router as users_router
 from app.routers.dashboard import router as dashboard_router
+from app.routers.notifications import router as notifications_router
 
 router = APIRouter()
 router.include_router(auth_router)
@@ -33,3 +34,5 @@ router.include_router(super_admin_router)
 router.include_router(ai_router)
 router.include_router(users_router)
 router.include_router(dashboard_router)
+router.include_router(notifications_router)
+

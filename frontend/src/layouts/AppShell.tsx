@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
-import { Layout, Menu, Button, Avatar, Dropdown, Badge, Tooltip, Drawer } from 'antd';
+import { Layout, Menu, Button, Avatar, Dropdown, Badge, Drawer, List, Empty, Tag, Typography } from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   DashboardOutlined, FileTextOutlined, DollarOutlined, UserOutlined,
   BankOutlined, CalendarOutlined, TeamOutlined, BarChartOutlined,
   SettingOutlined, BellOutlined, LogoutOutlined, MenuFoldOutlined,
   MenuUnfoldOutlined, AuditOutlined, GlobalOutlined, SafetyOutlined, CrownOutlined, RobotOutlined,
-  MenuOutlined
+  MenuOutlined, CheckOutlined
 } from '@ant-design/icons';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getNotifications, markNotificationRead, markAllNotificationsRead } from '../api/services';
+import type { NotificationItem } from '../api/services';
 import { useAuthStore } from '../store/authStore';
 import { authService } from '../auth/authService';
 import './AppShell.css';
@@ -53,9 +56,11 @@ interface Props {
 const AppShell: React.FC<Props> = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { user, hasModule } = useAuthStore();
+  const queryClient = useQueryClient();
 
   React.useEffect(() => {
     authService.me().then((freshUser) => {
@@ -71,6 +76,105 @@ const AppShell: React.FC<Props> = ({ children }) => {
       });
     }).catch(() => {});
   }, []);
+
+  // Live notifications (poll every 30s)
+  const { data: notifData } = useQuery({
+    queryKey: ['notifications'],
+    queryFn: getNotifications,
+    refetchInterval: 30_000,
+    staleTime: 20_000,
+  });
+
+  const markReadMutation = useMutation({
+    mutationFn: markNotificationRead,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
+  });
+
+  const markAllMutation = useMutation({
+    mutationFn: markAllNotificationsRead,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
+  });
+
+  const unreadCount = notifData?.unread_count ?? 0;
+  const notifications: NotificationItem[] = notifData?.notifications ?? [];
+
+  const NOTIF_TYPE_COLOR: Record<string, string> = {
+    success: 'success', error: 'error', warning: 'warning',
+    settlement: 'blue', expense: 'purple', info: 'default',
+  };
+
+  const notifDropdown = (
+    <div style={{ width: 360, background: '#fff', borderRadius: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.15)', overflow: 'hidden' }}>
+      <div style={{ padding: '12px 16px', background: '#0B2347', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography.Text style={{ color: '#fff', fontWeight: 700, fontSize: 14 }}>
+          🔔 Notifications {unreadCount > 0 && <Tag color="orange" style={{ marginLeft: 6, fontWeight: 700 }}>{unreadCount} New</Tag>}
+        </Typography.Text>
+        {unreadCount > 0 && (
+          <Button
+            size="small"
+            icon={<CheckOutlined />}
+            style={{ color: '#F97316', borderColor: '#F97316', fontSize: 11 }}
+            onClick={() => markAllMutation.mutate()}
+          >
+            Mark All Read
+          </Button>
+        )}
+      </div>
+      <div style={{ maxHeight: 360, overflowY: 'auto' }}>
+        {notifications.length === 0 ? (
+          <Empty description="No notifications yet" image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ padding: 32 }} />
+        ) : (
+          <List
+            dataSource={notifications}
+            renderItem={(item) => (
+              <List.Item
+                style={{
+                  padding: '10px 16px',
+                  background: item.is_read ? '#fff' : '#FFF7ED',
+                  cursor: 'pointer',
+                  borderLeft: item.is_read ? 'none' : '3px solid #F97316',
+                }}
+                onClick={() => {
+                  if (!item.is_read) markReadMutation.mutate(item.id);
+                  if (item.related_module) navigate(`/${item.related_module}`);
+                  setNotifOpen(false);
+                }}
+                extra={!item.is_read && (
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<CheckOutlined />}
+                    onClick={(e) => { e.stopPropagation(); markReadMutation.mutate(item.id); }}
+                    style={{ color: '#999', fontSize: 10 }}
+                  />
+                )}
+              >
+                <List.Item.Meta
+                  title={
+                    <span style={{ fontSize: 13, fontWeight: item.is_read ? 500 : 700, color: '#0B2347' }}>
+                      {item.title}
+                    </span>
+                  }
+                  description={
+                    <div>
+                      <div style={{ fontSize: 11, color: '#666', marginBottom: 3, lineHeight: 1.4 }}>{item.message}</div>
+                      <Tag color={NOTIF_TYPE_COLOR[item.notification_type] || 'default'} style={{ fontSize: 10 }}>
+                        {item.notification_type}
+                      </Tag>
+                      <span style={{ fontSize: 10, color: '#aaa', marginLeft: 6 }}>
+                        {new Date(item.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  }
+                />
+              </List.Item>
+            )}
+          />
+        )}
+      </div>
+    </div>
+  );
+
 
   const handleLogout = async () => {
     await authService.logout();
@@ -127,8 +231,11 @@ const AppShell: React.FC<Props> = ({ children }) => {
         placement="left"
         onClose={() => setMobileOpen(false)}
         open={mobileOpen}
-        width={280}
-        styles={{ body: { padding: 0, background: '#0B2347' }, header: { background: '#FFF' } }}
+        styles={{
+          wrapper: { width: '280px' },
+          body: { padding: 0, background: '#0B2347' },
+          header: { background: '#FFF' },
+        }}
       >
         <Menu
           mode="inline"
@@ -202,11 +309,22 @@ const AppShell: React.FC<Props> = ({ children }) => {
 
           <div className="header-right">
             {/* Notifications */}
-            <Tooltip title="Notifications">
-              <Badge count={3} size="small">
-                <Button type="text" icon={<BellOutlined />} className="header-icon-btn" />
+            <Dropdown
+              open={notifOpen}
+              onOpenChange={setNotifOpen}
+              popupRender={() => notifDropdown}
+              placement="bottomRight"
+              trigger={['click']}
+            >
+              <Badge count={unreadCount} size="small" offset={[-2, 2]}>
+                <Button
+                  type="text"
+                  icon={<BellOutlined />}
+                  className="header-icon-btn"
+                  style={unreadCount > 0 ? { color: '#F97316' } : {}}
+                />
               </Badge>
-            </Tooltip>
+            </Dropdown>
 
             {/* User Menu */}
             <Dropdown menu={userMenu} placement="bottomRight" trigger={['click']}>
