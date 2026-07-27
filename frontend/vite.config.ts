@@ -34,7 +34,7 @@ export default defineConfig({
             options: { cacheName: 'google-fonts', expiration: { maxAgeSeconds: 60 * 60 * 24 * 365 } },
           },
           {
-            urlPattern: /^\/api\/v1\/.*/i,
+            urlPattern: /.*\/api\/v1\/.*/i,
             handler: 'NetworkFirst',
             options: { cacheName: 'api-cache', expiration: { maxEntries: 200, maxAgeSeconds: 60 * 5 } },
           },

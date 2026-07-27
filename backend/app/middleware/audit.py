@@ -19,6 +19,9 @@ class AuditMiddleware(BaseHTTPMiddleware):
     SKIP_PATHS = {"/api/v1/auth/login", "/api/v1/auth/refresh", "/health", "/docs", "/openapi.json"}
 
     async def dispatch(self, request: Request, call_next) -> Response:
+        if request.method == "OPTIONS":
+            return await call_next(request)
+
         start_time = time.time()
 
         # Inject request context for use in service layer
@@ -41,5 +44,7 @@ class TenantMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next) -> Response:
         request.state.tenant_id = None  # Will be set by auth deps
+        if request.method == "OPTIONS":
+            return await call_next(request)
         response = await call_next(request)
         return response

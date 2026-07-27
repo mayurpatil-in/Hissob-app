@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  Card, Form, Input, Button, Typography, App, Select, Row, Col, Avatar, Tag, Tabs, Divider
+  Card, Form, Input, Button, Typography, App, Row, Col, Avatar, Tag, Tabs, Divider
 } from 'antd';
 import {
   SaveOutlined, UserOutlined, LockOutlined, SafetyCertificateOutlined,
@@ -11,7 +11,6 @@ import { useAuthStore } from '../../store/authStore';
 import OrganizationSettingsTab from './OrganizationSettingsTab';
 
 const { Title, Text } = Typography;
-const { Option } = Select;
 
 const ROLE_COLORS: Record<string, string> = {
   super_admin: 'gold',
@@ -29,7 +28,6 @@ const SettingsPage: React.FC = () => {
   const { user } = useAuthStore();
   const [profileForm] = Form.useForm();
   const [passwordForm] = Form.useForm();
-  const [orgForm] = Form.useForm();
   const logoInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -75,10 +73,6 @@ const SettingsPage: React.FC = () => {
   const handlePasswordSave = () => {
     passwordForm.resetFields();
     message.success('Password updated successfully!');
-  };
-
-  const handleOrgSave = () => {
-    message.success('Organization & printing preferences saved!');
   };
 
   const tabItems = [

@@ -59,7 +59,7 @@ function numberToWords(num: number): string {
 }
 
 /** Generate the payment reference line */
-function getPaymentRef(receipt: PrintReceiptData): string {
+export function getPaymentRef(receipt: PrintReceiptData): string {
   const mode = receipt.payment_mode?.toUpperCase();
   if (mode === 'UPI' && receipt.upi_reference) return `UPI Ref: ${receipt.upi_reference}`;
   if (mode === 'CHEQUE' && receipt.cheque_number) return `Cheque No: ${receipt.cheque_number}${receipt.bank_name ? ' | Bank: ' + receipt.bank_name : ''}`;

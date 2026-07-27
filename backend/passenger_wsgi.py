@@ -32,5 +32,3 @@ from a2wsgi import ASGIMiddleware
 
 # Phusion Passenger entrypoint
 application = ASGIMiddleware(fastapi_app)
-
-

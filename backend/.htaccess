@@ -1,0 +1,14 @@
+# Apache configuration for Phusion Passenger & FastAPI
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Pass Authorization header to Python application
+  SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
+  RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+</IfModule>
+
+# Ensure OPTIONS requests are passed directly to Passenger WSGI
+<IfModule mod_headers.c>
+  Header always set Access-Control-Allow-Headers "Authorization, Content-Type, X-Tenant-ID, X-Requested-With"
+  Header always set Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+</IfModule>
