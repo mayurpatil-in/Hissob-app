@@ -8,6 +8,7 @@ import {
   UploadOutlined, DeleteOutlined
 } from '@ant-design/icons';
 import { useAuthStore } from '../../store/authStore';
+import OrganizationSettingsTab from './OrganizationSettingsTab';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -233,42 +234,7 @@ const SettingsPage: React.FC = () => {
     {
       key: 'org',
       label: <span><SettingOutlined /> Organization & Printing Preferences</span>,
-      children: (
-        <Card className="hissob-card" style={{ maxWidth: 800 }}>
-          <Form form={orgForm} layout="vertical" onFinish={handleOrgSave} initialValues={{ name: user?.full_name, currency: 'INR', timezone: 'Asia/Kolkata' }}>
-            <Title level={5} style={{ color: '#F97316', marginTop: 0 }}>Organization & Financial Settings</Title>
-            <Row gutter={16}>
-              <Col span={12}>
-                <Form.Item label="Organization / Trust Name" name="org_title">
-                  <Input placeholder="e.g. Hissob Ganesh Utsav Trust" defaultValue="Hissob Charitable Trust" />
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item label="Default Currency" name="currency">
-                  <Select>
-                    <Option value="INR">INR (₹ Indian Rupee)</Option>
-                    <Option value="USD">USD ($ US Dollar)</Option>
-                  </Select>
-                </Form.Item>
-              </Col>
-            </Row>
-
-            <Title level={5} style={{ color: '#0B2347', marginTop: 12 }}>Donation Receipt & Printing Defaults</Title>
-            <Form.Item label="Receipt Header Banner Text" name="header_text">
-              <Input placeholder="e.g. Official Festival Donation Receipt" defaultValue="Official Festival Collection & Donation Receipt" />
-            </Form.Item>
-            <Form.Item label="Footer Terms & 80G Tax Note" name="footer_note">
-              <Input.TextArea rows={2} defaultValue="Thank you for your generous contribution. 80G tax receipt valid for IT deduction." />
-            </Form.Item>
-
-            <Form.Item style={{ textAlign: 'right', marginTop: 24, marginBottom: 0 }}>
-              <Button type="primary" htmlType="submit" icon={<SaveOutlined />} style={{ background: '#F97316', borderColor: '#F97316', borderRadius: 8, fontWeight: 700 }}>
-                Save Preferences
-              </Button>
-            </Form.Item>
-          </Form>
-        </Card>
-      ),
+      children: <OrganizationSettingsTab />,
     },
   ];
 

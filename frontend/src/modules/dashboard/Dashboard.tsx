@@ -1,16 +1,15 @@
-import React, { useState } from 'react';
-import { Row, Col, Table, Tag, Progress, Segmented, Button, Tooltip, Avatar, Spin } from 'antd';
+import React from 'react';
+import { Row, Col, Table, Tag, Progress, Button, Tooltip, Avatar, Spin } from 'antd';
 import {
   ArrowUpOutlined, DollarOutlined, FileTextOutlined,
-  TeamOutlined, CheckCircleOutlined, CrownOutlined, BankOutlined,
+  TeamOutlined, CheckCircleOutlined, BankOutlined,
   PlusOutlined, AuditOutlined, ThunderboltOutlined,
   SwapOutlined, CalendarOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '../../store/authStore';
-import { getDashboardSummary, getFinancialYears } from '../../api/services';
-import SuperAdminPage from '../super-admin/SuperAdminPage';
+import { getDashboardSummary, getFinancialYears, getOrganizations } from '../../api/services';
 import FinancialAnalyticsWidget from './FinancialAnalyticsWidget';
 import FestivalManagementWidget from './FestivalManagementWidget';
 import './dashboard.css';
@@ -30,9 +29,8 @@ const MODE_ICON: Record<string, string> = {
 };
 
 const Dashboard: React.FC = () => {
-  const { user, can } = useAuthStore();
+  const { user, can, selectedTenantId } = useAuthStore();
   const navigate = useNavigate();
-  const [viewMode, setViewMode] = useState<string>(user?.is_super_admin ? 'platform' : 'org');
 
   const { data: summaryData, isLoading } = useQuery({
     queryKey: ['dashboardSummary'],
@@ -44,6 +42,14 @@ const Dashboard: React.FC = () => {
     queryKey: ['financialYears'],
     queryFn: getFinancialYears,
   });
+
+  const { data: organizations = [] } = useQuery({
+    queryKey: ['organizations'],
+    queryFn: getOrganizations,
+    enabled: !!user?.is_super_admin,
+  });
+
+  const activeOrg = organizations.find((o: any) => o.id === selectedTenantId);
 
   const activeFy = fiscalYears.find((fy: any) => fy.is_current) || fiscalYears[0];
 
@@ -174,42 +180,8 @@ const Dashboard: React.FC = () => {
     },
   ];
 
-  if (user?.is_super_admin && viewMode === 'platform') {
-    return (
-      <div className="dashboard-container animate-fadeIn">
-        <div className="super-admin-bar">
-          <Tag color="gold" style={{ fontSize: 13, padding: '4px 14px', borderRadius: 20 }}>
-            <CrownOutlined /> SUPER ADMIN PLATFORM MODE
-          </Tag>
-          <Segmented
-            options={[
-              { label: 'Platform Command Center', value: 'platform', icon: <CrownOutlined /> },
-              { label: 'Organization View', value: 'org', icon: <BankOutlined /> },
-            ]}
-            value={viewMode}
-            onChange={(val) => setViewMode(val as string)}
-          />
-        </div>
-        <SuperAdminPage />
-      </div>
-    );
-  }
-
   return (
     <div className="dashboard-container animate-fadeIn">
-      {user?.is_super_admin && (
-        <div className="super-admin-switcher">
-          <Segmented
-            options={[
-              { label: 'Platform Command Center', value: 'platform', icon: <CrownOutlined /> },
-              { label: 'Organization View', value: 'org', icon: <BankOutlined /> },
-            ]}
-            value={viewMode}
-            onChange={(val) => setViewMode(val as string)}
-          />
-        </div>
-      )}
-
       {/* ── Glassmorphic Dynamic Time-of-Day Hero Banner ── */}
       <div className={`dashboard-hero-banner ${timeTheme.themeClass}`}>
         <div className="hero-banner-content">
@@ -236,7 +208,16 @@ const Dashboard: React.FC = () => {
                 {timeTheme.greeting}, {user?.full_name?.split(' ')[0]} {timeTheme.icon}
               </div>
               <div className="hero-subtext">
-                <span className="hero-subtext-item"><BankOutlined /> Organization Portal</span>
+                <span className="hero-subtext-item">
+                  <BankOutlined />{' '}
+                  {activeOrg ? (
+                    <span>Tenant: <Tag color="cyan" style={{ marginLeft: 4, fontWeight: 700, borderRadius: 10 }}>{activeOrg.name}</Tag></span>
+                  ) : user?.is_super_admin ? (
+                    <span><Tag color="geekblue" style={{ marginLeft: 4, fontWeight: 700, borderRadius: 10 }}>All Organizations View</Tag></span>
+                  ) : (
+                    'Organization Portal'
+                  )}
+                </span>
                 <span className="subtext-dot">•</span>
                 <span className="hero-subtext-item"><CalendarOutlined /> Active FY: <Tag color="gold" style={{ marginLeft: 4, fontWeight: 700, borderRadius: 10 }}>{activeFy?.name || '2026'} 👑</Tag></span>
                 <span className="subtext-dot">•</span>

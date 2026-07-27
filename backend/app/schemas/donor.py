@@ -74,6 +74,7 @@ class DonorResponse(DonorBase):
     tenant_id: UUID
     donor_number: Optional[str] = None
     total_donations: int
+    this_year_donations: Optional[int] = 0
     is_active: bool
     created_at: datetime
     updated_at: datetime

@@ -1,26 +1,35 @@
 import React, { useState } from 'react';
 import {
   Table, Button, Tag, Space, Modal, Form, Input, Checkbox,
-  Card, Row, Col, Typography, App, Tooltip
+  Card, Row, Col, Typography, App, Tooltip, Avatar, Segmented
 } from 'antd';
 import {
-  PlusOutlined, SearchOutlined, CrownOutlined, SafetyCertificateOutlined
+  PlusOutlined, SearchOutlined, CrownOutlined, SafetyCertificateOutlined,
+  HistoryOutlined, UserOutlined, PhoneOutlined, MailOutlined, IdcardOutlined,
+  EnvironmentOutlined, TeamOutlined, DollarOutlined, SafetyOutlined,
+  AppstoreOutlined, UnorderedListOutlined, FileAddOutlined
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { getDonors, createDonor } from '../../api/services';
 import Tax80GCertificateModal, { type Tax80GData } from '../reports/Tax80GCertificateModal';
+import DonorDetailDrawer from './DonorDetailDrawer';
 import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
 
-import DonorDetailDrawer from './DonorDetailDrawer';
-import { HistoryOutlined } from '@ant-design/icons';
+const CITY_PRESETS = ['Mumbai', 'Pune', 'Thane', 'Navi Mumbai', 'Nagpur', 'Nashik', 'Surat'];
 
 const DonorsPage: React.FC = () => {
   const { message } = App.useApp();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterCategory, setFilterCategory] = useState<'all' | 'vip' | '80g'>('all');
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>(
+    typeof window !== 'undefined' && window.innerWidth <= 768 ? 'grid' : 'table'
+  );
   const [selected80GData, setSelected80GData] = useState<Tax80GData | null>(null);
   const [selectedDonorId, setSelectedDonorId] = useState<string | null>(null);
 
@@ -34,7 +43,7 @@ const DonorsPage: React.FC = () => {
   const createMutation = useMutation({
     mutationFn: createDonor,
     onSuccess: () => {
-      message.success('Donor registered successfully!');
+      message.success('Donor profile registered successfully!');
       setIsModalOpen(false);
       form.resetFields();
       queryClient.invalidateQueries({ queryKey: ['donors'] });
@@ -48,46 +57,149 @@ const DonorsPage: React.FC = () => {
     createMutation.mutate(values);
   };
 
+  const handleOpenModal = () => {
+    setIsModalOpen(true);
+    setTimeout(() => {
+      form.resetFields();
+      form.setFieldsValue({
+        is_80g_eligible: true,
+      });
+    }, 0);
+  };
+
+  // Aggregated Stat Metrics
+  const totalDonors = donors.length;
+  const vipDonorsCount = donors.filter((d: any) => d.is_vip).length;
+  const tax80gCount = donors.filter((d: any) => d.is_80g_eligible).length;
+  const totalLifetimeContribution = donors.reduce((sum: number, d: any) => sum + Number(d.total_donations || 0), 0);
+  const avgContribution = totalDonors > 0 ? Math.round(totalLifetimeContribution / totalDonors) : 0;
+
+  // Filtered Donors List
+  const filteredDonors = donors.filter((d: any) => {
+    if (filterCategory === 'vip') return d.is_vip;
+    if (filterCategory === '80g') return d.is_80g_eligible;
+    return true;
+  });
+
   const columns = [
-    { title: 'Donor #', dataIndex: 'donor_number', key: 'donor_number', render: (t: string) => <b>{t || 'N/A'}</b> },
     {
-      title: 'Full Name',
+      title: 'Donor #',
+      dataIndex: 'donor_number',
+      key: 'donor_number',
+      render: (t: string) => (
+        <span style={{ fontWeight: 800, color: '#1E40AF', fontFamily: 'monospace', fontSize: 13, whiteSpace: 'nowrap' }}>
+          {t || 'N/A'}
+        </span>
+      ),
+    },
+    {
+      title: 'Donor Name & Badges',
       dataIndex: 'full_name',
       key: 'full_name',
       render: (name: string, record: any) => (
-        <Space>
-          <a
-            style={{ fontWeight: 700, color: '#0B2347' }}
-            onClick={(e) => {
-              e.preventDefault();
-              setSelectedDonorId(record.id);
+        <Space size={10}>
+          <Avatar
+            style={{
+              backgroundColor: record.is_vip ? '#D97706' : '#2563EB',
+              fontWeight: 800,
+              flexShrink: 0,
+              border: record.is_vip ? '2px solid #FCD34D' : 'none',
+              boxShadow: record.is_vip ? '0 0 10px rgba(217, 119, 6, 0.3)' : 'none'
             }}
           >
-            {name}
-          </a>
-          {record.is_vip && <Tag color="gold" icon={<CrownOutlined />}>VIP</Tag>}
-          {record.is_80g_eligible && <Tag color="green">80G</Tag>}
+            {name?.charAt(0)?.toUpperCase() || 'D'}
+          </Avatar>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <a
+                style={{ fontWeight: 800, color: '#0F172A', fontSize: 14 }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setSelectedDonorId(record.id);
+                }}
+              >
+                {name}
+              </a>
+              {record.is_vip && (
+                <Tag color="gold" icon={<CrownOutlined />} style={{ fontWeight: 800, borderRadius: 10, fontSize: 10, margin: 0 }}>
+                  VIP
+                </Tag>
+              )}
+              {record.is_80g_eligible && (
+                <Tag color="green" icon={<SafetyOutlined />} style={{ fontWeight: 700, borderRadius: 10, fontSize: 10, margin: 0 }}>
+                  80G
+                </Tag>
+              )}
+            </div>
+            {record.email && (
+              <div style={{ fontSize: 11, color: '#64748B' }}>{record.email}</div>
+            )}
+          </div>
         </Space>
       ),
     },
-    { title: 'Phone', dataIndex: 'phone', key: 'phone', render: (p: string) => p || 'N/A' },
-    { title: 'City', dataIndex: 'city', key: 'city', render: (c: string) => c || 'N/A' },
+    {
+      title: 'Phone',
+      dataIndex: 'phone',
+      key: 'phone',
+      render: (p: string) => (
+        <span style={{ whiteSpace: 'nowrap', fontWeight: 600, color: '#334155' }}>
+          {p ? `+91 ${p}` : 'N/A'}
+        </span>
+      ),
+    },
+    {
+      title: 'City & Location',
+      dataIndex: 'city',
+      key: 'city',
+      render: (c: string) => (
+        <span style={{ color: '#475569', fontWeight: 500 }}>
+          {c ? `📍 ${c}` : 'N/A'}
+        </span>
+      ),
+    },
+    {
+      title: 'This Year',
+      dataIndex: 'this_year_donations',
+      key: 'this_year_donations',
+      render: (val: number) => (
+        <span style={{ fontWeight: 800, color: '#2563EB', fontSize: 14, whiteSpace: 'nowrap' }}>
+          ₹ {Number(val || 0).toLocaleString('en-IN')}
+        </span>
+      ),
+    },
     {
       title: 'Total Contribution',
       dataIndex: 'total_donations',
       key: 'total_donations',
-      render: (val: number) => <span style={{ fontWeight: 700, color: '#22C55E' }}>₹ {Number(val || 0).toLocaleString('en-IN')}</span>,
+      render: (val: number) => (
+        <span style={{ fontWeight: 800, color: '#059669', fontSize: 14, whiteSpace: 'nowrap' }}>
+          ₹ {Number(val || 0).toLocaleString('en-IN')}
+        </span>
+      ),
     },
     {
       title: 'Actions',
       key: 'actions',
       render: (_: any, record: any) => (
-        <Space>
+        <Space size={6}>
+          <Tooltip title="Create Receipt for this Donor">
+            <Button
+              type="text"
+              icon={<FileAddOutlined style={{ color: '#EA580C' }} />}
+              size="small"
+              style={{ fontWeight: 700, color: '#EA580C', background: '#FFF7ED', borderRadius: 6, borderColor: '#FFEDD5' }}
+              onClick={() => navigate('/receipts', { state: { preselectedDonorId: record.id, preselectedDonorName: record.full_name } })}
+            >
+              + Receipt
+            </Button>
+          </Tooltip>
           <Tooltip title="View Comprehensive Donation History">
             <Button
               type="default"
-              icon={<HistoryOutlined />}
+              icon={<HistoryOutlined style={{ color: '#2563EB' }} />}
               size="small"
+              style={{ fontWeight: 600, borderRadius: 6, borderColor: '#CBD5E1' }}
               onClick={() => setSelectedDonorId(record.id)}
             >
               History
@@ -98,7 +210,7 @@ const DonorsPage: React.FC = () => {
               type="primary"
               icon={<SafetyCertificateOutlined />}
               size="small"
-              style={{ background: '#2563EB', borderColor: '#2563EB', borderRadius: 6 }}
+              style={{ background: 'linear-gradient(135deg, #1E40AF 0%, #2563EB 100%)', borderColor: '#2563EB', borderRadius: 6, fontWeight: 700 }}
               onClick={() => {
                 setSelected80GData({
                   certificateNumber: `80G-2025-${record.donor_number || record.id.slice(0, 6)}`,
@@ -108,12 +220,12 @@ const DonorsPage: React.FC = () => {
                   financialYear: '2025-26',
                   totalDonationAmount: Number(record.total_donations || 5000),
                   receiptNumbers: [`RC-2026-${record.id.slice(0, 4)}`],
-                  trustName: 'HISSOB GANESH UTSAV CHARITABLE TRUST',
+                  trustName: 'HISOB GANESH UTSAV CHARITABLE TRUST',
                   issueDate: dayjs().format('DD MMM YYYY'),
                 });
               }}
             >
-              80G Certificate
+              80G
             </Button>
           </Tooltip>
         </Space>
@@ -122,121 +234,375 @@ const DonorsPage: React.FC = () => {
   ];
 
   return (
-    <div className="donors-module animate-fadeIn">
-      <div className="page-header" style={{ marginBottom: 20 }}>
+    <div className="donors-module animate-fadeIn" style={{ paddingBottom: 24 }}>
+      {/* ── Page Header ── */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
         <div>
-          <Title level={3} style={{ margin: 0, color: '#0B2347', fontWeight: 900 }}>Donor Directory</Title>
-          <Text type="secondary">Manage profiles, track historical contributions and Section 80G tax certificates</Text>
+          <Title level={3} style={{ margin: 0, color: '#0B2347', fontWeight: 900, letterSpacing: '-0.3px' }}>
+            🤝 Donor Directory & Profiles
+          </Title>
+          <Text type="secondary" style={{ fontSize: 13 }}>
+            Manage donor records, track lifetime contribution history, and issue Section 80G tax certificates
+          </Text>
         </div>
         <Button
           type="primary"
           icon={<PlusOutlined />}
           size="large"
-          onClick={() => setIsModalOpen(true)}
-          style={{ background: '#F97316', borderColor: '#F97316', borderRadius: 8, fontWeight: 700 }}
+          onClick={handleOpenModal}
+          style={{
+            background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
+            borderColor: '#F97316',
+            borderRadius: 10,
+            fontWeight: 800,
+            boxShadow: '0 4px 14px rgba(249, 115, 22, 0.3)',
+          }}
         >
-          Register Donor
+          Register New Donor
         </Button>
       </div>
 
-      <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
-        <Col xs={24} sm={12}>
-          <Card className="hissob-card">
-            <Text type="secondary">Total Registered Donors</Text>
-            <Title level={3} style={{ margin: 0, color: '#0B2347', fontWeight: 900 }}>{donors.length}</Title>
-          </Card>
-        </Col>
-        <Col xs={24} sm={12}>
-          <Card className="hissob-card">
-            <Text type="secondary">VIP Donors (80G Eligible)</Text>
-            <Title level={3} style={{ margin: 0, color: '#FF9F1C', fontWeight: 900 }}>
-              {donors.filter(d => d.is_vip).length}
+      {/* ── Quick Overview Metric Cards ── */}
+      <div className="hissob-stat-row" style={{ marginBottom: 20 }}>
+        <div className="hissob-stat-col">
+          <Card className="hissob-stat-card" style={{ borderTop: '4px solid #1E40AF', borderRadius: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+              <Text type="secondary" style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.2, whiteSpace: 'nowrap' }}>
+                TOTAL DONORS
+              </Text>
+              <Avatar style={{ backgroundColor: '#DBEAFE', color: '#1E40AF', flexShrink: 0 }} icon={<TeamOutlined />} size="small" />
+            </div>
+            <Title level={4} style={{ margin: '4px 0 0 0', color: '#0F172A', fontWeight: 900 }}>
+              {totalDonors}
             </Title>
+            <Text type="secondary" style={{ fontSize: 10, whiteSpace: 'nowrap' }}>Active Profiles</Text>
           </Card>
-        </Col>
-      </Row>
+        </div>
 
-      <Card className="hissob-card">
-        <div style={{ marginBottom: 16 }}>
+        <div className="hissob-stat-col">
+          <Card className="hissob-stat-card" style={{ borderTop: '4px solid #D97706', borderRadius: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+              <Text type="secondary" style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.2, whiteSpace: 'nowrap' }}>
+                VIP DONORS
+              </Text>
+              <Avatar style={{ backgroundColor: '#FEF3C7', color: '#D97706', flexShrink: 0 }} icon={<CrownOutlined />} size="small" />
+            </div>
+            <Title level={4} style={{ margin: '4px 0 0 0', color: '#D97706', fontWeight: 900 }}>
+              {vipDonorsCount}
+            </Title>
+            <Text type="secondary" style={{ fontSize: 10, whiteSpace: 'nowrap' }}>VIP Patrons</Text>
+          </Card>
+        </div>
+
+        <div className="hissob-stat-col">
+          <Card className="hissob-stat-card" style={{ borderTop: '4px solid #059669', borderRadius: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+              <Text type="secondary" style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.2, whiteSpace: 'nowrap' }}>
+                80G CERTIFIED
+              </Text>
+              <Avatar style={{ backgroundColor: '#D1FAE5', color: '#059669', flexShrink: 0 }} icon={<SafetyOutlined />} size="small" />
+            </div>
+            <Title level={4} style={{ margin: '4px 0 0 0', color: '#059669', fontWeight: 900 }}>
+              {tax80gCount}
+            </Title>
+            <Text type="secondary" style={{ fontSize: 10, whiteSpace: 'nowrap' }}>Tax Exemption</Text>
+          </Card>
+        </div>
+
+        <div className="hissob-stat-col">
+          <Card className="hissob-stat-card" style={{ borderTop: '4px solid #7C3AED', borderRadius: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+              <Text type="secondary" style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.2, whiteSpace: 'nowrap' }}>
+                CONTRIBUTIONS
+              </Text>
+              <Avatar style={{ backgroundColor: '#EDE9FE', color: '#7C3AED', flexShrink: 0 }} icon={<DollarOutlined />} size="small" />
+            </div>
+            <Title level={4} style={{ margin: '4px 0 0 0', color: '#7C3AED', fontWeight: 900, whiteSpace: 'nowrap' }}>
+              ₹ {totalLifetimeContribution.toLocaleString('en-IN')}
+            </Title>
+            <Text type="secondary" style={{ fontSize: 10, whiteSpace: 'nowrap' }}>Avg ₹{avgContribution.toLocaleString('en-IN')}</Text>
+          </Card>
+        </div>
+      </div>
+
+      {/* ── Main Donor Directory Control Bar & View Container ── */}
+      <Card className="hissob-card" style={{ borderRadius: 14, boxShadow: '0 4px 16px rgba(11,35,71,0.06)' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
           <Input
-            prefix={<SearchOutlined />}
-            placeholder="Search donors by name or phone..."
-            style={{ width: 300 }}
+            prefix={<SearchOutlined style={{ color: '#94A3B8' }} />}
+            placeholder="Search by donor name, phone, or city..."
+            style={{ width: '100%', borderRadius: 8 }}
             allowClear
             onChange={(e) => setSearchQuery(e.target.value)}
           />
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+            <Segmented
+              value={filterCategory}
+              onChange={(val) => setFilterCategory(val as any)}
+              options={[
+                { label: `All (${totalDonors})`, value: 'all' },
+                { label: `👑 VIP (${vipDonorsCount})`, value: 'vip' },
+                { label: `🛡️ 80G (${tax80gCount})`, value: '80g' },
+              ]}
+              style={{ fontWeight: 600 }}
+            />
+
+            <Segmented
+              value={viewMode}
+              onChange={(val) => setViewMode(val as any)}
+              options={[
+                { label: 'Table View', value: 'table', icon: <UnorderedListOutlined /> },
+                { label: 'Grid Cards', value: 'grid', icon: <AppstoreOutlined /> },
+              ]}
+              style={{ fontWeight: 700 }}
+            />
+          </div>
         </div>
 
-        <Table
-          dataSource={donors}
-          columns={columns}
-          rowKey="id"
-          loading={isLoading}
-          pagination={{ pageSize: 10 }}
-          scroll={{ x: 700 }}
-        />
+        {/* View Mode: Table vs Grid Cards */}
+        {viewMode === 'table' ? (
+          <Table
+            dataSource={filteredDonors}
+            columns={columns}
+            rowKey="id"
+            loading={isLoading}
+            pagination={{ pageSize: 10, showSizeChanger: true }}
+            scroll={{ x: 800 }}
+          />
+        ) : (
+          <Row gutter={[16, 16]}>
+            {filteredDonors.map((record: any) => (
+              <Col xs={24} sm={12} md={8} lg={6} key={record.id}>
+                <Card
+                  hoverable
+                  style={{
+                    borderRadius: 14,
+                    border: record.is_vip ? '2px solid #FCD34D' : '1px solid #E2E8F0',
+                    background: record.is_vip ? 'linear-gradient(180deg, #FFFDF5 0%, #FFFFFF 100%)' : '#FFFFFF',
+                    boxShadow: '0 4px 14px rgba(11,35,71,0.05)',
+                  }}
+                  styles={{ body: { padding: 16 } }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <Avatar
+                      size={48}
+                      style={{
+                        backgroundColor: record.is_vip ? '#D97706' : '#2563EB',
+                        fontWeight: 900,
+                        fontSize: 20,
+                        boxShadow: record.is_vip ? '0 4px 12px rgba(217, 119, 6, 0.3)' : 'none',
+                      }}
+                    >
+                      {record.full_name?.charAt(0)?.toUpperCase() || 'D'}
+                    </Avatar>
+
+                    <div style={{ textAlign: 'right' }}>
+                      <Tag color="blue" style={{ fontFamily: 'monospace', fontWeight: 800, borderRadius: 6, margin: 0 }}>
+                        {record.donor_number || 'N/A'}
+                      </Tag>
+                      <div style={{ marginTop: 4 }}>
+                        {record.is_vip && <Tag color="gold" icon={<CrownOutlined />} style={{ fontWeight: 800, margin: 0 }}>VIP</Tag>}
+                        {record.is_80g_eligible && <Tag color="green" icon={<SafetyOutlined />} style={{ fontWeight: 700, margin: 0 }}>80G</Tag>}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ fontWeight: 800, fontSize: 16, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <a onClick={(e) => { e.preventDefault(); setSelectedDonorId(record.id); }}>
+                      {record.full_name}
+                    </a>
+                  </div>
+
+                  <div style={{ fontSize: 12, color: '#64748B', margin: '6px 0 12px 0', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <div>📞 {record.phone ? `+91 ${record.phone}` : 'No phone provided'}</div>
+                    {record.email && <div>✉️ {record.email}</div>}
+                    <div>📍 {record.city || 'City Not Specified'}</div>
+                  </div>
+
+                  <div style={{ padding: '10px 12px', background: '#F8FAFC', borderRadius: 10, marginBottom: 12, border: '1px solid #F1F5F9' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                      <Text type="secondary" style={{ fontSize: 11, fontWeight: 700 }}>This Year (2025-26):</Text>
+                      <span style={{ fontWeight: 900, fontSize: 14, color: '#2563EB' }}>
+                        ₹ {Number(record.this_year_donations || 0).toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Text type="secondary" style={{ fontSize: 11, fontWeight: 700 }}>Lifetime Total:</Text>
+                      <span style={{ fontWeight: 900, fontSize: 14, color: '#059669' }}>
+                        ₹ {Number(record.total_donations || 0).toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 6, justifyContent: 'space-between' }}>
+                    <Button
+                      size="small"
+                      icon={<FileAddOutlined style={{ color: '#EA580C' }} />}
+                      style={{ flex: 1, fontWeight: 700, fontSize: 11, background: '#FFF7ED', borderColor: '#FFEDD5', color: '#EA580C' }}
+                      onClick={() => navigate('/receipts', { state: { preselectedDonorId: record.id, preselectedDonorName: record.full_name } })}
+                    >
+                      Receipt
+                    </Button>
+                    <Button
+                      size="small"
+                      icon={<HistoryOutlined style={{ color: '#2563EB' }} />}
+                      style={{ flex: 1, fontWeight: 600, fontSize: 11 }}
+                      onClick={() => setSelectedDonorId(record.id)}
+                    >
+                      History
+                    </Button>
+                    <Button
+                      type="primary"
+                      size="small"
+                      icon={<SafetyCertificateOutlined />}
+                      style={{ flex: 1, fontWeight: 700, fontSize: 11, background: 'linear-gradient(135deg, #1E40AF 0%, #2563EB 100%)' }}
+                      onClick={() => {
+                        setSelected80GData({
+                          certificateNumber: `80G-2025-${record.donor_number || record.id.slice(0, 6)}`,
+                          donorName: record.full_name,
+                          panNumber: record.pan_number || 'PAN-NOT-PROVIDED',
+                          address: record.city ? `${record.city}, India` : 'India',
+                          financialYear: '2025-26',
+                          totalDonationAmount: Number(record.total_donations || 5000),
+                          receiptNumbers: [`RC-2026-${record.id.slice(0, 4)}`],
+                          trustName: 'HISOB GANESH UTSAV CHARITABLE TRUST',
+                          issueDate: dayjs().format('DD MMM YYYY'),
+                        });
+                      }}
+                    >
+                      80G
+                    </Button>
+                  </div>
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        )}
       </Card>
 
+      {/* ── Register New Donor Modal ── */}
       <Modal
-        title="Register New Donor"
         open={isModalOpen}
         onCancel={() => setIsModalOpen(false)}
         footer={null}
         destroyOnHidden
+        width={560}
+        styles={{ body: { padding: 0 } }}
       >
-        <Form form={form} layout="vertical" onFinish={handleSubmit}>
-          <Form.Item name="full_name" label="Full Name" rules={[{ required: true, message: 'Enter donor full name' }]}>
-            <Input placeholder="Enter full name" />
-          </Form.Item>
+        {/* Sleek Gradient Modal Header */}
+        <div style={{ padding: '20px 24px', background: 'linear-gradient(135deg, #0B2347 0%, #1E40AF 100%)', color: '#fff' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Avatar style={{ backgroundColor: '#F97316', color: '#fff', fontWeight: 900 }} icon={<UserOutlined />} size={42} />
+            <div>
+              <Title level={4} style={{ margin: 0, color: '#fff', fontWeight: 900 }}>
+                Register New Donor
+              </Title>
+              <Text style={{ color: '#93C5FD', fontSize: 12 }}>
+                Enter donor contact details, tax identification, and VIP status
+              </Text>
+            </div>
+          </div>
+        </div>
 
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item name="phone" label="Phone Number">
-                <Input placeholder="Phone number" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="email" label="Email Address">
-                <Input placeholder="Email" />
-              </Form.Item>
-            </Col>
-          </Row>
+        {/* Modal Form Content */}
+        <div style={{ padding: '24px' }}>
+          <Form form={form} layout="vertical" onFinish={handleSubmit}>
+            <Form.Item
+              name="full_name"
+              label={<span style={{ fontWeight: 700, color: '#0F172A' }}>Full Name</span>}
+              rules={[{ required: true, message: 'Please enter the donor full name' }]}
+            >
+              <Input prefix={<UserOutlined style={{ color: '#94A3B8' }} />} placeholder="e.g. Ramesh Chandra Sharma" size="large" style={{ borderRadius: 8 }} />
+            </Form.Item>
 
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item name="pan_number" label="PAN Number (80G)">
-                <Input placeholder="ABCDE1234F" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="city" label="City">
-                <Input placeholder="City" />
-              </Form.Item>
-            </Col>
-          </Row>
+            <Row gutter={16}>
+              <Col xs={24} sm={12}>
+                <Form.Item name="phone" label={<span style={{ fontWeight: 700, color: '#0F172A' }}>Phone Number</span>}>
+                  <Input prefix={<PhoneOutlined style={{ color: '#94A3B8' }} />} placeholder="9876543210" size="large" style={{ borderRadius: 8 }} />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item name="email" label={<span style={{ fontWeight: 700, color: '#0F172A' }}>Email Address</span>}>
+                  <Input prefix={<MailOutlined style={{ color: '#94A3B8' }} />} placeholder="donor@gmail.com" size="large" style={{ borderRadius: 8 }} />
+                </Form.Item>
+              </Col>
+            </Row>
 
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item name="is_vip" valuePropName="checked">
-                <Checkbox>VIP Donor</Checkbox>
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="is_80g_eligible" valuePropName="checked">
-                <Checkbox defaultChecked>80G Tax Eligible</Checkbox>
-              </Form.Item>
-            </Col>
-          </Row>
+            <Row gutter={16}>
+              <Col xs={24} sm={12}>
+                <Form.Item name="pan_number" label={<span style={{ fontWeight: 700, color: '#0F172A' }}>PAN Number (80G Tax)</span>}>
+                  <Input prefix={<IdcardOutlined style={{ color: '#94A3B8' }} />} placeholder="ABCDE1234F" size="large" style={{ borderRadius: 8, textTransform: 'uppercase' }} />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item name="city" label={<span style={{ fontWeight: 700, color: '#0F172A' }}>City / District</span>}>
+                  <Input prefix={<EnvironmentOutlined style={{ color: '#94A3B8' }} />} placeholder="e.g. Mumbai" size="large" style={{ borderRadius: 8 }} />
+                </Form.Item>
+              </Col>
+            </Row>
 
-          <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
-            <Space>
-              <Button onClick={() => setIsModalOpen(false)}>Cancel</Button>
-              <Button type="primary" htmlType="submit" loading={createMutation.isPending} style={{ background: '#F97316', borderColor: '#F97316', borderRadius: 8, fontWeight: 700 }}>
-                Save Donor
+            {/* Quick City Presets */}
+            <div style={{ marginBottom: 16, marginTop: -8 }}>
+              <Text type="secondary" style={{ fontSize: 11, fontWeight: 700, marginRight: 8 }}>Quick City Presets:</Text>
+              <Space size={4} wrap>
+                {CITY_PRESETS.map((cityName) => (
+                  <Tag
+                    key={cityName}
+                    color="blue"
+                    style={{ cursor: 'pointer', borderRadius: 12, fontSize: 11, fontWeight: 600 }}
+                    onClick={() => form.setFieldValue('city', cityName)}
+                  >
+                    + {cityName}
+                  </Tag>
+                ))}
+              </Space>
+            </div>
+
+            <div style={{ background: '#F8FAFC', padding: '14px 16px', borderRadius: 10, border: '1px solid #E2E8F0', marginBottom: 20 }}>
+              <Text style={{ fontWeight: 800, color: '#0F172A', display: 'block', marginBottom: 8, fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                Donor Preferences & Badges
+              </Text>
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item name="is_vip" valuePropName="checked" style={{ margin: 0 }}>
+                    <Checkbox style={{ fontWeight: 700, color: '#D97706' }}>
+                      👑 Mark as VIP Donor
+                    </Checkbox>
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item name="is_80g_eligible" valuePropName="checked" style={{ margin: 0 }}>
+                    <Checkbox style={{ fontWeight: 700, color: '#059669' }}>
+                      🛡️ 80G Tax Exemption
+                    </Checkbox>
+                  </Form.Item>
+                </Col>
+              </Row>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, paddingTop: 12, borderTop: '1px solid #F1F5F9' }}>
+              <Button size="large" onClick={() => setIsModalOpen(false)} style={{ borderRadius: 8, fontWeight: 600 }}>
+                Cancel
               </Button>
-            </Space>
-          </Form.Item>
-        </Form>
+              <Button
+                type="primary"
+                htmlType="submit"
+                size="large"
+                loading={createMutation.isPending}
+                style={{
+                  background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
+                  borderColor: '#F97316',
+                  borderRadius: 8,
+                  fontWeight: 800,
+                  boxShadow: '0 4px 12px rgba(249, 115, 22, 0.25)',
+                }}
+              >
+                Save Donor Profile
+              </Button>
+            </div>
+          </Form>
+        </div>
       </Modal>
 
       {/* 80G Tax Exemption Certificate Modal */}

@@ -9,12 +9,15 @@ export const apiClient = axios.create({
   withCredentials: false,
 });
 
-// ── Request interceptor — attach access token ──
+// ── Request interceptor — attach access token & tenant context ──
 apiClient.interceptors.request.use(
   (config) => {
-    const token = useAuthStore.getState().accessToken;
-    if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
+    const { accessToken, selectedTenantId } = useAuthStore.getState();
+    if (accessToken) {
+      config.headers['Authorization'] = `Bearer ${accessToken}`;
+    }
+    if (selectedTenantId) {
+      config.headers['X-Tenant-ID'] = selectedTenantId;
     }
     return config;
   },

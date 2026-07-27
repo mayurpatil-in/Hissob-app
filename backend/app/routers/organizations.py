@@ -87,10 +87,19 @@ async def get_my_organization(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ):
-    if not current_user.tenant_id:
-        raise HTTPException(status_code=404, detail="No organization linked to user")
     repo = TenantRepository(db)
-    tenant = repo.get(current_user.tenant_id)
+    tenant_id = current_user.tenant_id
+
+    if not tenant_id and current_user.is_super_admin:
+        # Fallback to first tenant for Super Admins for testing/global defaults
+        first_tenant = db.query(Tenant).first()
+        if first_tenant:
+            tenant_id = first_tenant.id
+
+    if not tenant_id:
+        raise HTTPException(status_code=404, detail="No organization linked to user")
+        
+    tenant = repo.get(tenant_id)
     if not tenant:
         raise HTTPException(status_code=404, detail="Organization not found")
     return tenant
@@ -102,12 +111,38 @@ async def update_my_organization(
     current_user: User = Depends(require("settings", "update")),
     db: Session = Depends(get_db),
 ):
-    if not current_user.tenant_id:
+    repo = TenantRepository(db)
+    tenant_id = current_user.tenant_id
+
+    if not tenant_id and current_user.is_super_admin:
+        first_tenant = db.query(Tenant).first()
+        if first_tenant:
+            tenant_id = first_tenant.id
+
+    if not tenant_id:
         raise HTTPException(status_code=404, detail="No organization linked to user")
 
-    repo = TenantRepository(db)
-    tenant = repo.get(current_user.tenant_id)
+    tenant = repo.get(tenant_id)
     if not tenant:
         raise HTTPException(status_code=404, detail="Organization not found")
 
     return repo.update(tenant, payload.model_dump(exclude_unset=True))
+
+
+@router.put("/{org_id}", response_model=TenantResponse, summary="Update Organization (Super Admin)")
+async def update_organization(
+    org_id: UUID,
+    payload: TenantUpdate,
+    current_user: User = Depends(get_super_admin),
+    db: Session = Depends(get_db),
+):
+    repo = TenantRepository(db)
+    tenant = repo.get(org_id)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    update_data = payload.model_dump(exclude_unset=True)
+    if "status" in update_data and update_data["status"] is not None:
+        tenant.is_active = (update_data["status"] == TenantStatus.ACTIVE)
+
+    return repo.update(tenant, update_data)

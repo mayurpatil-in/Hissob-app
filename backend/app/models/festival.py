@@ -41,3 +41,13 @@ class Festival(Base, UUIDMixin, TimestampMixin, TenantMixin):
 
     def __repr__(self) -> str:
         return f"<Festival {self.name}>"
+
+    @property
+    def collected(self) -> float:
+        # Avoid circular import at module level
+        from app.models.receipt import ReceiptStatus
+        return sum(
+            float(r.amount) 
+            for r in self.receipts 
+            if r.status != ReceiptStatus.CANCELLED
+        )

@@ -5,11 +5,11 @@ import {
 } from 'antd';
 import {
   PlusOutlined, CheckOutlined, CloseOutlined, UploadOutlined,
-  EyeOutlined, PaperClipOutlined, FilePdfOutlined
+  EyeOutlined, PaperClipOutlined, FilePdfOutlined, EditOutlined, DeleteOutlined
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  getExpenses, createExpense, approveExpense, getFinancialYears,
+  getExpenses, createExpense, updateExpense, deleteExpense, approveExpense, getFinancialYears,
   uploadExpenseBill, attachExpenseBill
 } from '../../api/services';
 import { useAuthStore } from '../../store/authStore';
@@ -31,6 +31,8 @@ const ExpensesPage: React.FC = () => {
   const { user, can } = useAuthStore();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<any | null>(null);
+  const [deleteModalExpense, setDeleteModalExpense] = useState<any | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [uploadingBill, setUploadingBill] = useState(false);
   const [uploadedBillUrl, setUploadedBillUrl] = useState<string>('');
@@ -53,13 +55,40 @@ const ExpensesPage: React.FC = () => {
   const createMutation = useMutation({
     mutationFn: createExpense,
     onSuccess: () => {
-      message.success('Expense request submitted with bill voucher!');
+      message.success('Expense request submitted successfully!');
       setIsModalOpen(false);
+      setEditingExpense(null);
       setUploadedBillUrl('');
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
     },
     onError: (err: any) => {
       message.error(err?.response?.data?.detail || 'Failed to create expense');
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, values }: { id: string; values: any }) => updateExpense(id, values),
+    onSuccess: () => {
+      message.success('Expense updated successfully!');
+      setIsModalOpen(false);
+      setEditingExpense(null);
+      setUploadedBillUrl('');
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+    },
+    onError: (err: any) => {
+      message.error(err?.response?.data?.detail || 'Failed to update expense');
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteExpense(id),
+    onSuccess: () => {
+      message.success('Expense deleted successfully!');
+      setDeleteModalExpense(null);
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+    },
+    onError: (err: any) => {
+      message.error(err?.response?.data?.detail || 'Failed to delete expense');
     },
   });
 
@@ -91,6 +120,7 @@ const ExpensesPage: React.FC = () => {
   const [form] = Form.useForm();
 
   const handleOpenModal = () => {
+    setEditingExpense(null);
     const activeFy = fiscalYears.find((fy: any) => fy.is_current) || fiscalYears[0];
     setUploadedBillUrl('');
     setIsModalOpen(true);
@@ -103,6 +133,25 @@ const ExpensesPage: React.FC = () => {
           expense_date: dayjs()
         });
       }
+    }, 0);
+  };
+
+  const handleOpenEditModal = (record: any) => {
+    setEditingExpense(record);
+    setUploadedBillUrl(record.bill_url || '');
+    setIsModalOpen(true);
+    setTimeout(() => {
+      form.resetFields();
+      form.setFieldsValue({
+        financial_year_id: record.financial_year_id,
+        category: record.category,
+        vendor_name: record.vendor_name,
+        amount: Number(record.amount),
+        description: record.description,
+        voucher_number: record.voucher_number,
+        expense_date: dayjs(record.expense_date),
+        bill_url: record.bill_url,
+      });
     }, 0);
   };
 
@@ -121,11 +170,16 @@ const ExpensesPage: React.FC = () => {
   };
 
   const handleSubmit = (values: any) => {
-    createMutation.mutate({
+    const payload = {
       ...values,
       bill_url: uploadedBillUrl || values.bill_url,
       expense_date: values.expense_date ? values.expense_date.format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD'),
-    });
+    };
+    if (editingExpense) {
+      updateMutation.mutate({ id: editingExpense.id, values: payload });
+    } else {
+      createMutation.mutate(payload);
+    }
   };
 
   const totalExpense = expenses.reduce((acc, e) => acc + Number(e.amount || 0), 0);
@@ -197,7 +251,7 @@ const ExpensesPage: React.FC = () => {
       title: 'Actions',
       key: 'actions',
       render: (_: any, record: any) => (
-        <Space>
+        <Space size={4}>
           {record.status === 'pending' && canApprove ? (
             <>
               <Tooltip title="Approve Expense">
@@ -233,6 +287,21 @@ const ExpensesPage: React.FC = () => {
           ) : record.status === 'approved' ? (
             <Tag color="blue" style={{ borderRadius: 10 }}>Approved - Awaiting Payout</Tag>
           ) : null}
+
+          <Tooltip title="Edit Expense Request">
+            <Button
+              icon={<EditOutlined style={{ color: '#2563EB' }} />}
+              size="small"
+              onClick={() => handleOpenEditModal(record)}
+            />
+          </Tooltip>
+          <Tooltip title="Delete / Void Expense">
+            <Button
+              icon={<DeleteOutlined style={{ color: '#EF4444' }} />}
+              size="small"
+              onClick={() => setDeleteModalExpense(record)}
+            />
+          </Tooltip>
         </Space>
       ),
     },
@@ -379,14 +448,14 @@ const ExpensesPage: React.FC = () => {
 
           <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
             <Space>
-              <Button onClick={() => setIsModalOpen(false)}>Cancel</Button>
+              <Button onClick={() => { setIsModalOpen(false); setEditingExpense(null); }}>Cancel</Button>
               <Button
                 type="primary"
                 htmlType="submit"
-                loading={createMutation.isPending || uploadingBill}
+                loading={createMutation.isPending || updateMutation.isPending || uploadingBill}
                 style={{ background: '#F97316', borderColor: '#F97316' }}
               >
-                Submit Expense
+                {editingExpense ? 'Update Expense' : 'Submit Expense'}
               </Button>
             </Space>
           </Form.Item>
@@ -463,6 +532,39 @@ const ExpensesPage: React.FC = () => {
           </div>
         </Modal>
       )}
+
+      {/* Delete Expense Confirmation Modal */}
+      <Modal
+        open={Boolean(deleteModalExpense)}
+        onCancel={() => setDeleteModalExpense(null)}
+        footer={null}
+        destroyOnHidden
+        width={440}
+        styles={{ body: { padding: 0 } }}
+      >
+        <div style={{ padding: '20px 24px', background: '#FEF2F2', borderBottom: '1px solid #FEE2E2' }}>
+          <Title level={4} style={{ margin: 0, color: '#DC2626', fontWeight: 900 }}>
+            Delete Expense Voucher #{deleteModalExpense?.expense_number}?
+          </Title>
+          <Text type="secondary" style={{ fontSize: 12, color: '#991B1B' }}>
+            This will permanently remove expense record ₹{Number(deleteModalExpense?.amount || 0).toLocaleString('en-IN')} ({deleteModalExpense?.category}).
+          </Text>
+        </div>
+        <div style={{ padding: 24, display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+          <Button onClick={() => setDeleteModalExpense(null)} style={{ borderRadius: 8, fontWeight: 600 }}>
+            Keep Expense
+          </Button>
+          <Button
+            type="primary"
+            danger
+            loading={deleteMutation.isPending}
+            onClick={() => deleteMutation.mutate(deleteModalExpense.id)}
+            style={{ fontWeight: 800, borderRadius: 8, background: '#DC2626', borderColor: '#DC2626' }}
+          >
+            Confirm Delete
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 };

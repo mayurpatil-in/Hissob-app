@@ -19,6 +19,8 @@ class TenantBase(BaseModel):
     country: str = "India"
     pincode: Optional[str] = None
     logo_url: Optional[str] = None
+    qr_code_url: Optional[str] = None
+    upi_id: Optional[str] = None
     website: Optional[str] = None
     gstin: Optional[str] = None
     pan: Optional[str] = None
@@ -46,6 +48,8 @@ class TenantUpdate(BaseModel):
     state: Optional[str] = None
     pincode: Optional[str] = None
     logo_url: Optional[str] = None
+    qr_code_url: Optional[str] = None
+    upi_id: Optional[str] = None
     website: Optional[str] = None
     gstin: Optional[str] = None
     pan: Optional[str] = None

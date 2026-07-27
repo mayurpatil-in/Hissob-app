@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
-import { Layout, Menu, Button, Avatar, Badge, Drawer, List, Tag, Typography, Tooltip } from 'antd';
+import { Layout, Menu, Button, Avatar, Badge, Drawer, List, Tag, Typography, Tooltip, Select } from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   DashboardOutlined, FileTextOutlined, DollarOutlined, UserOutlined,
   BankOutlined, CalendarOutlined, TeamOutlined, BarChartOutlined,
   SettingOutlined, BellOutlined, LogoutOutlined, MenuFoldOutlined,
   MenuUnfoldOutlined, AuditOutlined, GlobalOutlined, SafetyOutlined, CrownOutlined, RobotOutlined,
-  MenuOutlined, CheckOutlined, CloseOutlined
+  MenuOutlined, CheckOutlined, CloseOutlined, RocketOutlined
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getNotifications, markNotificationRead, markAllNotificationsRead } from '../api/services';
+import { getNotifications, markNotificationRead, markAllNotificationsRead, getOrganizations } from '../api/services';
 import type { NotificationItem } from '../api/services';
 import { useAuthStore } from '../store/authStore';
 import { authService } from '../auth/authService';
@@ -25,7 +25,7 @@ interface NavItem {
 }
 
 const SUPER_ADMIN_NAV: NavItem[] = [
-  { key: '/dashboard',   label: 'Platform Overview', icon: <DashboardOutlined /> },
+  { key: '/dashboard',   label: 'Dashboard',         icon: <DashboardOutlined /> },
   { key: '/ai-insights', label: 'AI Insights',       icon: <RobotOutlined style={{ color: '#F97316' }} /> },
   { key: '/super-admin', label: 'Organizations',     icon: <CrownOutlined /> },
   { key: '/audit',       label: 'Global Audit Log',  icon: <AuditOutlined /> },
@@ -50,7 +50,6 @@ const ORG_NAV: NavItem[] = [
 ];
 
 import CollectorDailySummaryModal from '../modules/settlements/CollectorDailySummaryModal';
-import { RocketOutlined } from '@ant-design/icons';
 
 interface Props {
   children: React.ReactNode;
@@ -64,8 +63,14 @@ const AppShell: React.FC<Props> = ({ children }) => {
   const [eodModalOpen, setEodModalOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, hasModule } = useAuthStore();
+  const { user, hasModule, selectedTenantId, setSelectedTenantId } = useAuthStore();
   const queryClient = useQueryClient();
+
+  const { data: organizations = [] } = useQuery({
+    queryKey: ['organizations'],
+    queryFn: getOrganizations,
+    enabled: !!user?.is_super_admin,
+  });
 
   React.useEffect(() => {
     if (!notifOpen && !userOpen) return;
@@ -347,7 +352,7 @@ const AppShell: React.FC<Props> = ({ children }) => {
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => { setMobileOpen(false); navigate('/dashboard'); }}>
             <div className="sidebar-logo-icon">H</div>
-            <span style={{ color: '#0B2347', fontWeight: 800, fontSize: 18 }}>Hissob ERP</span>
+            <span style={{ color: '#0B2347', fontWeight: 800, fontSize: 18 }}>Hisob ERP</span>
           </div>
         }
         placement="left"
@@ -388,7 +393,7 @@ const AppShell: React.FC<Props> = ({ children }) => {
         {/* Logo */}
         <div className="sidebar-logo" onClick={() => navigate('/dashboard')}>
           <div className="sidebar-logo-icon">H</div>
-          {!collapsed && <span className="sidebar-logo-text">Hissob ERP</span>}
+          {!collapsed && <span className="sidebar-logo-text">Hisob ERP</span>}
         </div>
 
         {/* Navigation */}
@@ -428,13 +433,32 @@ const AppShell: React.FC<Props> = ({ children }) => {
               onClick={handleToggleMenu}
             />
             <span style={{ fontSize: 16, fontWeight: 800, color: '#0B2347', letterSpacing: '-0.3px' }} className="hide-mobile">
-              HISSOB ERP
+              HISOB ERP
             </span>
+
+            {user?.is_super_admin && (
+              <Select
+                style={{ minWidth: 260, marginLeft: 16 }}
+                placeholder="Select Organization View"
+                value={selectedTenantId || 'all'}
+                onChange={(val) => {
+                  setSelectedTenantId(val === 'all' ? null : val);
+                  queryClient.invalidateQueries();
+                }}
+                options={[
+                  { label: '🌐 All Organizations (Global View)', value: 'all' },
+                  ...organizations.map((org: any) => ({
+                    label: `🏛️ ${org.name}`,
+                    value: org.id,
+                  })),
+                ]}
+              />
+            )}
           </div>
 
           <div className="header-right">
             {/* Collector Daily EOD Summary Button */}
-            <Tooltip title="Collector Daily Summary & EOD Handover" trigger={['hover']}>
+            <Tooltip title="Collector Daily Summary & EOD Handover" open={eodModalOpen ? false : undefined}>
               <Button
                 type="text"
                 icon={<RocketOutlined style={{ color: '#EA580C', fontSize: 16 }} />}

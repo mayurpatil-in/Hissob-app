@@ -9,7 +9,8 @@ import { useQuery } from '@tanstack/react-query';
 import { getFestivals, type Festival } from '../../api/services';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
-import FestivalTasksModal, { type EventTask } from '../festivals/FestivalTasksModal';
+import { useTaskStore } from '../../store/taskStore';
+import FestivalTasksModal from '../festivals/FestivalTasksModal';
 
 const { Title, Text } = Typography;
 
@@ -17,54 +18,11 @@ interface Props {
   selectedFyId?: string;
 }
 
-const DASHBOARD_PLANNED_TASKS: EventTask[] = [
-  {
-    id: 'dt-1',
-    task_name: 'Mandap Setup & Electrical Illumination',
-    assigned_to_name: 'Vinay (Collector)',
-    budget_allocated: 15000,
-    due_date: '2026-08-20',
-    status: 'in_progress',
-    notes: 'Main pandal bamboo setup and lighting',
-  },
-  {
-    id: 'dt-2',
-    task_name: 'Maha Prasad & Catering Arrangement',
-    assigned_to_name: 'Suresh (Treasurer)',
-    budget_allocated: 25000,
-    due_date: '2026-08-25',
-    status: 'accepted',
-    notes: 'Prasad boxes for 500 devotees',
-  },
-  {
-    id: 'dt-3',
-    task_name: 'Pooja Samagri & Daily Flower Procurement',
-    assigned_to_name: 'Ramesh Shah (VIP Member)',
-    budget_allocated: 8000,
-    due_date: '2026-08-24',
-    status: 'completed',
-    notes: 'Garlands and daily pooja materials',
-  },
-];
-
-const DEFAULT_FESTIVAL_CAMPAIGN: Festival = {
-  id: 'fest-default-1',
-  financial_year_id: 'default',
-  name: 'Ganesh Utsav 2026',
-  deity: 'Lord Ganesha',
-  location: 'Main Mandap Chowk',
-  start_date: '2026-08-15',
-  end_date: '2026-08-26',
-  budget: 500000,
-  status: 'active',
-};
-
 const FestivalManagementWidget: React.FC<Props> = ({ selectedFyId }) => {
   const navigate = useNavigate();
   const { user, can } = useAuthStore();
   const canManage = user?.is_super_admin || can('festivals', 'create');
 
-  const [tasks] = useState<EventTask[]>(DASHBOARD_PLANNED_TASKS);
   const [selectedFestivalForModal, setSelectedFestivalForModal] = useState<any | null>(null);
 
   const { data: fetchedFestivals = [], isLoading } = useQuery({
@@ -72,8 +30,11 @@ const FestivalManagementWidget: React.FC<Props> = ({ selectedFyId }) => {
     queryFn: () => getFestivals(selectedFyId),
   });
 
-  const displayFestivals = fetchedFestivals.length > 0 ? fetchedFestivals : [DEFAULT_FESTIVAL_CAMPAIGN];
+  const displayFestivals = fetchedFestivals;
   const activeFest = displayFestivals[0];
+  
+  const { tasks } = useTaskStore();
+  const festivalTasks = tasks.filter(t => t.festival_id === activeFest?.id);
 
   const taskColumns = [
     {
@@ -165,85 +126,102 @@ const FestivalManagementWidget: React.FC<Props> = ({ selectedFyId }) => {
       </div>
 
       <Spin spinning={isLoading}>
-        <>
-          {/* Top Campaign Cards Grid */}
-          <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
-            {displayFestivals.map((fest: Festival) => {
-              const targetBudget = Number(fest.budget || 500000);
-              const mockRaised = Math.round(targetBudget * 0.65);
-              const pct = Math.min(100, Math.round((mockRaised / targetBudget) * 100));
-
-              return (
-                <Col xs={24} sm={12} key={fest.id}>
-                  <div
-                    style={{
-                      padding: 14,
-                      background: '#FFF',
-                      borderRadius: 10,
-                      border: '1px solid #E4E8F0',
-                      boxShadow: '0 2px 8px rgba(11, 35, 71, 0.04)',
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
-                      <div>
-                        <span style={{ fontSize: 16, fontWeight: 800, color: '#0B2347' }}>
-                          🌺 {fest.name}
-                        </span>
-                        {fest.deity && (
-                          <Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
-                            Deity: {fest.deity}
-                          </Text>
-                        )}
-                      </div>
-                      <Tag color={fest.status === 'active' ? 'success' : 'processing'} style={{ borderRadius: 10, fontWeight: 700, margin: 0 }}>
-                        {fest.status ? fest.status.toUpperCase() : 'ACTIVE'}
-                      </Tag>
-                    </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6, margin: '10px 0', fontSize: 12, color: '#64748B' }}>
-                      <span>
-                        <CalendarOutlined style={{ marginRight: 6, color: '#F97316' }} />
-                        <b>Dates:</b> {fest.start_date} to {fest.end_date}
-                      </span>
-                      <Tag color="orange" style={{ borderRadius: 8, fontSize: 11, fontWeight: 700, margin: 0 }}>
-                        ⏳ 8 Days Remaining
-                      </Tag>
-                    </div>
-
-                    <div style={{ margin: '10px 0' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
-                        <span><TrophyOutlined style={{ color: '#F59E0B' }} /> Raised: <b>₹ {mockRaised.toLocaleString('en-IN')}</b></span>
-                        <span>Target: <b>₹ {targetBudget.toLocaleString('en-IN')}</b></span>
-                      </div>
-                      <Progress percent={pct} strokeColor="#F97316" size="small" />
-                    </div>
-                  </div>
-                </Col>
-              );
-            })}
-          </Row>
-
-          {/* Dashboard Assigned Event Tasks Table */}
-          <div style={{ marginTop: 16 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
-              <span style={{ fontWeight: 800, color: '#0B2347', fontSize: 14 }}>
-                <UnorderedListOutlined style={{ color: '#F97316', marginRight: 6 }} />
-                Assigned Event Tasks & Target Dates
-              </span>
-              <Tag color="cyan" style={{ margin: 0 }}>Active: {activeFest.name}</Tag>
-            </div>
-
-            <Table
-              dataSource={tasks}
-              columns={taskColumns}
-              rowKey="id"
-              pagination={false}
-              size="middle"
-              scroll={{ x: 600 }}
-              style={{ marginTop: 8 }}
-            />
+        {fetchedFestivals.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '36px 20px', background: '#F8FAFC', borderRadius: 12, border: '1px dashed #CBD5E1' }}>
+            <div style={{ fontSize: 36, marginBottom: 8 }}>🎪</div>
+            <Title level={5} style={{ margin: 0, color: '#0B2347' }}>No Active Festivals or Event Campaigns</Title>
+            <Text type="secondary" style={{ fontSize: 13, display: 'block', margin: '4px 0 16px 0' }}>
+              Create your organization's first festival (e.g. Ganesh Utsav, Navratri, Diwali) to track tasks, budgets, and collections.
+            </Text>
+            {canManage && (
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => navigate('/festivals')}
+                style={{ background: '#F97316', borderColor: '#F97316', borderRadius: 8, fontWeight: 700 }}
+              >
+                Create Festival Campaign
+              </Button>
+            )}
           </div>
-        </>
+        ) : (
+          <>
+            {/* Top Campaign Cards Grid */}
+            <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
+              {displayFestivals.map((fest: Festival) => {
+                const targetBudget = Number(fest.budget || 0);
+                const raisedAmount = Number((fest as any).collected || 0);
+                const pct = targetBudget > 0 ? Math.min(100, Math.round((raisedAmount / targetBudget) * 100)) : 0;
+
+                return (
+                  <Col xs={24} sm={12} key={fest.id}>
+                    <div
+                      style={{
+                        padding: 14,
+                        background: '#FFF',
+                        borderRadius: 10,
+                        border: '1px solid #E4E8F0',
+                        boxShadow: '0 2px 8px rgba(11, 35, 71, 0.04)',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                        <div>
+                          <span style={{ fontSize: 16, fontWeight: 800, color: '#0B2347' }}>
+                            🌺 {fest.name}
+                          </span>
+                          {fest.deity && (
+                            <Text type="secondary" style={{ display: 'block', fontSize: 12 }}>
+                              Deity: {fest.deity}
+                            </Text>
+                          )}
+                        </div>
+                        <Tag color={fest.status === 'active' ? 'success' : 'processing'} style={{ borderRadius: 10, fontWeight: 700, margin: 0 }}>
+                          {fest.status ? fest.status.toUpperCase() : 'ACTIVE'}
+                        </Tag>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6, margin: '10px 0', fontSize: 12, color: '#64748B' }}>
+                        <span>
+                          <CalendarOutlined style={{ marginRight: 6, color: '#F97316' }} />
+                          <b>Dates:</b> {fest.start_date} to {fest.end_date}
+                        </span>
+                      </div>
+
+                      <div style={{ margin: '10px 0' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
+                          <span><TrophyOutlined style={{ color: '#F59E0B' }} /> Raised: <b>₹ {raisedAmount.toLocaleString('en-IN')}</b></span>
+                          <span>Target: <b>₹ {targetBudget.toLocaleString('en-IN')}</b></span>
+                        </div>
+                        <Progress percent={pct} strokeColor="#F97316" size="small" />
+                      </div>
+                    </div>
+                  </Col>
+                );
+              })}
+            </Row>
+
+            {/* Dashboard Assigned Event Tasks Table */}
+            <div style={{ marginTop: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+                <span style={{ fontWeight: 800, color: '#0B2347', fontSize: 14 }}>
+                  <UnorderedListOutlined style={{ color: '#F97316', marginRight: 6 }} />
+                  Assigned Event Tasks & Target Dates
+                </span>
+                {activeFest && <Tag color="cyan" style={{ margin: 0 }}>Active: {activeFest.name}</Tag>}
+              </div>
+
+              <Table
+                dataSource={festivalTasks}
+                columns={taskColumns}
+                rowKey="id"
+                pagination={false}
+                size="middle"
+                scroll={{ x: 600 }}
+                style={{ marginTop: 8 }}
+              />
+            </div>
+          </>
+        )}
       </Spin>
 
       {/* Task Modal launcher */}

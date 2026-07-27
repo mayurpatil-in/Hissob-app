@@ -16,7 +16,7 @@ from app.models.user import User
 from app.models.finance import Expense
 from app.models.financial_year import FinancialYear
 from app.repositories.expense import ExpenseRepository
-from app.schemas.expense import ExpenseCreate, ExpenseApproval, ExpenseResponse
+from app.schemas.expense import ExpenseCreate, ExpenseUpdate, ExpenseApproval, ExpenseResponse
 
 router = APIRouter(prefix="/expenses", tags=["Expenses"])
 
@@ -237,4 +237,52 @@ async def attach_expense_bill(
     db.commit()
     db.refresh(expense)
     return expense
+
+
+@router.put("/{expense_id}", response_model=ExpenseResponse, summary="Update Expense Request")
+async def update_expense(
+    expense_id: UUID,
+    payload: ExpenseUpdate,
+    current_user: User = Depends(require("expenses", "create")),
+    db: Session = Depends(get_db),
+):
+    repo = ExpenseRepository(db)
+    expense = repo.get(expense_id)
+    if not expense or (expense.tenant_id != current_user.tenant_id and not current_user.is_super_admin):
+        raise HTTPException(status_code=404, detail="Expense not found")
+
+    if payload.category is not None:
+        expense.category = payload.category
+    if payload.vendor_name is not None:
+        expense.vendor_name = payload.vendor_name
+    if payload.amount is not None:
+        expense.amount = payload.amount
+    if payload.description is not None:
+        expense.description = payload.description
+    if payload.voucher_number is not None:
+        expense.voucher_number = payload.voucher_number
+    if payload.bill_url is not None:
+        expense.bill_url = payload.bill_url
+    if payload.expense_date is not None:
+        expense.expense_date = payload.expense_date
+
+    db.commit()
+    db.refresh(expense)
+    return expense
+
+
+@router.delete("/{expense_id}", summary="Delete / Void Expense Request")
+async def delete_expense(
+    expense_id: UUID,
+    current_user: User = Depends(require("expenses", "create")),
+    db: Session = Depends(get_db),
+):
+    repo = ExpenseRepository(db)
+    expense = repo.get(expense_id)
+    if not expense or (expense.tenant_id != current_user.tenant_id and not current_user.is_super_admin):
+        raise HTTPException(status_code=404, detail="Expense not found")
+
+    db.delete(expense)
+    db.commit()
+    return {"message": "Expense deleted successfully", "id": str(expense_id)}
 

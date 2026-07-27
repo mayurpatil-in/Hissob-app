@@ -97,9 +97,10 @@ export const getFinancialYears = async () => (await apiClient.get<FinancialYear[
 export const createFinancialYear = async (data: any) => (await apiClient.post<FinancialYear>('/financial-years', data)).data;
 export const setFYActive = async (id: string) => (await apiClient.post<FinancialYear>(`/financial-years/${id}/set-current`)).data;
 
-// ── Festival API ──
 export const getFestivals = async (fy_id?: string) => (await apiClient.get<Festival[]>('/festivals', { params: { fy_id } })).data;
 export const createFestival = async (data: any) => (await apiClient.post<Festival>('/festivals', data)).data;
+export const updateFestival = async ({ id, data }: { id: string; data: any }) => (await apiClient.put<Festival>(`/festivals/${id}`, data)).data;
+export const deleteFestival = async (id: string) => (await apiClient.delete<any>(`/festivals/${id}`)).data;
 
 // ── Donor API ──
 export const getDonors = async (q?: string) => (await apiClient.get<Donor[]>('/donors', { params: { q } })).data;
@@ -109,12 +110,17 @@ export const getDonorSummary = async (id: string) => (await apiClient.get<any>(`
 // ── Receipt API ──
 export const getReceipts = async (params?: any) => (await apiClient.get<Receipt[]>('/receipts', { params })).data;
 export const createReceipt = async (data: any) => (await apiClient.post<Receipt>('/receipts', data)).data;
+export const updateReceipt = async (id: string, data: any) => (await apiClient.put<Receipt>(`/receipts/${id}`, data)).data;
+export const cancelReceipt = async (id: string, reason?: string) => (await apiClient.post<Receipt>(`/receipts/${id}/cancel`, { reason: reason || 'Cancelled by user' })).data;
+export const deleteReceipt = async (id: string) => (await apiClient.delete(`/receipts/${id}`)).data;
 export const settleReceipt = async (id: string, data?: any) => (await apiClient.post<Receipt>(`/receipts/${id}/settle`, data)).data;
 export const getCollectorDailySummary = async (params?: any) => (await apiClient.get<any>('/receipts/daily-summary', { params })).data;
 
 // ── Expense API ──
 export const getExpenses = async (params?: any) => (await apiClient.get<Expense[]>('/expenses', { params })).data;
 export const createExpense = async (data: any) => (await apiClient.post<Expense>('/expenses', data)).data;
+export const updateExpense = async (id: string, data: any) => (await apiClient.put<Expense>(`/expenses/${id}`, data)).data;
+export const deleteExpense = async (id: string) => (await apiClient.delete(`/expenses/${id}`)).data;
 export const approveExpense = async (id: string, action: string, rejection_reason?: string) => (await apiClient.post<Expense>(`/expenses/${id}/approve`, { action, rejection_reason })).data;
 export const uploadExpenseBill = async (file: File) => {
   const formData = new FormData();
@@ -138,6 +144,19 @@ export const getAuditLogs = async (module?: string) => (await apiClient.get<Audi
 export const getSuperAdminStats = async () => (await apiClient.get<any>('/super-admin/dashboard-stats')).data;
 export const getOrganizations = async () => (await apiClient.get<any[]>('/organizations')).data;
 export const createOrganization = async (data: any) => (await apiClient.post<any>('/organizations', data)).data;
+export const updateOrganization = async ({ id, data }: { id: string; data: any }) => (await apiClient.put<any>(`/organizations/${id}`, data)).data;
+
+export const getMyOrganization = async () => (await apiClient.get<any>('/organizations/my-org')).data;
+export const updateMyOrganization = async (data: any) => (await apiClient.put<any>('/organizations/my-org', data)).data;
+
+// ── File Upload API ──
+export const uploadFile = async (file: File) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  return (await apiClient.post<{ url: string }>('/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })).data;
+};
 
 // ── AI Engine API ──
 export const getAIInsights = async () => (await apiClient.get<any>('/ai/insights')).data;

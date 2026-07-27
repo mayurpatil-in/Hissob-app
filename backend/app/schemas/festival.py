@@ -42,5 +42,6 @@ class FestivalResponse(FestivalBase):
     is_active: bool
     created_at: datetime
     updated_at: datetime
+    collected: float = 0.0
 
     model_config = {"from_attributes": True}

@@ -2,19 +2,12 @@ import React, { useState } from 'react';
 import { Modal, Table, Button, Tag, Space, Form, Input, InputNumber, Typography, App, Tooltip, Popconfirm, Select, DatePicker } from 'antd';
 import { PlusOutlined, CheckCircleOutlined, UserOutlined, TrophyOutlined, ClockCircleOutlined, EditOutlined, DeleteOutlined, CalendarOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import { useTaskStore, type EventTask } from '../../store/taskStore';
 
 const { Text } = Typography;
 const { Option } = Select;
 
-export interface EventTask {
-  id: string;
-  task_name: string;
-  assigned_to_name: string;
-  budget_allocated: number;
-  due_date?: string;
-  status: 'assigned' | 'in_progress' | 'completed' | 'accepted';
-  notes?: string;
-}
+export type { EventTask };
 
 interface Props {
   open: boolean;
@@ -22,41 +15,11 @@ interface Props {
   festival: any | null;
 }
 
-const INITIAL_TASKS: Record<string, EventTask[]> = {
-  default: [
-    {
-      id: 'task-1',
-      task_name: 'Mandap Setup & Electricals',
-      assigned_to_name: 'Vinay (Collector)',
-      budget_allocated: 15000,
-      due_date: '2026-08-20',
-      status: 'in_progress',
-      notes: 'Main pandal bamboo setup and lighting',
-    },
-    {
-      id: 'task-2',
-      task_name: 'Maha Prasad & Catering Arrangement',
-      assigned_to_name: 'Suresh (Treasurer)',
-      budget_allocated: 25000,
-      due_date: '2026-08-25',
-      status: 'accepted',
-      notes: 'Prasad boxes for 500 devotees',
-    },
-    {
-      id: 'task-3',
-      task_name: 'Pooja Samagri & Flower Decoration',
-      assigned_to_name: 'Ramesh Shah (VIP Member)',
-      budget_allocated: 8000,
-      due_date: '2026-08-24',
-      status: 'completed',
-      notes: 'Garlands and daily pooja materials',
-    },
-  ],
-};
-
 const FestivalTasksModal: React.FC<Props> = ({ open, onClose, festival }) => {
   const { message } = App.useApp();
-  const [tasks, setTasks] = useState<EventTask[]>(INITIAL_TASKS.default);
+  const { tasks, addTask, updateTask, deleteTask } = useTaskStore();
+  const festivalTasks = tasks.filter(t => t.festival_id === festival?.id);
+  
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<EventTask | null>(null);
   const [form] = Form.useForm();
@@ -64,14 +27,12 @@ const FestivalTasksModal: React.FC<Props> = ({ open, onClose, festival }) => {
   if (!festival) return null;
 
   const handleAcceptTask = (taskId: string) => {
-    setTasks(prev =>
-      prev.map(t => (t.id === taskId ? { ...t, status: 'accepted' as const } : t))
-    );
+    updateTask(taskId, { status: 'accepted' });
     message.success('Task completion accepted & approved by Admin!');
   };
 
   const handleDeleteTask = (taskId: string) => {
-    setTasks(prev => prev.filter(t => t.id !== taskId));
+    deleteTask(taskId);
     message.success('Assigned task deleted successfully');
   };
 
@@ -93,26 +54,20 @@ const FestivalTasksModal: React.FC<Props> = ({ open, onClose, festival }) => {
 
     if (editingTask) {
       // Update existing task
-      setTasks(prev =>
-        prev.map(t =>
-          t.id === editingTask.id
-            ? {
-                ...t,
-                task_name: values.task_name,
-                assigned_to_name: values.assigned_to_name,
-                budget_allocated: Number(values.budget_allocated || 0),
-                due_date: formattedDueDate,
-                status: values.status || t.status,
-                notes: values.notes,
-              }
-            : t
-        )
-      );
+      updateTask(editingTask.id, {
+        task_name: values.task_name,
+        assigned_to_name: values.assigned_to_name,
+        budget_allocated: Number(values.budget_allocated || 0),
+        due_date: formattedDueDate,
+        status: values.status || editingTask.status,
+        notes: values.notes,
+      });
       message.success('Assigned task updated successfully!');
     } else {
       // Create new task
       const newTask: EventTask = {
         id: `task-${Date.now()}`,
+        festival_id: festival.id,
         task_name: values.task_name,
         assigned_to_name: values.assigned_to_name,
         budget_allocated: Number(values.budget_allocated || 0),
@@ -120,13 +75,12 @@ const FestivalTasksModal: React.FC<Props> = ({ open, onClose, festival }) => {
         status: values.status || 'assigned',
         notes: values.notes,
       };
-      setTasks(prev => [newTask, ...prev]);
+      addTask(newTask);
       message.success('New sub-task planned and member assigned!');
     }
 
     setIsAddTaskOpen(false);
     setEditingTask(null);
-    form.resetFields();
   };
 
   const columns = [
@@ -187,6 +141,7 @@ const FestivalTasksModal: React.FC<Props> = ({ open, onClose, festival }) => {
                 type="primary"
                 icon={<CheckCircleOutlined />}
                 size="small"
+                className="animated-btn"
                 style={{ background: '#22C55E', borderColor: '#22C55E', borderRadius: 6, fontWeight: 600 }}
                 onClick={() => handleAcceptTask(record.id)}
               >
@@ -228,21 +183,24 @@ const FestivalTasksModal: React.FC<Props> = ({ open, onClose, festival }) => {
 
   return (
     <Modal
+      className="glass-modal"
       open={open}
       onCancel={onClose}
       title={
-        <Space>
-          <TrophyOutlined style={{ color: '#F97316' }} />
-          <span>Festival Task Planning & Member Assignments — {festival.name}</span>
-        </Space>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, paddingRight: 32 }}>
+          <TrophyOutlined style={{ color: '#F97316', marginTop: 4 }} />
+          <span className="gradient-text-orange" style={{ lineHeight: 1.4, wordBreak: 'break-word', fontWeight: 800 }}>
+            Festival Task Planning & Member Assignments — {festival.name}
+          </span>
+        </div>
       }
       width={900}
       footer={[
         <Button key="close" onClick={onClose}>Close</Button>,
       ]}
     >
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Text type="secondary">
+      <div style={{ marginBottom: 16, display: 'flex', flexWrap: 'wrap', gap: 16, justifyContent: 'space-between', alignItems: 'center' }}>
+        <Text type="secondary" style={{ flex: '1 1 250px', lineHeight: 1.5 }}>
           Assign sub-tasks to committee members, set target due dates, edit or delete tasks
         </Text>
         <Button
@@ -253,6 +211,7 @@ const FestivalTasksModal: React.FC<Props> = ({ open, onClose, festival }) => {
             form.resetFields();
             setIsAddTaskOpen(true);
           }}
+          className="animated-btn"
           style={{ background: '#F97316', borderColor: '#F97316', borderRadius: 8, fontWeight: 700 }}
         >
           Assign Member & Task
@@ -260,7 +219,8 @@ const FestivalTasksModal: React.FC<Props> = ({ open, onClose, festival }) => {
       </div>
 
       <Table
-        dataSource={tasks}
+        className="custom-table"
+        dataSource={festivalTasks}
         columns={columns}
         rowKey="id"
         pagination={false}
@@ -269,15 +229,15 @@ const FestivalTasksModal: React.FC<Props> = ({ open, onClose, festival }) => {
 
       {/* Add / Edit Task Modal */}
       <Modal
-        title={editingTask ? "Edit Assigned Task & Member" : "Assign Event Task to Committee Member"}
+        title={<span className="gradient-text" style={{ fontSize: 16, fontWeight: 800 }}>{editingTask ? "Edit Assigned Task & Member" : "Assign Event Task to Committee Member"}</span>}
         open={isAddTaskOpen}
         onCancel={() => {
           setIsAddTaskOpen(false);
           setEditingTask(null);
-          form.resetFields();
         }}
         footer={null}
-        destroyOnHidden
+        forceRender
+        className="glass-modal"
       >
         <Form form={form} layout="vertical" onFinish={handleFormSubmit}>
           <Form.Item name="task_name" label="Sub-Task / Activity Name" rules={[{ required: true, message: 'Enter task name' }]}>
@@ -292,7 +252,7 @@ const FestivalTasksModal: React.FC<Props> = ({ open, onClose, festival }) => {
             <DatePicker style={{ width: '100%' }} placeholder="Select Target Completion Date" />
           </Form.Item>
 
-          <Form.Item name="budget_allocated" label="Allocated Budget (₹)" rules={[{ required: true }]}>
+          <Form.Item name="budget_allocated" label="Allocated Budget (₹)">
             <InputNumber style={{ width: '100%' }} min={0} placeholder="e.g. 15000" />
           </Form.Item>
 
@@ -315,7 +275,7 @@ const FestivalTasksModal: React.FC<Props> = ({ open, onClose, festival }) => {
                 setIsAddTaskOpen(false);
                 setEditingTask(null);
               }}>Cancel</Button>
-              <Button type="primary" htmlType="submit" style={{ background: '#F97316', borderColor: '#F97316', borderRadius: 8, fontWeight: 700 }}>
+              <Button type="primary" htmlType="submit" className="animated-btn" style={{ background: '#F97316', borderColor: '#F97316', borderRadius: 8, fontWeight: 700 }}>
                 {editingTask ? "Update Task" : "Save Assignment"}
               </Button>
             </Space>

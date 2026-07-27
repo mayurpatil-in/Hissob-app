@@ -169,11 +169,11 @@ const CollectorDailySummaryModal: React.FC<Props> = ({
   return (
     <Modal
       title={
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingRight: 28 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingRight: 48 }}>
           <RocketOutlined style={{ color: '#F97316', fontSize: 22, flexShrink: 0 }} />
           <div>
-            <Title level={4} style={{ margin: 0, color: '#0B2347', fontSize: 16 }}>Collector EOD Daily Summary & Cash Handover</Title>
-            <Text type="secondary" style={{ fontSize: 11 }}>Daily collections report & physical cash handover</Text>
+            <Title level={4} style={{ margin: 0, color: '#0B2347', fontSize: 14, lineHeight: 1.3, wordBreak: 'break-word' }}>Collector EOD Daily Summary & Cash Handover</Title>
+            <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 2 }}>Daily collections report & physical cash handover</Text>
           </div>
         </div>
       }
@@ -237,74 +237,102 @@ const CollectorDailySummaryModal: React.FC<Props> = ({
       ) : (
         <div>
           {/* Summary Stat Cards */}
-          <Row gutter={[16, 16]} className="hissob-stat-row" style={{ marginBottom: 20 }}>
-            <Col xs={12} sm={6} className="hissob-stat-col">
+          <Row gutter={[10, 10]} style={{ marginBottom: 20, display: 'flex', flexWrap: 'wrap' }}>
+            <Col span={12} sm={6} style={{ display: 'flex' }}>
               <Card
                 className="hissob-stat-card"
                 style={{
+                  width: '100%',
+                  height: '100%',
                   background: 'linear-gradient(180deg, #F8FAFC 0%, #FFFFFF 100%)',
                   border: '1px solid #E2E8F0',
                   borderTop: '4px solid #0B2347',
+                  borderRadius: 12,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
                 }}
+                styles={{ body: { padding: '12px 8px' } }}
               >
-                <Text style={{ fontSize: 11, fontWeight: 700, color: '#0B2347', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                <Text style={{ fontSize: 10, fontWeight: 700, color: '#0B2347', textTransform: 'uppercase', letterSpacing: 0.5 }}>
                   💰 Today's Collection
                 </Text>
-                <div style={{ marginTop: 4, color: '#0B2347', fontSize: 18, fontWeight: 900, whiteSpace: 'nowrap' }}>
+                <div style={{ marginTop: 6, color: '#0B2347', fontSize: 15, fontWeight: 900, whiteSpace: 'nowrap' }}>
                   ₹ {Number(data?.total_collected || 0).toLocaleString('en-IN')}
                 </div>
               </Card>
             </Col>
 
-            <Col xs={12} sm={6} className="hissob-stat-col">
+            <Col span={12} sm={6} style={{ display: 'flex' }}>
               <Card
                 className="hissob-stat-card"
                 style={{
+                  width: '100%',
+                  height: '100%',
                   background: 'linear-gradient(180deg, #FFF7ED 0%, #FFFFFF 100%)',
                   border: '1px solid #FFEDD5',
                   borderTop: '4px solid #F97316',
+                  borderRadius: 12,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
                 }}
+                styles={{ body: { padding: '12px 8px' } }}
               >
-                <Text style={{ fontSize: 11, fontWeight: 700, color: '#EA580C', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                <Text style={{ fontSize: 10, fontWeight: 700, color: '#EA580C', textTransform: 'uppercase', letterSpacing: 0.5 }}>
                   💵 Cash Collected
                 </Text>
-                <div style={{ marginTop: 4, color: '#EA580C', fontSize: 18, fontWeight: 900, whiteSpace: 'nowrap' }}>
+                <div style={{ marginTop: 6, color: '#EA580C', fontSize: 15, fontWeight: 900, whiteSpace: 'nowrap' }}>
                   ₹ {Number(data?.cash_collected || 0).toLocaleString('en-IN')}
                 </div>
               </Card>
             </Col>
 
-            <Col xs={12} sm={6} className="hissob-stat-col">
+            <Col span={12} sm={6} style={{ display: 'flex' }}>
               <Card
                 className="hissob-stat-card"
                 style={{
+                  width: '100%',
+                  height: '100%',
                   background: 'linear-gradient(180deg, #EFF6FF 0%, #FFFFFF 100%)',
                   border: '1px solid #DBEAFE',
                   borderTop: '4px solid #2563EB',
+                  borderRadius: 12,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
                 }}
+                styles={{ body: { padding: '12px 8px' } }}
               >
-                <Text style={{ fontSize: 11, fontWeight: 700, color: '#2563EB', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                <Text style={{ fontSize: 10, fontWeight: 700, color: '#2563EB', textTransform: 'uppercase', letterSpacing: 0.5 }}>
                   📱 Digital (UPI/Cheque)
                 </Text>
-                <div style={{ marginTop: 4, color: '#2563EB', fontSize: 18, fontWeight: 900, whiteSpace: 'nowrap' }}>
+                <div style={{ marginTop: 6, color: '#2563EB', fontSize: 15, fontWeight: 900, whiteSpace: 'nowrap' }}>
                   ₹ {Number(data?.digital_collected || 0).toLocaleString('en-IN')}
                 </div>
               </Card>
             </Col>
 
-            <Col xs={12} sm={6} className="hissob-stat-col">
+            <Col span={12} sm={6} style={{ display: 'flex' }}>
               <Card
                 className="hissob-stat-card"
                 style={{
+                  width: '100%',
+                  height: '100%',
                   background: 'linear-gradient(180deg, #ECFDF5 0%, #FFFFFF 100%)',
                   border: '1px solid #BBF7D0',
                   borderTop: '4px solid #10B981',
+                  borderRadius: 12,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
                 }}
+                styles={{ body: { padding: '12px 8px' } }}
               >
-                <Text style={{ fontSize: 11, fontWeight: 700, color: '#15803D', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                <Text style={{ fontSize: 10, fontWeight: 700, color: '#15803D', textTransform: 'uppercase', letterSpacing: 0.5 }}>
                   🤝 Awaiting Handover
                 </Text>
-                <div style={{ marginTop: 4, color: '#15803D', fontSize: 18, fontWeight: 900, whiteSpace: 'nowrap' }}>
+                <div style={{ marginTop: 6, color: '#15803D', fontSize: 15, fontWeight: 900, whiteSpace: 'nowrap' }}>
                   ₹ {Number(data?.unsettled_cash_amount || 0).toLocaleString('en-IN')}
                 </div>
               </Card>

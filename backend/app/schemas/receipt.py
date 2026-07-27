@@ -30,7 +30,21 @@ class ReceiptCreate(ReceiptBase):
 
 
 class ReceiptCancel(BaseModel):
-    reason: str = Field(..., min_length=3)
+    reason: Optional[str] = "Cancelled by user"
+
+
+class ReceiptUpdate(BaseModel):
+    amount: Optional[float] = None
+    payment_mode: Optional[PaymentMode] = None
+    receipt_date: Optional[date] = None
+    donor_id: Optional[UUID] = None
+    purpose: Optional[str] = None
+    notes: Optional[str] = None
+    upi_reference: Optional[str] = None
+    cheque_number: Optional[str] = None
+    bank_name: Optional[str] = None
+    transaction_ref: Optional[str] = None
+    festival_id: Optional[UUID] = None
 
 
 class ReceiptResponse(ReceiptBase):

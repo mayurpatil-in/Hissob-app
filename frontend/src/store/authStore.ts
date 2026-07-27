@@ -16,9 +16,11 @@ interface AuthState {
   refreshToken: string | null;
   user: UserInfo | null;
   isAuthenticated: boolean;
+  selectedTenantId: string | null;
 
   setAuth: (accessToken: string, refreshToken: string, user: UserInfo) => void;
   setTokens: (accessToken: string, refreshToken: string) => void;
+  setSelectedTenantId: (id: string | null) => void;
   logout: () => void;
 
   // Permission helpers
@@ -33,15 +35,19 @@ export const useAuthStore = create<AuthState>()(
       refreshToken: null,
       user: null,
       isAuthenticated: false,
+      selectedTenantId: null,
 
       setAuth: (accessToken, refreshToken, user) =>
-        set({ accessToken, refreshToken, user, isAuthenticated: true }),
+        set({ accessToken, refreshToken, user, isAuthenticated: true, selectedTenantId: null }),
 
       setTokens: (accessToken, refreshToken) =>
         set({ accessToken, refreshToken }),
 
+      setSelectedTenantId: (id) =>
+        set({ selectedTenantId: id }),
+
       logout: () =>
-        set({ accessToken: null, refreshToken: null, user: null, isAuthenticated: false }),
+        set({ accessToken: null, refreshToken: null, user: null, isAuthenticated: false, selectedTenantId: null }),
 
       can: (module: string, action: string): boolean => {
         const { user } = get();
@@ -64,6 +70,7 @@ export const useAuthStore = create<AuthState>()(
         refreshToken: state.refreshToken,
         user: state.user,
         isAuthenticated: state.isAuthenticated,
+        selectedTenantId: state.selectedTenantId,
       }),
     }
   )

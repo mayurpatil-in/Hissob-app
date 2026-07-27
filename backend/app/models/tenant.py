@@ -30,6 +30,8 @@ class Tenant(Base, UUIDMixin, TimestampMixin):
     country: Mapped[str] = mapped_column(String(100), default="India")
     pincode: Mapped[str | None] = mapped_column(String(20))
     logo_url: Mapped[str | None] = mapped_column(String(500))
+    qr_code_url: Mapped[str | None] = mapped_column(String(500))
+    upi_id: Mapped[str | None] = mapped_column(String(100))
     website: Mapped[str | None] = mapped_column(String(255))
     gstin: Mapped[str | None] = mapped_column(String(20))
     pan: Mapped[str | None] = mapped_column(String(20))

@@ -13,8 +13,8 @@ export default defineConfig({
         type: 'module',
       },
       manifest: {
-        name: 'Hissob ERP',
-        short_name: 'Hissob',
+        name: 'Hisob ERP',
+        short_name: 'Hisob',
         description: 'Festival Collection & Financial Management',
         theme_color: '#0B2347',
         background_color: '#F8F9FC',

@@ -109,3 +109,62 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+/* ── Premium UI Utility Classes ── */
+.glass-modal .ant-modal-content {
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 20px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15) !important;
+}
+.glass-modal .ant-modal-header {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04) !important;
+}
+
+.premium-card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.premium-card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px -4px rgba(0, 0, 0, 0.08), 0 8px 12px -6px rgba(0, 0, 0, 0.04) !important;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #0B2347 0%, #2563EB 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.gradient-text-orange {
+  background: linear-gradient(135deg, #F97316 0%, #EA580C 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.animated-btn {
+  transition: all 0.2s ease-in-out;
+}
+.animated-btn:hover {
+  transform: scale(1.02);
+  filter: brightness(1.05);
+}
+.animated-btn:active {
+  transform: scale(0.98);
+}
+
+.custom-table .ant-table-thead > tr > th {
+  background: #F8FAFC !important;
+  color: #475569 !important;
+  font-weight: 700 !important;
+  border-bottom: 2px solid #E2E8F0 !important;
+}
+.custom-table .ant-table-tbody > tr > td {
+  border-bottom: 1px solid #F1F5F9 !important;
+}
+.custom-table .ant-table-tbody > tr:hover > td {
+  background: #F8FAFC !important;
+}

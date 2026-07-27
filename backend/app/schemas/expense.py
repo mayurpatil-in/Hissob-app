@@ -22,6 +22,16 @@ class ExpenseCreate(ExpenseBase):
     expense_date: Optional[date] = None
 
 
+class ExpenseUpdate(BaseModel):
+    category: Optional[str] = None
+    vendor_name: Optional[str] = None
+    amount: Optional[float] = None
+    description: Optional[str] = None
+    voucher_number: Optional[str] = None
+    bill_url: Optional[str] = None
+    expense_date: Optional[date] = None
+
+
 class ExpenseApproval(BaseModel):
     action: str = Field(..., pattern="^(approve|reject|pay)$")
     rejection_reason: Optional[str] = None

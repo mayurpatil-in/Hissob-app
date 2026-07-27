@@ -36,8 +36,8 @@ class Settings(BaseSettings):
     RATE_LIMIT_PER_MINUTE: int = 60
 
     # Super Admin Seed
-    SUPER_ADMIN_EMAIL: str = "admin@hissob.app"
-    SUPER_ADMIN_PASSWORD: str = "ChangeMe@123"
+    SUPER_ADMIN_EMAIL: str = "admin@hisob.in"
+    SUPER_ADMIN_PASSWORD: str = "ChangeMe@396"
 
 
 settings = Settings()

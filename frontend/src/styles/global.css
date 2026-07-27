@@ -179,9 +179,12 @@ body {
   display: flex !important;
   flex-wrap: wrap !important;
   align-items: stretch !important;
+  gap: 16px !important;
 }
 
 .hissob-stat-col {
+  flex: 1 1 0 !important;
+  min-width: 120px !important;
   display: flex !important;
   flex-direction: column !important;
 }
@@ -212,6 +215,12 @@ body {
   transition: all 0.2s ease-in-out !important;
 }
 
+@media (max-width: 768px) {
+  .hissob-stat-card {
+    padding: 10px 8px !important;
+  }
+}
+
 .hissob-stat-card .ant-card-body {
   padding: 0 !important;
   width: 100% !important;
@@ -224,6 +233,48 @@ body {
 .hissob-stat-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(0,0,0,0.09) !important;
+}
+
+/* ── Modal Styling & Glassmorphic Close Button Elevators ── */
+.ant-modal-content {
+  overflow: hidden !important;
+  border-radius: 16px !important;
+  padding: 0 !important;
+  box-shadow: 0 20px 40px rgba(11, 35, 71, 0.18) !important;
+}
+
+.ant-modal-close {
+  color: #0B2347 !important;
+  top: 14px !important;
+  right: 14px !important;
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  background: #F1F5F9 !important;
+  border: 1px solid #E2E8F0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s ease !important;
+  z-index: 100 !important;
+}
+
+.ant-modal-close:hover {
+  background: #0B2347 !important;
+  color: #FFFFFF !important;
+  border-color: #0B2347 !important;
+  transform: scale(1.08);
+}
+
+.ant-modal-close-x {
+  color: inherit !important;
+  font-size: 14px !important;
+  font-weight: bold !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 

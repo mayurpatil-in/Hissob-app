@@ -14,7 +14,7 @@ from app.models.receipt import Receipt, ReceiptStatus, PaymentMode
 from app.models.financial_year import FinancialYear
 from app.repositories.receipt import ReceiptRepository
 from app.repositories.donor import DonorRepository
-from app.schemas.receipt import ReceiptCreate, ReceiptCancel, ReceiptResponse
+from app.schemas.receipt import ReceiptCreate, ReceiptCancel, ReceiptUpdate, ReceiptResponse
 
 router = APIRouter(prefix="/receipts", tags=["Receipts"])
 
@@ -232,10 +232,59 @@ async def get_receipt(
     return receipt
 
 
+@router.put("/{receipt_id}", response_model=ReceiptResponse, summary="Update Receipt")
+async def update_receipt(
+    receipt_id: UUID,
+    payload: ReceiptUpdate,
+    current_user: User = Depends(require("receipts", "create")),
+    db: Session = Depends(get_db),
+):
+    repo = ReceiptRepository(db)
+    receipt = repo.get(receipt_id)
+    if not receipt or (receipt.tenant_id != current_user.tenant_id and not current_user.is_super_admin):
+        raise HTTPException(status_code=404, detail="Receipt not found")
+
+    if receipt.status == ReceiptStatus.CANCELLED:
+        raise HTTPException(status_code=400, detail="Cannot edit a cancelled receipt")
+
+    old_amount = float(receipt.amount)
+    new_amount = float(payload.amount) if payload.amount is not None else old_amount
+
+    if payload.amount is not None:
+        receipt.amount = payload.amount
+        if receipt.donor:
+            receipt.donor.total_donations += int(new_amount - old_amount)
+
+    if payload.payment_mode is not None:
+        receipt.payment_mode = payload.payment_mode
+    if payload.receipt_date is not None:
+        receipt.receipt_date = payload.receipt_date
+    if payload.donor_id is not None:
+        receipt.donor_id = payload.donor_id
+    if payload.purpose is not None:
+        receipt.purpose = payload.purpose
+    if payload.notes is not None:
+        receipt.notes = payload.notes
+    if payload.upi_reference is not None:
+        receipt.upi_reference = payload.upi_reference
+    if payload.cheque_number is not None:
+        receipt.cheque_number = payload.cheque_number
+    if payload.bank_name is not None:
+        receipt.bank_name = payload.bank_name
+    if payload.transaction_ref is not None:
+        receipt.transaction_ref = payload.transaction_ref
+    if payload.festival_id is not None:
+        receipt.festival_id = payload.festival_id
+
+    db.commit()
+    db.refresh(receipt)
+    return receipt
+
+
 @router.post("/{receipt_id}/cancel", response_model=ReceiptResponse, summary="Cancel Receipt")
 async def cancel_receipt(
     receipt_id: UUID,
-    payload: ReceiptCancel,
+    payload: Optional[ReceiptCancel] = None,
     current_user: User = Depends(require("receipts", "cancel")),
     db: Session = Depends(get_db),
 ):
@@ -244,11 +293,12 @@ async def cancel_receipt(
     if not receipt or (receipt.tenant_id != current_user.tenant_id and not current_user.is_super_admin):
         raise HTTPException(status_code=404, detail="Receipt not found")
 
-    if receipt.status == ReceiptStatus.SETTLED:
-        raise HTTPException(status_code=400, detail="Cannot cancel a settled receipt")
+    if receipt.donor and receipt.status != ReceiptStatus.CANCELLED:
+        receipt.donor.total_donations = max(0, receipt.donor.total_donations - int(receipt.amount))
 
+    reason_str = payload.reason if payload and payload.reason else "Cancelled by user"
     receipt.status = ReceiptStatus.CANCELLED
-    receipt.cancel_reason = payload.reason
+    receipt.cancel_reason = reason_str
     receipt.cancelled_by = current_user.id
     db.commit()
     db.refresh(receipt)
@@ -288,3 +338,22 @@ async def settle_receipt(
     db.commit()
     db.refresh(receipt)
     return receipt
+
+
+@router.delete("/{receipt_id}", summary="Permanently Delete Receipt (Hard Delete)")
+async def delete_receipt(
+    receipt_id: UUID,
+    current_user: User = Depends(require("receipts", "delete")),
+    db: Session = Depends(get_db),
+):
+    repo = ReceiptRepository(db)
+    receipt = repo.get(receipt_id)
+    if not receipt or (receipt.tenant_id != current_user.tenant_id and not current_user.is_super_admin):
+        raise HTTPException(status_code=404, detail="Receipt not found")
+
+    if receipt.donor and receipt.status != ReceiptStatus.CANCELLED:
+        receipt.donor.total_donations = max(0, receipt.donor.total_donations - int(receipt.amount))
+
+    db.delete(receipt)
+    db.commit()
+    return {"message": "Receipt permanently deleted", "id": str(receipt_id)}

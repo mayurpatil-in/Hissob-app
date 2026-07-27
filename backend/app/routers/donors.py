@@ -65,7 +65,49 @@ async def list_donors(
     if not current_user.tenant_id and not current_user.is_super_admin:
         raise HTTPException(status_code=400, detail="Tenant context required")
     repo = DonorRepository(db)
-    return repo.search_donors(current_user.tenant_id, query=q, area_id=area_id, skip=skip, limit=limit)
+    donors = repo.search_donors(current_user.tenant_id, query=q, area_id=area_id, skip=skip, limit=limit)
+
+    # Active Financial Year
+    from app.models.financial_year import FinancialYear
+    from app.models.receipt import Receipt, ReceiptStatus
+    from sqlalchemy import func
+
+    active_fy = db.query(FinancialYear).filter(
+        FinancialYear.tenant_id == current_user.tenant_id,
+        FinancialYear.is_current == True
+    ).first()
+
+    fy_donations_map = {}
+    if active_fy:
+        fy_sums = (
+            db.query(Receipt.donor_id, func.sum(Receipt.amount))
+            .filter(
+                Receipt.tenant_id == current_user.tenant_id,
+                Receipt.financial_year_id == active_fy.id,
+                Receipt.status != ReceiptStatus.CANCELLED,
+            )
+            .group_by(Receipt.donor_id)
+            .all()
+        )
+        fy_donations_map = {donor_id: int(total or 0) for donor_id, total in fy_sums}
+
+    lifetime_sums = (
+        db.query(Receipt.donor_id, func.sum(Receipt.amount))
+        .filter(
+            Receipt.tenant_id == current_user.tenant_id,
+            Receipt.status != ReceiptStatus.CANCELLED,
+        )
+        .group_by(Receipt.donor_id)
+        .all()
+    )
+    lifetime_map = {donor_id: int(total or 0) for donor_id, total in lifetime_sums}
+
+    for d in donors:
+        if d.id in lifetime_map:
+            d.total_donations = lifetime_map[d.id]
+        setattr(d, 'this_year_donations', fy_donations_map.get(d.id, 0))
+
+    return donors
 
 
 @router.post("", response_model=DonorResponse, status_code=status.HTTP_201_CREATED, summary="Create Donor")
