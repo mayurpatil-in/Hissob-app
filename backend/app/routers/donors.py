@@ -243,3 +243,19 @@ async def update_donor(
         raise HTTPException(status_code=404, detail="Donor not found")
 
     return repo.update(donor, payload.model_dump(exclude_unset=True))
+
+
+@router.delete("/{donor_id}", status_code=204, summary="Delete Donor")
+async def delete_donor(
+    donor_id: UUID,
+    current_user: User = Depends(require("donors", "delete")),
+    db: Session = Depends(get_db),
+):
+    repo = DonorRepository(db)
+    donor = repo.get(donor_id)
+    if not donor or (donor.tenant_id != current_user.tenant_id and not current_user.is_super_admin):
+        raise HTTPException(status_code=404, detail="Donor not found")
+
+    donor.is_active = False
+    db.commit()
+    return None

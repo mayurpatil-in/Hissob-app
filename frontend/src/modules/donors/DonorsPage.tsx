@@ -7,11 +7,11 @@ import {
   PlusOutlined, SearchOutlined, CrownOutlined, SafetyCertificateOutlined,
   HistoryOutlined, UserOutlined, PhoneOutlined, MailOutlined, IdcardOutlined,
   EnvironmentOutlined, TeamOutlined, DollarOutlined, SafetyOutlined,
-  AppstoreOutlined, UnorderedListOutlined, FileAddOutlined
+  AppstoreOutlined, UnorderedListOutlined, FileAddOutlined, EditOutlined, DeleteOutlined
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { getDonors, createDonor } from '../../api/services';
+import { getDonors, createDonor, updateDonor, deleteDonor } from '../../api/services';
 import Tax80GCertificateModal, { type Tax80GData } from '../reports/Tax80GCertificateModal';
 import DonorDetailDrawer from './DonorDetailDrawer';
 import dayjs from 'dayjs';
@@ -35,6 +35,8 @@ const DonorsPage: React.FC = () => {
 
   const [form] = Form.useForm();
 
+  const [editingDonor, setEditingDonor] = useState<any | null>(null);
+
   const { data: donors = [], isLoading } = useQuery({
     queryKey: ['donors', searchQuery],
     queryFn: () => getDonors(searchQuery || undefined),
@@ -45,6 +47,7 @@ const DonorsPage: React.FC = () => {
     onSuccess: () => {
       message.success('Donor profile registered successfully!');
       setIsModalOpen(false);
+      setEditingDonor(null);
       form.resetFields();
       queryClient.invalidateQueries({ queryKey: ['donors'] });
     },
@@ -53,16 +56,62 @@ const DonorsPage: React.FC = () => {
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: ({ id, values }: { id: string; values: any }) => updateDonor({ id, data: values }),
+    onSuccess: () => {
+      message.success('Donor profile updated successfully!');
+      setIsModalOpen(false);
+      setEditingDonor(null);
+      form.resetFields();
+      queryClient.invalidateQueries({ queryKey: ['donors'] });
+    },
+    onError: (err: any) => {
+      message.error(err?.response?.data?.detail || 'Failed to update donor');
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteDonor,
+    onSuccess: () => {
+      message.success('Donor profile deleted successfully!');
+      queryClient.invalidateQueries({ queryKey: ['donors'] });
+    },
+    onError: (err: any) => {
+      message.error(err?.response?.data?.detail || 'Failed to delete donor');
+    },
+  });
+
   const handleSubmit = (values: any) => {
-    createMutation.mutate(values);
+    if (editingDonor) {
+      updateMutation.mutate({ id: editingDonor.id, values });
+    } else {
+      createMutation.mutate(values);
+    }
   };
 
   const handleOpenModal = () => {
+    setEditingDonor(null);
     setIsModalOpen(true);
     setTimeout(() => {
       form.resetFields();
       form.setFieldsValue({
         is_80g_eligible: true,
+      });
+    }, 0);
+  };
+
+  const handleOpenEditModal = (donor: any) => {
+    setEditingDonor(donor);
+    setIsModalOpen(true);
+    setTimeout(() => {
+      form.setFieldsValue({
+        full_name: donor.full_name,
+        phone: donor.phone,
+        email: donor.email,
+        pan_number: donor.pan_number,
+        city: donor.city,
+        is_vip: donor.is_vip,
+        is_80g_eligible: donor.is_80g_eligible,
       });
     }, 0);
   };
@@ -227,6 +276,32 @@ const DonorsPage: React.FC = () => {
             >
               80G
             </Button>
+          </Tooltip>
+          <Tooltip title="Edit Donor Profile">
+            <Button
+              type="text"
+              icon={<EditOutlined style={{ color: '#2563EB' }} />}
+              size="small"
+              onClick={() => handleOpenEditModal(record)}
+            />
+          </Tooltip>
+          <Tooltip title="Delete Donor Profile">
+            <Button
+              type="text"
+              danger
+              icon={<DeleteOutlined style={{ color: '#EF4444' }} />}
+              size="small"
+              onClick={() => {
+                Modal.confirm({
+                  title: 'Delete Donor Profile',
+                  content: `Are you sure you want to delete ${record.full_name}? This action cannot be undone.`,
+                  okText: 'Yes, Delete',
+                  okType: 'danger',
+                  cancelText: 'Cancel',
+                  onOk: () => deleteMutation.mutate(record.id),
+                });
+              }}
+            />
           </Tooltip>
         </Space>
       ),
@@ -435,44 +510,77 @@ const DonorsPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', gap: 6, justifyContent: 'space-between' }}>
-                    <Button
-                      size="small"
-                      icon={<FileAddOutlined style={{ color: '#EA580C' }} />}
-                      style={{ flex: 1, fontWeight: 700, fontSize: 11, background: '#FFF7ED', borderColor: '#FFEDD5', color: '#EA580C' }}
-                      onClick={() => navigate('/receipts', { state: { preselectedDonorId: record.id, preselectedDonorName: record.full_name } })}
-                    >
-                      Receipt
-                    </Button>
-                    <Button
-                      size="small"
-                      icon={<HistoryOutlined style={{ color: '#2563EB' }} />}
-                      style={{ flex: 1, fontWeight: 600, fontSize: 11 }}
-                      onClick={() => setSelectedDonorId(record.id)}
-                    >
-                      History
-                    </Button>
-                    <Button
-                      type="primary"
-                      size="small"
-                      icon={<SafetyCertificateOutlined />}
-                      style={{ flex: 1, fontWeight: 700, fontSize: 11, background: 'linear-gradient(135deg, #1E40AF 0%, #2563EB 100%)' }}
-                      onClick={() => {
-                        setSelected80GData({
-                          certificateNumber: `80G-2025-${record.donor_number || record.id.slice(0, 6)}`,
-                          donorName: record.full_name,
-                          panNumber: record.pan_number || 'PAN-NOT-PROVIDED',
-                          address: record.city ? `${record.city}, India` : 'India',
-                          financialYear: '2025-26',
-                          totalDonationAmount: Number(record.total_donations || 5000),
-                          receiptNumbers: [`RC-2026-${record.id.slice(0, 4)}`],
-                          trustName: 'HISOB GANESH UTSAV CHARITABLE TRUST',
-                          issueDate: dayjs().format('DD MMM YYYY'),
-                        });
-                      }}
-                    >
-                      80G
-                    </Button>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {/* Row 1: Primary Actions */}
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <Button
+                        size="small"
+                        icon={<FileAddOutlined style={{ color: '#EA580C' }} />}
+                        style={{ flex: 1, fontWeight: 700, fontSize: 11, background: '#FFF7ED', borderColor: '#FFEDD5', color: '#EA580C' }}
+                        onClick={() => navigate('/receipts', { state: { preselectedDonorId: record.id, preselectedDonorName: record.full_name } })}
+                      >
+                        + Receipt
+                      </Button>
+                      <Button
+                        size="small"
+                        icon={<HistoryOutlined style={{ color: '#2563EB' }} />}
+                        style={{ flex: 1, fontWeight: 600, fontSize: 11 }}
+                        onClick={() => setSelectedDonorId(record.id)}
+                      >
+                        History
+                      </Button>
+                    </div>
+
+                    {/* Row 2: Secondary & Manage Actions */}
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <Button
+                        type="primary"
+                        size="small"
+                        icon={<SafetyCertificateOutlined />}
+                        style={{ flex: 1, fontWeight: 700, fontSize: 11, background: 'linear-gradient(135deg, #1E40AF 0%, #2563EB 100%)', padding: '0 4px' }}
+                        onClick={() => {
+                          setSelected80GData({
+                            certificateNumber: `80G-2025-${record.donor_number || record.id.slice(0, 6)}`,
+                            donorName: record.full_name,
+                            panNumber: record.pan_number || 'PAN-NOT-PROVIDED',
+                            address: record.city ? `${record.city}, India` : 'India',
+                            financialYear: '2025-26',
+                            totalDonationAmount: Number(record.total_donations || 5000),
+                            receiptNumbers: [`RC-2026-${record.id.slice(0, 4)}`],
+                            trustName: 'HISOB GANESH UTSAV CHARITABLE TRUST',
+                            issueDate: dayjs().format('DD MMM YYYY'),
+                          });
+                        }}
+                      >
+                        80G
+                      </Button>
+                      <Button
+                        size="small"
+                        icon={<EditOutlined style={{ color: '#2563EB' }} />}
+                        style={{ flex: 1, fontWeight: 600, fontSize: 11, padding: '0 4px' }}
+                        onClick={() => handleOpenEditModal(record)}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        size="small"
+                        danger
+                        icon={<DeleteOutlined style={{ color: '#EF4444' }} />}
+                        style={{ flex: 1, fontWeight: 600, fontSize: 11, padding: '0 4px' }}
+                        onClick={() => {
+                          Modal.confirm({
+                            title: 'Delete Donor Profile',
+                            content: `Are you sure you want to delete ${record.full_name}?`,
+                            okText: 'Yes, Delete',
+                            okType: 'danger',
+                            cancelText: 'Cancel',
+                            onOk: () => deleteMutation.mutate(record.id),
+                          });
+                        }}
+                      >
+                        Delete
+                      </Button>
+                    </div>
                   </div>
                 </Card>
               </Col>
@@ -496,10 +604,10 @@ const DonorsPage: React.FC = () => {
             <Avatar style={{ backgroundColor: '#F97316', color: '#fff', fontWeight: 900 }} icon={<UserOutlined />} size={42} />
             <div>
               <Title level={4} style={{ margin: 0, color: '#fff', fontWeight: 900 }}>
-                Register New Donor
+                {editingDonor ? 'Edit Donor Profile' : 'Register New Donor'}
               </Title>
               <Text style={{ color: '#93C5FD', fontSize: 12 }}>
-                Enter donor contact details, tax identification, and VIP status
+                {editingDonor ? 'Update donor contact details, tax identification, and VIP status' : 'Enter donor contact details, tax identification, and VIP status'}
               </Text>
             </div>
           </div>
@@ -589,7 +697,7 @@ const DonorsPage: React.FC = () => {
                 type="primary"
                 htmlType="submit"
                 size="large"
-                loading={createMutation.isPending}
+                loading={createMutation.isPending || updateMutation.isPending}
                 style={{
                   background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
                   borderColor: '#F97316',
@@ -598,7 +706,7 @@ const DonorsPage: React.FC = () => {
                   boxShadow: '0 4px 12px rgba(249, 115, 22, 0.25)',
                 }}
               >
-                Save Donor Profile
+                {editingDonor ? 'Update Donor Profile' : 'Save Donor Profile'}
               </Button>
             </div>
           </Form>

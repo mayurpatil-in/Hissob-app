@@ -105,6 +105,8 @@ export const deleteFestival = async (id: string) => (await apiClient.delete<any>
 // ── Donor API ──
 export const getDonors = async (q?: string) => (await apiClient.get<Donor[]>('/donors', { params: { q } })).data;
 export const createDonor = async (data: any) => (await apiClient.post<Donor>('/donors', data)).data;
+export const updateDonor = async ({ id, data }: { id: string; data: any }) => (await apiClient.put<Donor>(`/donors/${id}`, data)).data;
+export const deleteDonor = async (id: string) => (await apiClient.delete<any>(`/donors/${id}`)).data;
 export const getDonorSummary = async (id: string) => (await apiClient.get<any>(`/donors/${id}/summary`)).data;
 
 // ── Receipt API ──
@@ -114,6 +116,23 @@ export const updateReceipt = async (id: string, data: any) => (await apiClient.p
 export const cancelReceipt = async (id: string, reason?: string) => (await apiClient.post<Receipt>(`/receipts/${id}/cancel`, { reason: reason || 'Cancelled by user' })).data;
 export const deleteReceipt = async (id: string) => (await apiClient.delete(`/receipts/${id}`)).data;
 export const settleReceipt = async (id: string, data?: any) => (await apiClient.post<Receipt>(`/receipts/${id}/settle`, data)).data;
+
+// Public Verification (No Auth Required)
+export const verifyPublicReceipt = async (id: string) => {
+  const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'}/receipts/public/${id}/verify`);
+  if (!response.ok) {
+    let errMsg = 'Receipt verification failed';
+    try {
+      const errData = await response.json();
+      if (errData.detail) errMsg = typeof errData.detail === 'string' ? errData.detail : JSON.stringify(errData.detail);
+    } catch (e) {
+      // Ignore JSON parse error if response is not JSON
+    }
+    throw new Error(errMsg);
+  }
+  return response.json();
+};
+
 export const getCollectorDailySummary = async (params?: any) => (await apiClient.get<any>('/receipts/daily-summary', { params })).data;
 
 // ── Expense API ──

@@ -4,8 +4,11 @@
  * Prints only the receipt without any app UI chrome.
  */
 import { getMyOrganization } from '../api/services';
+import { getMarathiReceiptHtml } from './marathiReceiptHtml';
+import html2canvas from 'html2canvas';
 
 export interface PrintReceiptData {
+  id?: string;
   receipt_number: string;
   receipt_date: string;
   amount: number;
@@ -64,9 +67,34 @@ function getPaymentRef(receipt: PrintReceiptData): string {
   return '';
 }
 
-/** Open a professional print popup for a donation receipt */
-/** Open a professional print popup for a donation receipt */
-export async function printReceiptWindow(receipt: PrintReceiptData, fallbackOrgName = 'Hissob ERP'): Promise<void> {
+function formatDateDDMMYYYY(dateStr?: string): string {
+  if (!dateStr) return '';
+  if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
+    const parts = dateStr.split('T')[0].split('-');
+    return `${parts[2]}-${parts[1]}-${parts[0]}`;
+  }
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return dateStr;
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}-${month}-${year}`;
+}
+
+function formatDonorAddress(donor?: any): string {
+  if (!donor) return '—';
+  const parts = [];
+  if (donor.address && donor.address.trim() && donor.address.trim() !== '—') {
+    parts.push(donor.address.trim());
+  }
+  if (donor.city && donor.city.trim() && donor.city.trim() !== '—') {
+    parts.push(donor.city.trim());
+  }
+  return parts.length > 0 ? parts.join(', ') : '—';
+}
+
+/** Generate the full HTML content for the receipt */
+export async function getReceiptHtmlContent(receipt: PrintReceiptData, fallbackOrgName = 'Hissob ERP', forShare = false): Promise<string> {
   let orgData: any = null;
   try {
     orgData = await getMyOrganization();
@@ -76,6 +104,7 @@ export async function printReceiptWindow(receipt: PrintReceiptData, fallbackOrgN
   const orgName = orgData?.name || fallbackOrgName;
   const logoUrl = orgData?.logo_url ? import.meta.env.VITE_API_URL?.replace('/api/v1', '') + orgData.logo_url : 'https://cdn-icons-png.flaticon.com/512/103/103328.png';
   const qrCodeUrl = orgData?.qr_code_url ? import.meta.env.VITE_API_URL?.replace('/api/v1', '') + orgData.qr_code_url : null;
+  const verifyQrUrl = receipt.id ? `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.origin + '/verify/' + receipt.id)}` : null;
   const upiId = orgData?.upi_id || 'hissob@upi';
   
   const amountWords = numberToWords(Number(receipt.amount));
@@ -94,13 +123,19 @@ export async function printReceiptWindow(receipt: PrintReceiptData, fallbackOrgN
   const isBank = mode === 'NEFT' || mode === 'RTGS' || mode === 'BANK TRANSFER';
   const isCheque = mode === 'CHEQUE';
 
-  const html = `<!DOCTYPE html>
+  let html = '';
+  if (orgData?.receipt_template === 'marathi_traditional') {
+    html = getMarathiReceiptHtml(receipt, orgName, orgData, logoUrl, qrCodeUrl, upiId, amountWords);
+  } else {
+    html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <title>Donation Receipt ${receipt.receipt_number}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800;900&family=Yatra+One&display=swap" />
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800;900&family=Yatra+One&display=swap');
     
     * { margin: 0; padding: 0; box-sizing: border-box; }
     
@@ -155,15 +190,15 @@ export async function printReceiptWindow(receipt: PrintReceiptData, fallbackOrgN
 
     /* Wavy Backgrounds */
     .bg-wave-left {
-      position: absolute; top: -100px; left: -80px; width: 400px; height: 350px;
+      position: absolute; top: -150px; left: -150px; width: 450px; height: 450px;
       background: linear-gradient(135deg, #ff9100, #ffb347);
-      border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+      border-radius: 50%;
       opacity: 0.15; z-index: 0;
     }
     .bg-wave-right {
-      position: absolute; top: -120px; right: -80px; width: 450px; height: 300px;
+      position: absolute; top: -150px; right: -150px; width: 450px; height: 450px;
       background: linear-gradient(135deg, #1e3a8a, #4338ca);
-      border-radius: 60% 40% 30% 70% / 50% 40% 60% 40%;
+      border-radius: 50%;
       opacity: 0.08; z-index: 0;
     }
     .bg-wave-bottom {
@@ -215,19 +250,9 @@ export async function printReceiptWindow(receipt: PrintReceiptData, fallbackOrgN
     .mandal-address { color: #334155; font-size: 15px; font-weight: 600; }
     .mandal-reg { color: #475569; font-size: 12px; font-weight: 500; margin-top: 4px; letter-spacing: 0.5px;}
 
-    .logo-container {
-      display: flex; align-items: center; gap: 10px;
-      background: rgba(255,255,255,0.9); padding: 8px 12px; border-radius: 12px; border: 1px solid #f1f5f9; box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+    .header-right {
+      display: flex; flex-direction: column; gap: 10px; justify-content: center; align-items: flex-end; width: 180px;
     }
-    .logo-icon {
-      width: 48px; height: 48px;
-      background: linear-gradient(135deg, #1e3a8a, #4338ca); color: #fff; border-radius: 10px;
-      display: flex; justify-content: center; align-items: center;
-      font-weight: 800; font-size: 28px; border: 2px solid #ff9100;
-      box-shadow: 0 4px 8px rgba(30,58,138,0.2);
-    }
-    .logo-text { color: #1e3a8a; font-weight: 900; font-size: 26px; line-height: 1; letter-spacing: -0.5px;}
-    .logo-text span { font-size: 10px; font-weight: 600; color: #64748b; display: block; letter-spacing: 0;}
 
     /* Orange Donation Banner */
     .banner-row {
@@ -253,29 +278,23 @@ export async function printReceiptWindow(receipt: PrintReceiptData, fallbackOrgN
     .main-banner h2 { font-size: 24px; font-weight: 900; letter-spacing: 1.5px; line-height: 1.2; text-shadow: 0 2px 4px rgba(0,0,0,0.1);}
     .main-banner p { font-size: 20px; font-family: 'Yatra One', cursive; letter-spacing: 1px; color: #ffedd5; margin-top: -2px;}
 
-    /* Receipt No & Date with Barcode */
-    .meta-row {
-      display: flex; justify-content: space-between; align-items: flex-end;
-      position: relative; z-index: 1; padding: 0 30px; margin-bottom: 15px;
-    }
+    /* Receipt No & Date Boxes */
     .meta-box {
       background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px;
-      padding: 8px 20px; font-size: 14px; color: #475569; font-weight: 600;
-      display: flex; align-items: center; justify-content: space-between; width: auto; gap: 12px;
+      padding: 6px 12px; font-size: 12px; color: #475569; font-weight: 600;
+      display: flex; align-items: center; justify-content: space-between; width: auto; gap: 8px;
       white-space: nowrap;
       box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
     }
-    .meta-box strong { font-size: 17px; color: #0f172a; font-weight: 800; }
+    .meta-box strong { font-size: 14px; color: #0f172a; font-weight: 800; }
     
-    .barcode-box {
-      display: flex; flex-direction: column; align-items: center;
+    .verify-qr-box {
+      margin-top: 6px; padding: 6px; background: #fff; border: 1px solid #cbd5e1; border-radius: 8px;
+      display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 10px; width: 100%;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.02);
     }
-    .barcode {
-      height: 28px; width: 140px;
-      background-image: repeating-linear-gradient(to right, #0f172a, #0f172a 2px, transparent 2px, transparent 4px, #0f172a 4px, #0f172a 5px, transparent 5px, transparent 8px, #0f172a 8px, #0f172a 11px, transparent 11px, transparent 14px);
-      margin-bottom: 4px; opacity: 0.8;
-    }
-    .barcode-text { font-size: 9px; color: #64748b; font-weight: 700; letter-spacing: 2px;}
+    .verify-qr-box img { width: 44px; height: 44px; mix-blend-mode: multiply; }
+    .verify-qr-box span { font-size: 11px; font-weight: 800; color: #1e3a8a; text-transform: uppercase; letter-spacing: 0.5px; text-align: left; line-height: 1.2;}
 
     /* Layout Body */
     .body-content {
@@ -397,6 +416,21 @@ export async function printReceiptWindow(receipt: PrintReceiptData, fallbackOrgN
     .sig-line-white { border-bottom: 2px solid #fff; }
     .sig-line-white::after { color: #fff; opacity: 0.4;}
 
+    .developer-footer {
+      text-align: center;
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.85);
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      z-index: 10;
+      margin-top: auto;
+      margin-bottom: -12px;
+    }
+    .developer-footer strong {
+      color: #ffffff;
+      font-weight: 700;
+    }
+
     @media print {
       @page { size: A4 landscape; margin: 0; }
       body { padding: 0; background: #fff; }
@@ -404,9 +438,15 @@ export async function printReceiptWindow(receipt: PrintReceiptData, fallbackOrgN
       .receipt-wrapper::before { display: none; }
       .ganesha-wrapper::before { animation: none; transform: rotate(45deg); opacity: 0.3; } /* Stop animation on print */
     }
+
+    /* Styles specifically for html2canvas to mimic print output */
+    body.share-mode { padding: 0; background: #fff; }
+    body.share-mode .receipt-wrapper { border: none; box-shadow: none; border-radius: 0; }
+    body.share-mode .receipt-wrapper::before { display: none; }
+    body.share-mode .ganesha-wrapper::before { animation: none; transform: rotate(45deg); opacity: 0.3; }
   </style>
 </head>
-<body>
+<body ${forShare ? 'class="share-mode"' : ''}>
   <div class="receipt-wrapper">
     <div class="watermark-bg">ॐ</div>
     <div class="bg-wave-left"></div>
@@ -421,12 +461,18 @@ export async function printReceiptWindow(receipt: PrintReceiptData, fallbackOrgN
       <div class="header-center">
         <div class="shree-text">॥ श्री गणेशाय नमः ॥</div>
         <div class="mandal-title">${orgName}</div>
-        <div class="mandal-address">${receipt.donor?.address ? receipt.donor.address + ', ' : ''}${receipt.donor?.city || 'Maharashtra, India'}</div>
-        <div class="mandal-reg">Registered Organization | Official Receipt</div>
+        <div class="mandal-address">${orgData?.address ? orgData.address + (orgData?.city ? ', ' + orgData.city : '') : (orgData?.city ? orgData.city + (orgData?.state ? ', ' + orgData.state : '') : 'Maharashtra, India')}</div>
+        <div class="mandal-reg">${orgData?.registration_number ? 'Reg. No: ' + orgData.registration_number + ' | Official Receipt' : 'Registered Organization | Official Receipt'}</div>
       </div>
-      <div class="logo-container">
-        <div class="logo-icon">H</div>
-        <div class="logo-text">Hisob<span>Simple Accounting<br>for Mandal & Trusts</span></div>
+      <div class="header-right">
+        <div class="meta-box"><span>Receipt No.</span> <strong>${receipt.receipt_number}</strong></div>
+        <div class="meta-box"><span>Date</span> <strong>${formatDateDDMMYYYY(receipt.receipt_date)}</strong></div>
+        ${verifyQrUrl ? `
+        <div class="verify-qr-box">
+          <img src="${verifyQrUrl}" alt="Verify QR" />
+          <span>Scan to<br/>Verify</span>
+        </div>
+        ` : ''}
       </div>
     </div>
 
@@ -436,16 +482,6 @@ export async function printReceiptWindow(receipt: PrintReceiptData, fallbackOrgN
         <h2>DONATION RECEIPT</h2>
         <p>देणगी पावती</p>
       </div>
-    </div>
-
-    <!-- Meta -->
-    <div class="meta-row">
-      <div class="meta-box">Receipt No. &nbsp;&nbsp;&nbsp;&nbsp;<strong>${receipt.receipt_number}</strong></div>
-      <div class="barcode-box">
-        <div class="barcode"></div>
-        <div class="barcode-text">* ${receipt.receipt_number.toUpperCase()} *</div>
-      </div>
-      <div class="meta-box">Date &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>${receipt.receipt_date || new Date().toLocaleDateString('en-IN')}</strong></div>
     </div>
 
     <!-- Body -->
@@ -459,7 +495,7 @@ export async function printReceiptWindow(receipt: PrintReceiptData, fallbackOrgN
         <div class="donor-info">
           <table class="info-table">
             <tr><td>Donor Name</td><td>: <strong>${receipt.donor?.full_name || 'Anonymous'}</strong></td></tr>
-            <tr><td>Address</td><td>: ${receipt.donor?.address || '—'} ${receipt.donor?.city ? ', ' + receipt.donor.city : ''}</td></tr>
+            <tr><td>Address</td><td>: ${formatDonorAddress(receipt.donor)}</td></tr>
             <tr><td>Mobile No.</td><td>: ${receipt.donor?.phone || '—'}</td></tr>
             <tr><td>Email</td><td>: ${receipt.donor?.email || '—'}</td></tr>
           </table>
@@ -544,16 +580,28 @@ export async function printReceiptWindow(receipt: PrintReceiptData, fallbackOrgN
         <div class="sig-label sig-white">Authorized Signature</div>
       </div>
     </div>
+    
+    <div class="developer-footer">
+      Powered By <strong>Hisob.in</strong> &nbsp;|&nbsp; Developed by <strong>mayurpatil.in</strong>
+    </div>
   </div>
-
+  ${forShare ? '' : `
   <script>
     window.onload = function() {
       setTimeout(function() { window.print(); }, 600);
     };
   </script>
+  `}
 </body>
 </html>`;
+  }
+  
+  return html;
+}
 
+/** Open a professional print popup for a donation receipt */
+export async function printReceiptWindow(receipt: PrintReceiptData, fallbackOrgName = 'Hissob ERP'): Promise<void> {
+  const html = await getReceiptHtmlContent(receipt, fallbackOrgName, false);
   const printWin = window.open('', '_blank', 'width=1100,height=800,toolbar=0,menubar=0,scrollbars=1');
   if (printWin) {
     printWin.document.write(html);
@@ -561,3 +609,133 @@ export async function printReceiptWindow(receipt: PrintReceiptData, fallbackOrgN
     printWin.focus();
   }
 }
+
+/** Generate an image and share via WhatsApp */
+export async function shareReceiptViaWhatsApp(receipt: PrintReceiptData, fallbackOrgName = 'Hissob ERP'): Promise<void> {
+  const STYLE_ID = 'hissob-receipt-share-style';
+  const ROOT_ID  = 'hissob-receipt-share-root';
+
+  try {
+    // 1. Generate the receipt HTML
+    const html = await getReceiptHtmlContent(receipt, fallbackOrgName, true);
+
+    // 2. Pull out the <style> block and body content
+    const styleMatch = html.match(/<style>([\s\S]*?)<\/style>/i);
+    const bodyMatch  = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+    if (!styleMatch || !bodyMatch) throw new Error('Failed to parse receipt HTML');
+
+    // 3. Scope the extracted CSS so it does NOT pollute the main page
+    //    Replace bare `body { ... }` with a scoped root selector
+    const scopedCss = styleMatch[1]
+      .replace(/\bbody\.share-mode\b/g, '#' + ROOT_ID)
+      .replace(/\bbody\b(?=\s*\{)/g,    '#' + ROOT_ID);
+
+    // 4. Ensure Mukta + Yatra One fonts are loaded in THIS document
+    const fontLinkId = 'hissob-receipt-fonts';
+    if (!document.getElementById(fontLinkId)) {
+      const link = document.createElement('link');
+      link.id   = fontLinkId;
+      link.rel  = 'stylesheet';
+      link.href = 'https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800;900&family=Yatra+One&display=swap';
+      document.head.appendChild(link);
+    }
+
+    // 5. Force-load Mukta & Yatra One (this actually downloads the glyph data)
+    await Promise.race([
+      Promise.all([
+        document.fonts.load('400 20px Mukta'),
+        document.fonts.load('600 20px Mukta'),
+        document.fonts.load('700 20px Mukta'),
+        document.fonts.load('800 20px Mukta'),
+        document.fonts.load('400 20px "Yatra One"'),
+        document.fonts.load('400 20px Inter'),
+        document.fonts.load('700 20px Inter'),
+      ]).catch(() => {}),
+      new Promise(resolve => setTimeout(resolve, 4000)), // hard timeout
+    ]);
+
+    // 6. Inject scoped styles into the main document
+    const oldStyle = document.getElementById(STYLE_ID);
+    if (oldStyle) oldStyle.remove();
+    const styleEl = document.createElement('style');
+    styleEl.id = STYLE_ID;
+    styleEl.textContent = scopedCss;
+    document.head.appendChild(styleEl);
+
+    // 7. Create a hidden off-screen root div and inject receipt HTML
+    const oldRoot = document.getElementById(ROOT_ID);
+    if (oldRoot) oldRoot.remove();
+    const root = document.createElement('div');
+    root.id = ROOT_ID;
+    // Override ONLY the layout — the scoped CSS handles everything else
+    root.style.cssText = [
+      'position:absolute', 'top:-9999px', 'left:-9999px',
+      'width:1100px',      'min-height:800px',
+      'background:#fff',   'overflow:hidden',
+      'display:flex',      'justify-content:center', 'align-items:center',
+      'z-index:-1',
+    ].join(';');
+    root.innerHTML = bodyMatch[1].trim();
+    document.body.appendChild(root);
+
+    // 8. Brief pause for images (QR code / logo) to load
+    await new Promise(resolve => setTimeout(resolve, 1200));
+
+    // 9. Find the receipt wrapper inside our injected root
+    const wrapper = root.querySelector('.receipt-wrapper') as HTMLElement;
+    if (!wrapper) throw new Error('Receipt wrapper not found in DOM');
+
+    // 10. Capture with html2canvas (fonts are already in the main document)
+    const canvas = await html2canvas(wrapper, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      foreignObjectRendering: false,
+      logging: false,
+    });
+
+    // 11. Cleanup
+    root.remove();
+    document.getElementById(STYLE_ID)?.remove();
+
+    // 12. Share or download
+    canvas.toBlob(async (blob) => {
+      if (!blob) return;
+      const file = new File([blob], `Receipt_${receipt.receipt_number}.png`, { type: 'image/png' });
+      const verifyUrl = receipt.id ? `${window.location.origin}/verify/${receipt.id}` : '';
+      const textMessage = `🙏 *Thank you for your contribution to ${fallbackOrgName}!*\n\n🧾 *Receipt No:* ${receipt.receipt_number}\n💰 *Amount:* ₹${Number(receipt.amount).toLocaleString('en-IN')}\n${verifyUrl ? `\n🔗 *View & Verify Receipt Online:*\n${verifyUrl}` : ''}`;
+
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: `Donation Receipt ${receipt.receipt_number}`,
+            text: textMessage,
+            files: [file],
+          });
+        } catch {
+          downloadFallback(canvas.toDataURL('image/png'), file.name);
+        }
+      } else {
+        downloadFallback(canvas.toDataURL('image/png'), file.name);
+      }
+    }, 'image/png');
+
+  } catch (err) {
+    // Cleanup on error
+    document.getElementById(ROOT_ID)?.remove();
+    document.getElementById(STYLE_ID)?.remove();
+    console.error('Failed to generate receipt image', err);
+    alert('Failed to generate receipt image for sharing.');
+  }
+}
+
+function downloadFallback(dataUrl: string, filename: string) {
+  const a = document.createElement('a');
+  a.href = dataUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+

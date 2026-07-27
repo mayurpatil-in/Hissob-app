@@ -50,6 +50,7 @@ class Tenant(Base, UUIDMixin, TimestampMixin):
     timezone: Mapped[str] = mapped_column(String(50), default="Asia/Kolkata")
     currency: Mapped[str] = mapped_column(String(10), default="INR")
     fiscal_year_start_month: Mapped[int] = mapped_column(Integer, default=4)  # April
+    receipt_template: Mapped[str] = mapped_column(String(50), default="modern", server_default="modern")
 
     # Relationships
     users: Mapped[list["User"]] = relationship("User", back_populates="tenant")

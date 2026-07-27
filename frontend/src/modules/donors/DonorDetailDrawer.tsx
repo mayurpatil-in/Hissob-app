@@ -8,8 +8,8 @@ import {
   WhatsAppOutlined, DownloadOutlined
 } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
-import { getDonorSummary } from '../../api/services';
-import { printReceiptWindow } from '../../utils/printReceipt';
+import { getDonorSummary, getMyOrganization } from '../../api/services';
+import { printReceiptWindow, shareReceiptViaWhatsApp } from '../../utils/printReceipt';
 import { generateWhatsAppReceiptLink } from '../../utils/whatsapp';
 import { exportToCSV } from '../../utils/exportTable';
 import Tax80GCertificateModal, { type Tax80GData } from '../reports/Tax80GCertificateModal';
@@ -30,6 +30,7 @@ const DonorDetailDrawer: React.FC<Props> = ({ donorId, onClose }) => {
     queryFn: () => getDonorSummary(donorId!),
     enabled: Boolean(donorId),
   });
+  const { data: myOrg } = useQuery({ queryKey: ['myOrganization'], queryFn: getMyOrganization });
 
   if (!donorId) return null;
 
@@ -48,7 +49,7 @@ const DonorDetailDrawer: React.FC<Props> = ({ donorId, onClose }) => {
       title: 'Date',
       dataIndex: 'receipt_date',
       key: 'receipt_date',
-      render: (d: string) => <span style={{ whiteSpace: 'nowrap' }}>{d}</span>,
+      render: (d: string) => <span style={{ whiteSpace: 'nowrap' }}>{d ? dayjs(d).format('DD-MM-YYYY') : ''}</span>,
     },
     {
       title: 'Amount (₹)',
@@ -103,12 +104,13 @@ const DonorDetailDrawer: React.FC<Props> = ({ donorId, onClose }) => {
               }, 'Hissob ERP')}
             />
           </Tooltip>
-          <Tooltip title="Share on WhatsApp">
+          <Tooltip title="Share Link via WhatsApp">
             <Button
               size="small"
               icon={<WhatsAppOutlined style={{ color: '#25D366' }} />}
               onClick={() => {
                 const link = generateWhatsAppReceiptLink({
+                  receiptId: record.id,
                   receiptNumber: record.receipt_number,
                   donorName: donor?.full_name || 'Donor',
                   donorPhone: donor?.phone,
@@ -116,9 +118,33 @@ const DonorDetailDrawer: React.FC<Props> = ({ donorId, onClose }) => {
                   paymentMode: record.payment_mode,
                   receiptDate: record.receipt_date,
                   purpose: record.purpose,
+                  orgName: myOrg?.name,
                 });
                 window.open(link, '_blank');
               }}
+            />
+          </Tooltip>
+          <Tooltip title="Share Image via WhatsApp">
+            <Button
+              size="small"
+              icon={<WhatsAppOutlined />}
+              style={{ background: '#25D366', borderColor: '#25D366', color: '#fff' }}
+              onClick={() => shareReceiptViaWhatsApp({
+                id: record.id,
+                receipt_number: record.receipt_number,
+                receipt_date: record.receipt_date,
+                amount: record.amount,
+                payment_mode: record.payment_mode,
+                purpose: record.purpose,
+                collector_name: record.collector_name,
+                donor: {
+                  full_name: donor?.full_name || 'Donor',
+                  phone: donor?.phone,
+                  pan_number: donor?.pan_number,
+                  address: donor?.address,
+                  city: donor?.city,
+                }
+              })}
             />
           </Tooltip>
         </Space>
@@ -210,8 +236,8 @@ const DonorDetailDrawer: React.FC<Props> = ({ donorId, onClose }) => {
             </Card>
 
             {/* Lifetime Contribution Metrics */}
-            <Row gutter={[16, 16]} className="hissob-stat-row" style={{ marginBottom: 20 }}>
-              <Col xs={12} sm={6} className="hissob-stat-col">
+            <Row gutter={[12, 12]} className="hissob-stat-row" style={{ marginBottom: 20 }}>
+              <Col xs={12} sm={12} className="hissob-stat-col">
                 <Card
                   className="hissob-stat-card"
                   style={{
@@ -229,7 +255,7 @@ const DonorDetailDrawer: React.FC<Props> = ({ donorId, onClose }) => {
                 </Card>
               </Col>
 
-              <Col xs={12} sm={6} className="hissob-stat-col">
+              <Col xs={12} sm={12} className="hissob-stat-col">
                 <Card
                   className="hissob-stat-card"
                   style={{
@@ -247,7 +273,7 @@ const DonorDetailDrawer: React.FC<Props> = ({ donorId, onClose }) => {
                 </Card>
               </Col>
 
-              <Col xs={12} sm={6} className="hissob-stat-col">
+              <Col xs={12} sm={12} className="hissob-stat-col">
                 <Card
                   className="hissob-stat-card"
                   style={{
@@ -265,7 +291,7 @@ const DonorDetailDrawer: React.FC<Props> = ({ donorId, onClose }) => {
                 </Card>
               </Col>
 
-              <Col xs={12} sm={6} className="hissob-stat-col">
+              <Col xs={12} sm={12} className="hissob-stat-col">
                 <Card
                   className="hissob-stat-card"
                   style={{
@@ -274,13 +300,13 @@ const DonorDetailDrawer: React.FC<Props> = ({ donorId, onClose }) => {
                     borderTop: '4px solid #2563EB',
                   }}
                 >
-                  <Text style={{ fontSize: 11, fontWeight: 700, color: '#1D4ED8', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  <Text style={{ fontSize: 11, fontWeight: 700, color: '#1E40AF', textTransform: 'uppercase', letterSpacing: 0.5 }}>
                     💳 Cash / Digital
                   </Text>
-                  <div style={{ marginTop: 4, fontWeight: 800, fontSize: 12, whiteSpace: 'nowrap' }}>
-                    <span style={{ color: '#EA580C' }}>₹{Math.round(metrics?.cash_total || 0).toLocaleString('en-IN')}</span>
-                    <span style={{ color: '#94A3B8', margin: '0 3px' }}>/</span>
-                    <span style={{ color: '#2563EB' }}>₹{Math.round(metrics?.digital_total || 0).toLocaleString('en-IN')}</span>
+                  <div style={{ marginTop: 4, fontSize: 14, fontWeight: 900, whiteSpace: 'nowrap' }}>
+                    <span style={{ color: '#EA580C' }}>₹{Number(metrics?.cash_total || 0).toLocaleString('en-IN')}</span>
+                    <span style={{ color: '#94A3B8', margin: '0 4px' }}>/</span>
+                    <span style={{ color: '#2563EB' }}>₹{Number(metrics?.digital_total || 0).toLocaleString('en-IN')}</span>
                   </div>
                 </Card>
               </Col>

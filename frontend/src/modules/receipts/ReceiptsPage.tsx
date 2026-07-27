@@ -9,10 +9,10 @@ import {
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { getReceipts, createReceipt, updateReceipt, cancelReceipt, deleteReceipt, settleReceipt, getDonors, getFinancialYears, getFestivals } from '../../api/services';
+import { getReceipts, createReceipt, updateReceipt, cancelReceipt, deleteReceipt, settleReceipt, getDonors, getFinancialYears, getFestivals, getMyOrganization } from '../../api/services';
 import { useAuthStore } from '../../store/authStore';
 import { generateWhatsAppReceiptLink } from '../../utils/whatsapp';
-import { printReceiptWindow } from '../../utils/printReceipt';
+import { printReceiptWindow, shareReceiptViaWhatsApp } from '../../utils/printReceipt';
 import { exportToCSV, exportToExcel } from '../../utils/exportTable';
 import AIVoiceAssistantModal from '../ai/AIVoiceAssistantModal';
 import CollectorDailySummaryModal from '../settlements/CollectorDailySummaryModal';
@@ -56,6 +56,7 @@ const ReceiptsPage: React.FC = () => {
   const { data: donors = [] } = useQuery({ queryKey: ['donors'], queryFn: () => getDonors() });
   const { data: fiscalYears = [] } = useQuery({ queryKey: ['financialYears'], queryFn: getFinancialYears });
   const { data: festivals = [] } = useQuery({ queryKey: ['festivals'], queryFn: () => getFestivals() });
+  const { data: myOrg } = useQuery({ queryKey: ['myOrganization'], queryFn: getMyOrganization });
 
   // Mutations
   const createMutation = useMutation({
@@ -189,7 +190,7 @@ const ReceiptsPage: React.FC = () => {
       title: 'Date',
       dataIndex: 'receipt_date',
       key: 'receipt_date',
-      render: (d: string) => <span style={{ whiteSpace: 'nowrap', fontWeight: 600, color: '#475569' }}>{d}</span>,
+      render: (d: string) => <span style={{ whiteSpace: 'nowrap', fontWeight: 600, color: '#475569' }}>{d ? dayjs(d).format('DD-MM-YYYY') : ''}</span>,
     },
     {
       title: 'Donor',
@@ -244,6 +245,7 @@ const ReceiptsPage: React.FC = () => {
               size="small"
               onClick={() => {
                 const link = generateWhatsAppReceiptLink({
+                  receiptId: record.id,
                   receiptNumber: record.receipt_number,
                   donorName: record.donor?.full_name || 'Donor',
                   donorPhone: record.donor?.phone,
@@ -251,9 +253,19 @@ const ReceiptsPage: React.FC = () => {
                   paymentMode: record.payment_mode,
                   receiptDate: record.receipt_date,
                   purpose: record.purpose,
+                  orgName: myOrg?.name,
                 });
                 window.open(link, '_blank');
               }}
+            />
+          </Tooltip>
+          <Tooltip title="Share Image via WhatsApp">
+            <Button
+              icon={<WhatsAppOutlined />}
+              size="small"
+              type="primary"
+              style={{ background: '#25D366', borderColor: '#25D366' }}
+              onClick={() => shareReceiptViaWhatsApp(record, 'Hisob ERP')}
             />
           </Tooltip>
           <Tooltip title="Print Professional Receipt">
@@ -520,7 +532,7 @@ const ReceiptsPage: React.FC = () => {
                           {record.receipt_number}
                         </span>
                         <div style={{ fontSize: 11, color: '#64748B', marginTop: 2 }}>
-                          📅 {record.receipt_date}
+                          📅 {record.receipt_date ? dayjs(record.receipt_date).format('DD-MM-YYYY') : ''}
                         </div>
                       </div>
                       <Tag color={tag.color} style={{ fontWeight: 800, borderRadius: 6, margin: 0 }}>
@@ -567,6 +579,7 @@ const ReceiptsPage: React.FC = () => {
                         style={{ flex: '1 1 auto', fontWeight: 700, fontSize: 11 }}
                         onClick={() => {
                           const link = generateWhatsAppReceiptLink({
+                            receiptId: record.id,
                             receiptNumber: record.receipt_number,
                             donorName: record.donor?.full_name || 'Donor',
                             donorPhone: record.donor?.phone,
@@ -574,11 +587,21 @@ const ReceiptsPage: React.FC = () => {
                             paymentMode: record.payment_mode,
                             receiptDate: record.receipt_date,
                             purpose: record.purpose,
+                            orgName: myOrg?.name,
                           });
                           window.open(link, '_blank');
                         }}
                       >
-                        WhatsApp
+                        WhatsApp Text
+                      </Button>
+                      <Button
+                        type="primary"
+                        size="small"
+                        icon={<WhatsAppOutlined />}
+                        style={{ flex: '1 1 auto', fontWeight: 700, fontSize: 11, background: '#25D366', borderColor: '#25D366' }}
+                        onClick={() => shareReceiptViaWhatsApp(record, 'Hisob ERP')}
+                      >
+                        Share Image
                       </Button>
                       <Button
                         type="primary"

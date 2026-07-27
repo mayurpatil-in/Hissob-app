@@ -100,3 +100,23 @@ class CashSettlementResponse(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class ReceiptListResponse(BaseModel):
+    items: List["ReceiptResponse"]
+    total: int
+
+
+class PublicReceiptVerificationResponse(BaseModel):
+    id: UUID
+    receipt_number: str
+    receipt_date: date
+    amount: float
+    payment_mode: PaymentMode
+    status: ReceiptStatus
+    donor_name: str
+    purpose: Optional[str] = None
+    transaction_ref: Optional[str] = None
+    org_name: str
+    org_logo_url: Optional[str] = None
+    verified_at: datetime

@@ -28,6 +28,7 @@ class TenantBase(BaseModel):
     timezone: str = "Asia/Kolkata"
     currency: str = "INR"
     fiscal_year_start_month: int = Field(4, ge=1, le=12)
+    receipt_template: str = "modern"
 
 
 class TenantCreate(TenantBase):
@@ -58,6 +59,7 @@ class TenantUpdate(BaseModel):
     storage_limit_mb: Optional[int] = None
     max_users: Optional[int] = None
     is_active: Optional[bool] = None
+    receipt_template: Optional[str] = None
 
 
 class TenantResponse(TenantBase):

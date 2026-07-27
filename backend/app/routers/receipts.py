@@ -10,11 +10,12 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.permissions.rbac import require
 from app.models.user import User
+from app.models.tenant import Tenant
 from app.models.receipt import Receipt, ReceiptStatus, PaymentMode
 from app.models.financial_year import FinancialYear
 from app.repositories.receipt import ReceiptRepository
 from app.repositories.donor import DonorRepository
-from app.schemas.receipt import ReceiptCreate, ReceiptCancel, ReceiptUpdate, ReceiptResponse
+from app.schemas.receipt import ReceiptCreate, ReceiptCancel, ReceiptUpdate, ReceiptResponse, PublicReceiptVerificationResponse
 
 router = APIRouter(prefix="/receipts", tags=["Receipts"])
 
@@ -357,3 +358,31 @@ async def delete_receipt(
     db.delete(receipt)
     db.commit()
     return {"message": "Receipt permanently deleted", "id": str(receipt_id)}
+
+
+@router.get("/public/{receipt_id}/verify", response_model=PublicReceiptVerificationResponse, summary="Publicly Verify Receipt")
+async def verify_receipt_public(
+    receipt_id: UUID,
+    db: Session = Depends(get_db),
+):
+    repo = ReceiptRepository(db)
+    receipt = repo.get(receipt_id)
+    if not receipt:
+        raise HTTPException(status_code=404, detail="Receipt not found")
+
+    tenant = db.get(Tenant, receipt.tenant_id)
+
+    return PublicReceiptVerificationResponse(
+        id=receipt.id,
+        receipt_number=receipt.receipt_number,
+        receipt_date=receipt.receipt_date,
+        amount=receipt.amount,
+        payment_mode=receipt.payment_mode,
+        status=receipt.status,
+        donor_name=receipt.donor.full_name if receipt.donor else "Unknown",
+        purpose=receipt.purpose,
+        transaction_ref=receipt.transaction_ref or receipt.upi_reference or receipt.cheque_number,
+        org_name=tenant.name if tenant else "Unknown Organization",
+        org_logo_url=tenant.logo_url if tenant else None,
+        verified_at=datetime.now(timezone.utc)
+    )

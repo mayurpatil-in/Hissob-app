@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Form, Input, Button, Typography, App, Row, Col, Upload, Spin, Divider } from 'antd';
+import { Card, Form, Input, Button, Typography, App, Row, Col, Upload, Spin, Divider, Select } from 'antd';
 import { SaveOutlined, UploadOutlined, BankOutlined, QrcodeOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getMyOrganization, updateMyOrganization, uploadFile } from '../../api/services';
@@ -24,6 +24,12 @@ const OrganizationSettingsTab: React.FC = () => {
       form.setFieldsValue({
         name: org.name,
         upi_id: org.upi_id,
+        receipt_template: org.receipt_template || 'modern',
+        address: org.address,
+        city: org.city,
+        state: org.state,
+        pincode: org.pincode,
+        registration_number: org.registration_number,
       });
     }
   }, [org, form]);
@@ -77,6 +83,12 @@ const OrganizationSettingsTab: React.FC = () => {
     updateMutation.mutate({
       name: values.name,
       upi_id: values.upi_id,
+      receipt_template: values.receipt_template,
+      address: values.address,
+      city: values.city,
+      state: values.state,
+      pincode: values.pincode,
+      registration_number: values.registration_number,
     });
   };
 
@@ -84,8 +96,8 @@ const OrganizationSettingsTab: React.FC = () => {
 
   return (
     <Card className="hissob-card" style={{ maxWidth: 800 }}>
-      <Title level={5} style={{ color: '#F97316', marginTop: 0 }}><BankOutlined /> Organization Profile</Title>
-      <Text type="secondary">Update your organization details and printing settings here.</Text>
+      <Title level={5} style={{ color: '#F97316', marginTop: 0 }}><BankOutlined /> Organization Profile & Address</Title>
+      <Text type="secondary">Update your organization address, registration details, and print settings here.</Text>
       <Divider style={{ margin: '16px 0' }} />
 
       <Row gutter={[24, 24]}>
@@ -124,13 +136,55 @@ const OrganizationSettingsTab: React.FC = () => {
       <Form form={form} layout="vertical" onFinish={handleSave}>
         <Row gutter={16}>
           <Col span={12}>
-            <Form.Item label="Organization / Mandal Name" name="name" rules={[{ required: true }]}>
-              <Input placeholder="e.g. Hissob Ganesh Utsav Trust" />
+            <Form.Item label="Organization / Mandal Name" name="name" rules={[{ required: true, message: 'Please enter Organization Name' }]}>
+              <Input placeholder="e.g. Vighnaharta Ganesh Utsav Mandal" />
             </Form.Item>
           </Col>
           <Col span={12}>
             <Form.Item label="UPI ID (For dynamic QR generation)" name="upi_id">
               <Input placeholder="e.g. yourbank@upi" />
+            </Form.Item>
+          </Col>
+        </Row>
+
+        <Row gutter={16}>
+          <Col span={24}>
+            <Form.Item label="Street Address / Location" name="address">
+              <Input.TextArea rows={2} placeholder="e.g. Station Road, Near Main Temple, Kolhapur" />
+            </Form.Item>
+          </Col>
+        </Row>
+
+        <Row gutter={16}>
+          <Col span={8}>
+            <Form.Item label="City / District" name="city">
+              <Input placeholder="e.g. Kolhapur" />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item label="State" name="state">
+              <Input placeholder="e.g. Maharashtra" />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item label="Pincode" name="pincode">
+              <Input placeholder="e.g. 416001" />
+            </Form.Item>
+          </Col>
+        </Row>
+        
+        <Row gutter={16}>
+          <Col span={12}>
+            <Form.Item label="Trust / Society Reg. No." name="registration_number">
+              <Input placeholder="e.g. Reg. No. MAH/1234/2020" />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item label="Receipt Print Template" name="receipt_template" tooltip="Choose how your receipts look when printed.">
+              <Select>
+                <Select.Option value="modern">Modern English (Default)</Select.Option>
+                <Select.Option value="marathi_traditional">Traditional Marathi (Classic Maroon)</Select.Option>
+              </Select>
             </Form.Item>
           </Col>
         </Row>
