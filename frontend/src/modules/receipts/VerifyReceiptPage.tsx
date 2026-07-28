@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { verifyPublicReceipt } from '../../api/services';
 import { Result, Card, Button, Typography, Spin, Divider, Tag } from 'antd';
-import { CheckCircleFilled, CloseCircleFilled, PrinterOutlined, SafetyCertificateFilled } from '@ant-design/icons';
+import { CheckCircleFilled, CloseCircleFilled, SafetyCertificateFilled } from '@ant-design/icons';
 import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
@@ -148,7 +148,7 @@ const VerifyReceiptPage: React.FC = () => {
         <div className="body-padding" style={{ padding: '24px 20px', position: 'relative' }}>
           <div style={{ textAlign: 'center', marginBottom: 20 }}>
             {data.org_logo_url && (
-              <img src={data.org_logo_url} alt="Org Logo" style={{ height: 60, width: 60, borderRadius: 12, marginBottom: 12, objectFit: 'cover', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }} />
+              <img src={data.org_logo_url.startsWith('http') ? data.org_logo_url : (import.meta.env.VITE_API_URL?.replace('/api/v1', '') || '') + data.org_logo_url} alt="Org Logo" style={{ height: 64, maxWidth: 160, borderRadius: 12, marginBottom: 12, objectFit: 'contain', background: '#fff', padding: 4, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }} />
             )}
             <div style={{ fontSize: 13, color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>Donation Amount</div>
             <Title className="amount-title" level={1} style={{ margin: 0, color: '#0f172a', fontWeight: 900, fontSize: 42 }}>
@@ -189,21 +189,10 @@ const VerifyReceiptPage: React.FC = () => {
           <Divider dashed style={{ borderColor: '#cbd5e1' }} />
           
           <div style={{ textAlign: 'center' }}>
-            <div style={{ display: 'inline-block', background: '#f8fafc', padding: '6px 16px', borderRadius: 20, border: '1px solid #e2e8f0', marginBottom: 20 }}>
+            <div style={{ display: 'inline-block', background: '#f8fafc', padding: '6px 16px', borderRadius: 20, border: '1px solid #e2e8f0', marginBottom: 4 }}>
               <Text style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>
                 Verified at {dayjs(data.verified_at).format('DD MMM YYYY, hh:mm A')}
               </Text>
-            </div>
-            <div>
-              <Button type="primary" block size="large" onClick={() => window.print()} icon={<PrinterOutlined />} 
-                style={{ 
-                  height: 48, borderRadius: 12, fontWeight: 700, fontSize: 15,
-                  background: 'linear-gradient(135deg, #0f172a, #1e293b)', 
-                  border: 'none',
-                  boxShadow: '0 4px 12px rgba(15, 23, 42, 0.2)'
-                }}>
-                Print Details
-              </Button>
             </div>
           </div>
         </div>

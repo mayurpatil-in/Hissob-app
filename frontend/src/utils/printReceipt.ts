@@ -93,6 +93,44 @@ function formatDonorAddress(donor?: any): string {
   return parts.length > 0 ? parts.join(', ') : '—';
 }
 
+/** Helper to convert image URL to base64 Data URL to prevent CORS canvas tainting on mobile */
+async function imageToBase64(url: string): Promise<string> {
+  if (!url || url.startsWith('data:')) return url;
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return url;
+    const blob = await response.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(url);
+      reader.readAsDataURL(blob);
+    });
+  } catch (e) {
+    // If fetch failed due to CORS or network error, attempt Image element fallback
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth || img.width;
+          canvas.height = img.naturalHeight || img.height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0);
+            resolve(canvas.toDataURL('image/png'));
+            return;
+          }
+        } catch {}
+        resolve(url);
+      };
+      img.onerror = () => resolve(url);
+      img.src = url;
+    });
+  }
+}
+
 /** Generate the full HTML content for the receipt */
 export async function getReceiptHtmlContent(receipt: PrintReceiptData, fallbackOrgName = 'Hissob ERP', forShare = false): Promise<string> {
   let orgData: any = null;
@@ -102,10 +140,18 @@ export async function getReceiptHtmlContent(receipt: PrintReceiptData, fallbackO
     console.error('Failed to fetch org settings for receipt', err);
   }
   const orgName = orgData?.name || fallbackOrgName;
-  const logoUrl = orgData?.logo_url ? import.meta.env.VITE_API_URL?.replace('/api/v1', '') + orgData.logo_url : 'https://cdn-icons-png.flaticon.com/512/103/103328.png';
-  const qrCodeUrl = orgData?.qr_code_url ? import.meta.env.VITE_API_URL?.replace('/api/v1', '') + orgData.qr_code_url : null;
-  const verifyQrUrl = receipt.id ? `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.origin + '/verify/' + receipt.id)}` : null;
+  let logoUrl = orgData?.logo_url ? import.meta.env.VITE_API_URL?.replace('/api/v1', '') + orgData.logo_url : 'https://cdn-icons-png.flaticon.com/512/103/103328.png';
+  let qrCodeUrl = orgData?.qr_code_url ? import.meta.env.VITE_API_URL?.replace('/api/v1', '') + orgData.qr_code_url : null;
+  let verifyQrUrl = receipt.id ? `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.origin + '/verify/' + receipt.id)}` : null;
   const upiId = orgData?.upi_id || 'hissob@upi';
+  let defaultUpiQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(orgName)}&am=${receipt.amount}`;
+
+  if (forShare) {
+    logoUrl = await imageToBase64(logoUrl);
+    if (qrCodeUrl) qrCodeUrl = await imageToBase64(qrCodeUrl);
+    if (verifyQrUrl) verifyQrUrl = await imageToBase64(verifyQrUrl);
+    defaultUpiQrUrl = await imageToBase64(defaultUpiQrUrl);
+  }
   
   const amountWords = numberToWords(Number(receipt.amount));
   
@@ -125,7 +171,7 @@ export async function getReceiptHtmlContent(receipt: PrintReceiptData, fallbackO
 
   let html = '';
   if (orgData?.receipt_template === 'marathi_traditional') {
-    html = getMarathiReceiptHtml(receipt, orgName, orgData, logoUrl, qrCodeUrl, upiId, amountWords);
+    html = getMarathiReceiptHtml(receipt, orgName, orgData, logoUrl, qrCodeUrl, upiId, amountWords, verifyQrUrl, defaultUpiQrUrl);
   } else {
     html = `<!DOCTYPE html>
 <html lang="en">
@@ -270,7 +316,7 @@ export async function getReceiptHtmlContent(receipt: PrintReceiptData, fallbackO
       position: relative;
     }
     .main-banner::before, .main-banner::after {
-      content: '⚜'; position: absolute; top: 50%; transform: translateY(-50%);
+      content: '\\269C'; position: absolute; top: 50%; transform: translateY(-50%);
       color: #fde68a; font-size: 24px; text-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
     .main-banner::before { left: 24px; }
@@ -502,7 +548,7 @@ export async function getReceiptHtmlContent(receipt: PrintReceiptData, fallbackO
         </div>
         <div class="amt-box-wrapper">
           <div class="rubber-stamp">RECEIVED</div>
-          <div class="rupee-icon">₹</div>
+          <div class="rupee-icon">&#8377;</div>
           <div class="amt-nums">
             <div class="lbl">Amount</div>
             <div class="val">${Number(receipt.amount).toLocaleString('en-IN')}/-</div>
@@ -525,12 +571,12 @@ export async function getReceiptHtmlContent(receipt: PrintReceiptData, fallbackO
             Purpose of Donation
           </div>
           <div class="purpose-grid">
-            <div class="cb-item"><div class="cb-box ${isGanesh ? 'active' : ''}">${isGanesh ? '✓' : ''}</div> Ganesh Festival</div>
-            <div class="cb-item"><div class="cb-box ${isDonation ? 'active' : ''}">${isDonation ? '✓' : ''}</div> Donation</div>
-            <div class="cb-item"><div class="cb-box ${isMahaprasad ? 'active' : ''}">${isMahaprasad ? '✓' : ''}</div> Mahaprasad</div>
-            <div class="cb-item"><div class="cb-box ${isDecoration ? 'active' : ''}">${isDecoration ? '✓' : ''}</div> Decoration</div>
-            <div class="cb-item"><div class="cb-box ${isSocial ? 'active' : ''}">${isSocial ? '✓' : ''}</div> Social Activity</div>
-            <div class="cb-item"><div class="cb-box ${isOther ? 'active' : ''}">${isOther ? '✓' : ''}</div> Other <span class="other-line">${isOther ? receipt.purpose : ''}</span></div>
+            <div class="cb-item"><div class="cb-box ${isGanesh ? 'active' : ''}">${isGanesh ? '&#10003;' : ''}</div> Ganesh Festival</div>
+            <div class="cb-item"><div class="cb-box ${isDonation ? 'active' : ''}">${isDonation ? '&#10003;' : ''}</div> Donation</div>
+            <div class="cb-item"><div class="cb-box ${isMahaprasad ? 'active' : ''}">${isMahaprasad ? '&#10003;' : ''}</div> Mahaprasad</div>
+            <div class="cb-item"><div class="cb-box ${isDecoration ? 'active' : ''}">${isDecoration ? '&#10003;' : ''}</div> Decoration</div>
+            <div class="cb-item"><div class="cb-box ${isSocial ? 'active' : ''}">${isSocial ? '&#10003;' : ''}</div> Social Activity</div>
+            <div class="cb-item"><div class="cb-box ${isOther ? 'active' : ''}">${isOther ? '&#10003;' : ''}</div> Other <span class="other-line">${isOther ? receipt.purpose : ''}</span></div>
           </div>
         </div>
 
@@ -541,10 +587,10 @@ export async function getReceiptHtmlContent(receipt: PrintReceiptData, fallbackO
               Payment Mode
             </div>
             <div class="pay-grid">
-              <div class="cb-item"><div class="cb-box ${isCash ? 'active' : ''}">${isCash ? '✓' : ''}</div> Cash</div>
-              <div class="cb-item"><div class="cb-box ${isUPI ? 'active' : ''}">${isUPI ? '✓' : ''}</div> UPI</div>
-              <div class="cb-item"><div class="cb-box ${isBank ? 'active' : ''}">${isBank ? '✓' : ''}</div> Bank Transfer</div>
-              <div class="cb-item"><div class="cb-box ${isCheque ? 'active' : ''}">${isCheque ? '✓' : ''}</div> Cheque</div>
+              <div class="cb-item"><div class="cb-box ${isCash ? 'active' : ''}">${isCash ? '&#10003;' : ''}</div> Cash</div>
+              <div class="cb-item"><div class="cb-box ${isUPI ? 'active' : ''}">${isUPI ? '&#10003;' : ''}</div> UPI</div>
+              <div class="cb-item"><div class="cb-box ${isBank ? 'active' : ''}">${isBank ? '&#10003;' : ''}</div> Bank Transfer</div>
+              <div class="cb-item"><div class="cb-box ${isCheque ? 'active' : ''}">${isCheque ? '&#10003;' : ''}</div> Cheque</div>
             </div>
             <div class="utr-text">
               Transaction / UTR No. : <strong>${receipt.transaction_ref || receipt.upi_reference || receipt.cheque_number || '—'}</strong>
@@ -554,7 +600,7 @@ export async function getReceiptHtmlContent(receipt: PrintReceiptData, fallbackO
             <div>Scan & Pay (UPI)</div>
             ${qrCodeUrl 
               ? `<img src="${qrCodeUrl}" alt="QR" />` 
-              : `<img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=${upiId}&pn=${orgName}&am=${receipt.amount}" alt="QR" />`
+              : `<img src="${defaultUpiQrUrl}" alt="QR" />`
             }
             <div class="upi-id">UPI ID: ${upiId}</div>
           </div>
@@ -610,27 +656,21 @@ export async function printReceiptWindow(receipt: PrintReceiptData, fallbackOrgN
   }
 }
 
-/** Generate an image and share via WhatsApp */
-export async function shareReceiptViaWhatsApp(receipt: PrintReceiptData, fallbackOrgName = 'Hissob ERP'): Promise<void> {
-  const STYLE_ID = 'hissob-receipt-share-style';
-  const ROOT_ID  = 'hissob-receipt-share-root';
+/** Direct download receipt image as PNG file */
+export async function downloadReceiptImage(receipt: PrintReceiptData, fallbackOrgName = 'Hisob ERP'): Promise<void> {
+  const STYLE_ID = 'hissob-receipt-dl-style';
+  const ROOT_ID  = 'hissob-receipt-dl-root';
 
   try {
-    // 1. Generate the receipt HTML
     const html = await getReceiptHtmlContent(receipt, fallbackOrgName, true);
-
-    // 2. Pull out the <style> block and body content
     const styleMatch = html.match(/<style>([\s\S]*?)<\/style>/i);
     const bodyMatch  = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
     if (!styleMatch || !bodyMatch) throw new Error('Failed to parse receipt HTML');
 
-    // 3. Scope the extracted CSS so it does NOT pollute the main page
-    //    Replace bare `body { ... }` with a scoped root selector
     const scopedCss = styleMatch[1]
       .replace(/\bbody\.share-mode\b/g, '#' + ROOT_ID)
       .replace(/\bbody\b(?=\s*\{)/g,    '#' + ROOT_ID);
 
-    // 4. Ensure Mukta + Yatra One fonts are loaded in THIS document
     const fontLinkId = 'hissob-receipt-fonts';
     if (!document.getElementById(fontLinkId)) {
       const link = document.createElement('link');
@@ -640,21 +680,6 @@ export async function shareReceiptViaWhatsApp(receipt: PrintReceiptData, fallbac
       document.head.appendChild(link);
     }
 
-    // 5. Force-load Mukta & Yatra One (this actually downloads the glyph data)
-    await Promise.race([
-      Promise.all([
-        document.fonts.load('400 20px Mukta'),
-        document.fonts.load('600 20px Mukta'),
-        document.fonts.load('700 20px Mukta'),
-        document.fonts.load('800 20px Mukta'),
-        document.fonts.load('400 20px "Yatra One"'),
-        document.fonts.load('400 20px Inter'),
-        document.fonts.load('700 20px Inter'),
-      ]).catch(() => {}),
-      new Promise(resolve => setTimeout(resolve, 4000)), // hard timeout
-    ]);
-
-    // 6. Inject scoped styles into the main document
     const oldStyle = document.getElementById(STYLE_ID);
     if (oldStyle) oldStyle.remove();
     const styleEl = document.createElement('style');
@@ -662,12 +687,10 @@ export async function shareReceiptViaWhatsApp(receipt: PrintReceiptData, fallbac
     styleEl.textContent = scopedCss;
     document.head.appendChild(styleEl);
 
-    // 7. Create a hidden off-screen root div and inject receipt HTML
     const oldRoot = document.getElementById(ROOT_ID);
     if (oldRoot) oldRoot.remove();
     const root = document.createElement('div');
     root.id = ROOT_ID;
-    // Override ONLY the layout — the scoped CSS handles everything else
     root.style.cssText = [
       'position:absolute', 'top:-9999px', 'left:-9999px',
       'width:1100px',      'min-height:800px',
@@ -678,14 +701,12 @@ export async function shareReceiptViaWhatsApp(receipt: PrintReceiptData, fallbac
     root.innerHTML = bodyMatch[1].trim();
     document.body.appendChild(root);
 
-    // 8. Brief pause for images (QR code / logo) to load
-    await new Promise(resolve => setTimeout(resolve, 1200));
+    // Wait for Devanagari fonts to fully load before capture (fixes garbled Marathi text)
+    await ensureDevanagariFonts();
 
-    // 9. Find the receipt wrapper inside our injected root
     const wrapper = root.querySelector('.receipt-wrapper') as HTMLElement;
     if (!wrapper) throw new Error('Receipt wrapper not found in DOM');
 
-    // 10. Capture with html2canvas (fonts are already in the main document)
     const canvas = await html2canvas(wrapper, {
       scale: 2,
       useCORS: true,
@@ -695,38 +716,338 @@ export async function shareReceiptViaWhatsApp(receipt: PrintReceiptData, fallbac
       logging: false,
     });
 
-    // 11. Cleanup
     root.remove();
     document.getElementById(STYLE_ID)?.remove();
 
-    // 12. Share or download
-    canvas.toBlob(async (blob) => {
-      if (!blob) return;
-      const file = new File([blob], `Receipt_${receipt.receipt_number}.png`, { type: 'image/png' });
-      const verifyUrl = receipt.id ? `${window.location.origin}/verify/${receipt.id}` : '';
-      const textMessage = `🙏 *Thank you for your contribution to ${fallbackOrgName}!*\n\n🧾 *Receipt No:* ${receipt.receipt_number}\n💰 *Amount:* ₹${Number(receipt.amount).toLocaleString('en-IN')}\n${verifyUrl ? `\n🔗 *View & Verify Receipt Online:*\n${verifyUrl}` : ''}`;
+    const fileName = `Receipt_${receipt.receipt_number}.png`;
+    const dataUrl = canvas.toDataURL('image/png');
+    downloadFallback(dataUrl, fileName);
+  } catch (err) {
+    document.getElementById(ROOT_ID)?.remove();
+    document.getElementById(STYLE_ID)?.remove();
+    console.error('Failed to download receipt image', err);
+    alert('Failed to download receipt image.');
+  }
+}
 
-      if (navigator.share) {
+// ─── PRE-GENERATION BLOB CACHE ─────────────────────────────────────────────
+// Mobile browsers expire user-gesture tokens within ~1 second of a tap.
+// All async work (API calls, image fetching, html2canvas) takes 2–5 seconds.
+// Solution: pre-generate blobs in the background and cache them so that
+// navigator.share() can be called IMMEDIATELY when the user taps the button.
+
+const _receiptBlobCache = new Map<string, { blob: Blob; dataUrl: string; textMessage: string }>();
+const _receiptBlobGenerating = new Set<string>();
+
+/** Build the WhatsApp text message for a receipt */
+function buildReceiptTextMessage(receipt: PrintReceiptData, fallbackOrgName: string): string {
+  const verifyUrl = receipt.id ? `${window.location.origin}/verify/${receipt.id}` : '';
+  const formattedDate = formatDateDDMMYYYY(receipt.receipt_date);
+  const formattedAmt  = `₹ ${Number(receipt.amount || 0).toLocaleString('en-IN')}`;
+  const donorName     = receipt.donor?.full_name || 'Donor';
+  const modeText      = (receipt.payment_mode || 'CASH').toUpperCase();
+
+  return `🚩 *॥ श्री गणेशाय नमः ॥*
+🏛️ *${fallbackOrgName}*
+
+🙏 *आपल्या अमूल्य योगदानाबद्दल मनःपूर्वक धन्यवाद!*
+*Thank you for your generous contribution.*
+
+📜 *OFFICIAL DONATION RECEIPT | देणगी पावती*
+━━━━━━━━━━━━━━━━━━━━━━━
+🧾 *पावती क्र. (Receipt No):* ${receipt.receipt_number}
+📅 *दिनांक (Date):* ${formattedDate}
+👤 *देणगीदार (Donor):* ${donorName}
+💰 *रक्कम (Amount):* *${formattedAmt}*
+💳 *भरणा प्रकार (Mode):* ${modeText}
+${receipt.purpose ? `📌 *उद्देश (Purpose):* ${receipt.purpose}\n` : ''}━━━━━━━━━━━━━━━━━━━━━━━
+✅ *Status:* Confirmed & Authentic Receipt
+${verifyUrl ? `\n🔗 *डिजिटल पावती ऑनलाइन पाहा व तपासा:*\n${verifyUrl}\n` : ''}
+🌺 *गणपती बाप्पा मोरया! मंगलमूर्ती मोरया!*
+_Generated by Hisob ERP System | Developed by www.mayurpatil.in_`;
+}
+
+/** Ensure Devanagari fonts (Mukta + Yatra One) are loaded before html2canvas capture.
+ *  Without this, Marathi/Hindi text renders as garbled â¤¶â¤Ÿ characters.
+ */
+async function ensureDevanagariFonts(): Promise<void> {
+  const fontLinkId = 'hissob-receipt-fonts';
+  if (!document.getElementById(fontLinkId)) {
+    const link = document.createElement('link');
+    link.id   = fontLinkId;
+    link.rel  = 'stylesheet';
+    link.href = 'https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800;900&family=Yatra+One&display=swap';
+    document.head.appendChild(link);
+    // Wait for stylesheet to parse
+    await new Promise(resolve => setTimeout(resolve, 200));
+  }
+  // Explicitly load specific Devanagari glyphs used in receipts
+  if (document.fonts) {
+    try {
+      await Promise.all([
+        document.fonts.load('400 20px Mukta'),
+        document.fonts.load('700 20px Mukta'),
+        document.fonts.load('800 20px Mukta'),
+        document.fonts.load('400 20px "Yatra One"'),
+        document.fonts.load('700 20px Inter'),
+      ]);
+      // Extra settle time for font metrics to apply to DOM
+      await new Promise(resolve => setTimeout(resolve, 150));
+    } catch (_) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+  } else {
+    await new Promise(resolve => setTimeout(resolve, 800));
+  }
+}
+
+/** Pre-generate receipt image blob in the background and cache it.
+ *  Call this when the receipts list loads (before the user taps the button).
+ */
+export async function preGenerateReceiptBlob(receipt: PrintReceiptData, fallbackOrgName = 'Hisob ERP'): Promise<void> {
+  const cacheKey = receipt.id || receipt.receipt_number;
+  if (_receiptBlobCache.has(cacheKey) || _receiptBlobGenerating.has(cacheKey)) return;
+  _receiptBlobGenerating.add(cacheKey);
+
+  const STYLE_ID = `hissob-pregen-style-${cacheKey}`;
+  const ROOT_ID  = `hissob-pregen-root-${cacheKey}`;
+
+  try {
+    const html = await getReceiptHtmlContent(receipt, fallbackOrgName, true);
+    const styleMatch = html.match(/<style>([\s\S]*?)<\/style>/i);
+    const bodyMatch  = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+    if (!styleMatch || !bodyMatch) return;
+
+    const scopedCss = styleMatch[1]
+      .replace(/\bbody\.share-mode\b/g, '#' + ROOT_ID)
+      .replace(/\bbody\b(?=\s*\{)/g,    '#' + ROOT_ID);
+
+    document.getElementById(STYLE_ID)?.remove();
+    const styleEl = document.createElement('style');
+    styleEl.id = STYLE_ID;
+    styleEl.textContent = scopedCss;
+    document.head.appendChild(styleEl);
+
+    document.getElementById(ROOT_ID)?.remove();
+    const root = document.createElement('div');
+    root.id = ROOT_ID;
+    root.style.cssText = [
+      'position:absolute', 'top:-99999px', 'left:-99999px',
+      'width:1100px', 'min-height:800px', 'background:#fff',
+      'overflow:hidden', 'display:flex', 'justify-content:center',
+      'align-items:center', 'z-index:-999',
+    ].join(';');
+    root.innerHTML = bodyMatch[1].trim();
+    document.body.appendChild(root);
+
+    // Wait for Devanagari fonts to load before capturing (prevents garbled Marathi text)
+    await ensureDevanagariFonts();
+
+    const wrapper = root.querySelector('.receipt-wrapper') as HTMLElement;
+    if (!wrapper) return;
+
+    const canvas = await html2canvas(wrapper, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      foreignObjectRendering: false,
+      logging: false,
+    });
+
+    root.remove();
+    document.getElementById(STYLE_ID)?.remove();
+
+    const dataUrl = canvas.toDataURL('image/png');
+    const blob: Blob | null = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    if (!blob) return;
+
+    const textMessage = buildReceiptTextMessage(receipt, fallbackOrgName);
+    _receiptBlobCache.set(cacheKey, { blob, dataUrl, textMessage });
+  } catch (_) {
+    // Silent fail — will fall back to on-demand generation
+  } finally {
+    _receiptBlobGenerating.delete(cacheKey);
+    document.getElementById(ROOT_ID)?.remove();
+    document.getElementById(STYLE_ID)?.remove();
+  }
+}
+
+/** Invalidate the cached blob for a receipt (call after editing a receipt) */
+export function invalidateReceiptBlobCache(receiptId: string): void {
+  _receiptBlobCache.delete(receiptId);
+}
+
+/** Generate an image and share via WhatsApp.
+ * Uses pre-generated blob cache if available for instant mobile share.
+ */
+export async function shareReceiptViaWhatsApp(receipt: PrintReceiptData, fallbackOrgName = 'Hissob ERP'): Promise<void> {
+  const cacheKey = receipt.id || receipt.receipt_number;
+  const fileName  = `Receipt_${receipt.receipt_number}.png`;
+
+  // ✅ FAST PATH: use pre-generated blob (called within user gesture — always works on mobile)
+  const cached = _receiptBlobCache.get(cacheKey);
+  if (cached) {
+    const { blob, dataUrl, textMessage } = cached;
+    if (typeof navigator !== 'undefined' && navigator.canShare) {
+      const file = new File([blob], fileName, { type: 'image/png' });
+      if (navigator.canShare({ files: [file] })) {
         try {
           await navigator.share({
             title: `Donation Receipt ${receipt.receipt_number}`,
             text: textMessage,
             files: [file],
           });
-        } catch {
-          downloadFallback(canvas.toDataURL('image/png'), file.name);
+          return;
+        } catch (err: any) {
+          if (err?.name === 'AbortError') return;
         }
-      } else {
-        downloadFallback(canvas.toDataURL('image/png'), file.name);
       }
-    }, 'image/png');
+    }
+    // Fallback for desktop
+    downloadFallback(dataUrl, fileName);
+    return;
+  }
+
+  // SLOW PATH: no cache — generate on demand (may not work on mobile due to gesture expiry)
+  const STYLE_ID = 'hissob-receipt-share-style';
+  const ROOT_ID  = 'hissob-receipt-share-root';
+
+  try {
+    // 1. Generate the receipt HTML (with all images pre-converted to base64)
+    const html = await getReceiptHtmlContent(receipt, fallbackOrgName, true);
+
+
+    // 2. Extract <style> and <body> content
+    const styleMatch = html.match(/<style>([\s\S]*?)<\/style>/i);
+    const bodyMatch  = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+    if (!styleMatch || !bodyMatch) throw new Error('Failed to parse receipt HTML');
+
+    // 3. Scope CSS to our off-screen container so it doesn't leak to main page
+    const scopedCss = styleMatch[1]
+      .replace(/\bbody\.share-mode\b/g, '#' + ROOT_ID)
+      .replace(/\bbody\b(?=\s*\{)/g,    '#' + ROOT_ID);
+
+    // 4. Ensure Google Fonts are loaded in this document
+    const fontLinkId = 'hissob-receipt-fonts';
+    if (!document.getElementById(fontLinkId)) {
+      const link = document.createElement('link');
+      link.id   = fontLinkId;
+      link.rel  = 'stylesheet';
+      link.href = 'https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800;900&family=Yatra+One&display=swap';
+      document.head.appendChild(link);
+    }
+
+    // 5. Inject scoped styles
+    document.getElementById(STYLE_ID)?.remove();
+    const styleEl = document.createElement('style');
+    styleEl.id = STYLE_ID;
+    styleEl.textContent = scopedCss;
+    document.head.appendChild(styleEl);
+
+    // 6. Create off-screen container and inject receipt HTML
+    document.getElementById(ROOT_ID)?.remove();
+    const root = document.createElement('div');
+    root.id = ROOT_ID;
+    root.style.cssText = [
+      'position:absolute', 'top:-9999px', 'left:-9999px',
+      'width:1100px', 'min-height:800px', 'background:#fff',
+      'overflow:hidden', 'display:flex', 'justify-content:center',
+      'align-items:center', 'z-index:-1',
+    ].join(';');
+    root.innerHTML = bodyMatch[1].trim();
+    document.body.appendChild(root);
+
+    // 7. Wait for Devanagari fonts to fully load before capture (fixes garbled Marathi text)
+    await ensureDevanagariFonts();
+
+    // 8. Capture receipt canvas
+    const wrapper = root.querySelector('.receipt-wrapper') as HTMLElement;
+    if (!wrapper) throw new Error('Receipt wrapper not found in DOM');
+
+    const canvas = await html2canvas(wrapper, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      foreignObjectRendering: false,
+      logging: false,
+    });
+
+    // 9. Clean up DOM immediately after capture
+    root.remove();
+    document.getElementById(STYLE_ID)?.remove();
+
+    const fileName = `Receipt_${receipt.receipt_number}.png`;
+    const dataUrl  = canvas.toDataURL('image/png');
+
+    // 10. CRITICAL FIX: Convert canvas to Blob using awaitable Promise.
+    //     Using canvas.toBlob() as a raw callback causes navigator.share() to
+    //     be called OUTSIDE the user-gesture window â€” browser blocks it.
+    //     Wrapping in Promise keeps the async chain unbroken.
+    const blob: Blob | null = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+
+    // 11. Build WhatsApp text message
+    const verifyUrl     = receipt.id ? `${window.location.origin}/verify/${receipt.id}` : '';
+    const formattedDate = formatDateDDMMYYYY(receipt.receipt_date);
+    const formattedAmt  = `â‚¹ ${Number(receipt.amount || 0).toLocaleString('en-IN')}`;
+    const donorName     = receipt.donor?.full_name || 'Donor';
+    const modeText      = (receipt.payment_mode || 'CASH').toUpperCase();
+
+    const textMessage =
+`ðŸš© *à¥¥ à¤¶à¥à¤°à¥€ à¤—à¤£à¥‡à¤¶à¤¾à¤¯ à¤¨à¤®à¤ƒ à¥¥*
+ðŸ›ï¸ *${fallbackOrgName}*
+
+ðŸ™ *à¤†à¤ªà¤²à¥à¤¯à¤¾ à¤…à¤®à¥‚à¤²à¥à¤¯ à¤¯à¥‹à¤—à¤¦à¤¾à¤¨à¤¾à¤¬à¤¦à¥à¤¦à¤² à¤®à¤¨à¤ƒà¤ªà¥‚à¤°à¥à¤µà¤• à¤§à¤¨à¥à¤¯à¤µà¤¾à¤¦!*
+*Thank you for your generous contribution.*
+
+ðŸ“œ *OFFICIAL DONATION RECEIPT | à¤¦à¥‡à¤£à¤—à¥€ à¤ªà¤¾à¤µà¤¤à¥€*
+â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”
+ðŸ§¾ *à¤ªà¤¾à¤µà¤¤à¥€ à¤•à¥à¤°. (Receipt No):* ${receipt.receipt_number}
+ðŸ“… *à¤¦à¤¿à¤¨à¤¾à¤‚à¤• (Date):* ${formattedDate}
+ðŸ‘¤ *à¤¦à¥‡à¤£à¤—à¥€à¤¦à¤¾à¤° (Donor):* ${donorName}
+ðŸ’° *à¤°à¤•à¥à¤•à¤® (Amount):* *${formattedAmt}*
+ðŸ’³ *à¤­à¤°à¤£à¤¾ à¤ªà¥à¤°à¤•à¤¾à¤° (Mode):* ${modeText}
+${receipt.purpose ? `ðŸ“Œ *à¤‰à¤¦à¥à¤¦à¥‡à¤¶ (Purpose):* ${receipt.purpose}\n` : ''}â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”
+âœ… *Status:* Confirmed & Authentic Receipt
+${verifyUrl ? `\nðŸ”— *à¤¡à¤¿à¤œà¤¿à¤Ÿà¤² à¤ªà¤¾à¤µà¤¤à¥€ à¤‘à¤¨à¤²à¤¾à¤‡à¤¨ à¤ªà¤¾à¤¹à¤¾ à¤µ à¤¤à¤ªà¤¾à¤¸à¤¾:*\n${verifyUrl}\n` : ''}
+ðŸŒº *à¤—à¤£à¤ªà¤¤à¥€ à¤¬à¤¾à¤ªà¥à¤ªà¤¾ à¤®à¥‹à¤°à¤¯à¤¾! à¤®à¤‚à¤—à¤²à¤®à¥‚à¤°à¥à¤¤à¥€ à¤®à¥‹à¤°à¤¯à¤¾!*
+_Generated by Hisob ERP System | Developed by www.mayurpatil.in_`;
+
+    // 12. Attempt native Web Share API with image file
+    if (blob && typeof navigator !== 'undefined' && navigator.canShare) {
+      const file = new File([blob], fileName, { type: 'image/png' });
+      if (navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            title: `Donation Receipt ${receipt.receipt_number}`,
+            text: textMessage,
+            files: [file],
+          });
+          return; // âœ… Share panel opened â€” done
+        } catch (err: any) {
+          if (err?.name === 'AbortError') return; // User cancelled â€” done
+          // Other error (e.g. share not supported for files) â€” fall through
+        }
+      }
+    }
+
+    // 13. Fallback: download image + text-only share (desktop / unsupported browsers)
+    downloadFallback(dataUrl, fileName);
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: `Donation Receipt ${receipt.receipt_number}`,
+          text: textMessage,
+        });
+      } catch (_) {}
+    }
 
   } catch (err) {
-    // Cleanup on error
     document.getElementById(ROOT_ID)?.remove();
     document.getElementById(STYLE_ID)?.remove();
-    console.error('Failed to generate receipt image', err);
-    alert('Failed to generate receipt image for sharing.');
+    console.error('Failed to share receipt image', err);
+    alert('Failed to generate receipt image. Please try again.');
   }
 }
 

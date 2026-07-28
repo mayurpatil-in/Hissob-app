@@ -33,7 +33,7 @@ const AppRouter: React.FC = () => (
     <Routes>
       {/* Public */}
       <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
-      <Route path="/verify/:id" element={<PublicRoute><VerifyReceiptPage /></PublicRoute>} />
+      <Route path="/verify/:id" element={<VerifyReceiptPage />} />
 
       {/* Private — wrapped in AppShell */}
       <Route path="/*" element={

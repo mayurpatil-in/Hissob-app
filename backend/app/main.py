@@ -18,6 +18,14 @@ from app.api.v1 import router as api_v1_router
 # ─── Rate Limiter ──────────────────────────────────────────────
 limiter = Limiter(key_func=get_remote_address, default_limits=[f"{settings.RATE_LIMIT_PER_MINUTE}/minute"])
 
+class CORSStaticFiles(StaticFiles):
+    async def get_response(self, path, scope):
+        response = await super().get_response(path, scope)
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "GET, OPTIONS"
+        return response
+
+
 # ─── App Factory ───────────────────────────────────────────────
 def create_app() -> FastAPI:
     app = FastAPI(
@@ -51,7 +59,7 @@ def create_app() -> FastAPI:
     # Static file uploads
     upload_dir = settings.UPLOAD_DIR
     os.makedirs(upload_dir, exist_ok=True)
-    app.mount("/uploads", StaticFiles(directory=upload_dir), name="uploads")
+    app.mount("/uploads", CORSStaticFiles(directory=upload_dir), name="uploads")
 
     # Health check
     @app.get("/health", tags=["Health"])

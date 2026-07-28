@@ -21,7 +21,9 @@ export function getMarathiReceiptHtml(
   logoUrl: string, 
   qrCodeUrl: string | null, 
   upiId: string, 
-  amountWords: string
+  amountWords: string,
+  verifyQrUrlOverride?: string | null,
+  defaultUpiQrUrlOverride?: string | null
 ): string {
   
   const p = (receipt.purpose || '').toLowerCase();
@@ -38,7 +40,11 @@ export function getMarathiReceiptHtml(
   const isBank = mode === 'NEFT' || mode === 'RTGS' || mode === 'BANK TRANSFER';
   const isCheque = mode === 'CHEQUE';
 
-  const verifyQrUrl = receipt.id ? `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.origin + '/verify/' + receipt.id)}` : null;
+  const verifyQrUrl = verifyQrUrlOverride !== undefined 
+    ? verifyQrUrlOverride 
+    : (receipt.id ? `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.origin + '/verify/' + receipt.id)}` : null);
+  
+  const defaultUpiQrUrl = defaultUpiQrUrlOverride || `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(orgName)}&am=${receipt.amount}`;
 
   return `<!DOCTYPE html>
 <html lang="mr">
@@ -411,7 +417,7 @@ export function getMarathiReceiptHtml(
             <div class="qr-img">
               ${qrCodeUrl 
                 ? `<img src="${qrCodeUrl}" alt="QR" />`
-                : `<img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=${upiId}&pn=${orgName}&am=${receipt.amount}" alt="QR" />`
+                : `<img src="${defaultUpiQrUrl}" alt="QR" />`
               }
               <span>Scan & Pay (UPI)</span>
             </div>

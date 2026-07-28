@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Table, Button, Tag, Space, Modal, Form, Input, InputNumber,
   Select, Card, Row, Col, Typography, App, Tooltip, DatePicker, Avatar, Segmented
@@ -12,7 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { getReceipts, createReceipt, updateReceipt, cancelReceipt, deleteReceipt, settleReceipt, getDonors, getFinancialYears, getFestivals, getMyOrganization } from '../../api/services';
 import { useAuthStore } from '../../store/authStore';
 import { generateWhatsAppReceiptLink } from '../../utils/whatsapp';
-import { printReceiptWindow, shareReceiptViaWhatsApp } from '../../utils/printReceipt';
+import { printReceiptWindow, shareReceiptViaWhatsApp, downloadReceiptImage, preGenerateReceiptBlob } from '../../utils/printReceipt';
 import { exportToCSV, exportToExcel } from '../../utils/exportTable';
 import AIVoiceAssistantModal from '../ai/AIVoiceAssistantModal';
 import CollectorDailySummaryModal from '../settlements/CollectorDailySummaryModal';
@@ -57,6 +57,19 @@ const ReceiptsPage: React.FC = () => {
   const { data: fiscalYears = [] } = useQuery({ queryKey: ['financialYears'], queryFn: getFinancialYears });
   const { data: festivals = [] } = useQuery({ queryKey: ['festivals'], queryFn: () => getFestivals() });
   const { data: myOrg } = useQuery({ queryKey: ['myOrganization'], queryFn: getMyOrganization });
+
+  // Pre-generate receipt image blobs in the background so the Share panel
+  // opens immediately on mobile (within the browser's 1-second user-gesture window)
+  useEffect(() => {
+    if (!receipts?.length) return;
+    const orgName = myOrg?.name || 'Hisob ERP';
+    // Stagger pre-generation to avoid overloading (one per second)
+    receipts.forEach((receipt: any, idx: number) => {
+      setTimeout(() => {
+        preGenerateReceiptBlob(receipt, orgName).catch(() => {});
+      }, idx * 1000);
+    });
+  }, [receipts, myOrg]);
 
   // Mutations
   const createMutation = useMutation({
@@ -265,7 +278,15 @@ const ReceiptsPage: React.FC = () => {
               size="small"
               type="primary"
               style={{ background: '#25D366', borderColor: '#25D366' }}
-              onClick={() => shareReceiptViaWhatsApp(record, 'Hisob ERP')}
+              onClick={() => shareReceiptViaWhatsApp(record, myOrg?.name || 'Hisob ERP')}
+            />
+          </Tooltip>
+          <Tooltip title="Download Receipt Image (PNG)">
+            <Button
+              icon={<DownloadOutlined />}
+              size="small"
+              style={{ color: '#059669', borderColor: '#A7F3D0', background: '#ECFDF5' }}
+              onClick={() => downloadReceiptImage(record, myOrg?.name || 'Hisob ERP')}
             />
           </Tooltip>
           <Tooltip title="Print Professional Receipt">
@@ -274,7 +295,7 @@ const ReceiptsPage: React.FC = () => {
               size="small"
               type="primary"
               style={{ background: '#0B2347', borderColor: '#0B2347' }}
-              onClick={() => printReceiptWindow(record, 'Hisob ERP')}
+              onClick={() => printReceiptWindow(record, myOrg?.name || 'Hisob ERP')}
             />
           </Tooltip>
           {record.status !== 'cancelled' ? (
@@ -599,16 +620,24 @@ const ReceiptsPage: React.FC = () => {
                         size="small"
                         icon={<WhatsAppOutlined />}
                         style={{ flex: '1 1 auto', fontWeight: 700, fontSize: 11, background: '#25D366', borderColor: '#25D366' }}
-                        onClick={() => shareReceiptViaWhatsApp(record, 'Hisob ERP')}
+                        onClick={() => shareReceiptViaWhatsApp(record, myOrg?.name || 'Hisob ERP')}
                       >
                         Share Image
+                      </Button>
+                      <Button
+                        size="small"
+                        icon={<DownloadOutlined />}
+                        style={{ flex: '1 1 auto', fontWeight: 700, fontSize: 11, color: '#059669', borderColor: '#A7F3D0', background: '#ECFDF5' }}
+                        onClick={() => downloadReceiptImage(record, myOrg?.name || 'Hisob ERP')}
+                      >
+                        Download Image
                       </Button>
                       <Button
                         type="primary"
                         size="small"
                         icon={<PrinterOutlined />}
                         style={{ flex: '1 1 auto', fontWeight: 700, fontSize: 11, background: '#0B2347', borderColor: '#0B2347' }}
-                        onClick={() => printReceiptWindow(record, 'Hisob ERP')}
+                        onClick={() => printReceiptWindow(record, myOrg?.name || 'Hisob ERP')}
                       >
                         Print
                       </Button>

@@ -36,21 +36,24 @@ export function generateWhatsAppReceiptLink(details: ReceiptWhatsAppDetails): st
   const verifyUrl = details.receiptId ? `${window.location.origin}/verify/${details.receiptId}` : '';
 
   const messageText = 
-`🙏 *Jai Ganesh! Thank you for your generous contribution.*
+`🚩 *॥ श्री गणेशाय नमः ॥*
+🏛️ *${org}*
 
-📜 *DONATION RECEIPT VOUCHER*
----------------------------------------
-🏛️ *Trust:* ${org}
-🧾 *Receipt No:* ${details.receiptNumber}
-📅 *Date:* ${formattedDate}
-👤 *Donor Name:* ${details.donorName}
-💰 *Amount Paid:* ${formattedAmount}
-💳 *Payment Mode:* ${modeText}
-${details.purpose ? `📌 *Purpose:* ${details.purpose}\n` : ''}---------------------------------------
-✅ *Status:* Confirmed & Recorded
-Tax Exemption (80G) Eligible
-${verifyUrl ? `\n🔗 *View & Verify Receipt Online:*\n${verifyUrl}\n` : ''}
-_Issued via Hissob ERP system._`;
+🙏 *आपल्या अमूल्य योगदानाबद्दल मनःपूर्वक धन्यवाद!*
+*Thank you for your generous contribution.*
+
+📜 *OFFICIAL DONATION RECEIPT | देणगी पावती*
+━━━━━━━━━━━━━━━━━━━━━━━
+🧾 *पावती क्र. (Receipt No):* ${details.receiptNumber}
+📅 *दिनांक (Date):* ${formattedDate}
+👤 *देणगीदार (Donor):* ${details.donorName}
+💰 *रक्कम (Amount):* *${formattedAmount}*
+💳 *भरणा प्रकार (Mode):* ${modeText}
+${details.purpose ? `📌 *उद्देश (Purpose):* ${details.purpose}\n` : ''}━━━━━━━━━━━━━━━━━━━━━━━
+✅ *Status:* Confirmed & Authentic Receipt
+${verifyUrl ? `\n🔗 *डिजिटल पावती ऑनलाइन पाहा व तपासा:*\n${verifyUrl}\n` : ''}
+🌺 *गणपती बाप्पा मोरया! मंगलमूर्ती मोरया!*
+_Issued via Hisob ERP System | Developed by www.mayurpatil.in_`;
 
   const encodedText = encodeURIComponent(messageText);
 
