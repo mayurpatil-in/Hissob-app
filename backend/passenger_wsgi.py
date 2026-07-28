@@ -21,11 +21,14 @@ else:
 if BACKEND_DIR not in sys.path:
     sys.path.insert(0, BACKEND_DIR)
 
-# Load environment variables (.env)
+# Load environment variables (.env or .env.production)
 from dotenv import load_dotenv
 env_path = os.path.join(BACKEND_DIR, ".env")
+env_prod_path = os.path.join(BACKEND_DIR, ".env.production")
 if os.path.exists(env_path):
     load_dotenv(env_path)
+elif os.path.exists(env_prod_path):
+    load_dotenv(env_prod_path)
 
 from app.main import app as fastapi_app
 from a2wsgi import ASGIMiddleware
