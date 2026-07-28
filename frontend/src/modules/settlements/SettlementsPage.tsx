@@ -736,7 +736,7 @@ const SettlementsPage: React.FC = () => {
             placeholder="Search receipt #, donor, collector, UTR, or notes..."
             prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
             allowClear
-            style={{ width: 320, borderRadius: 8 }}
+            style={{ flex: '1 1 240px', minWidth: 180, maxWidth: '100%', borderRadius: 8 }}
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             size="middle"

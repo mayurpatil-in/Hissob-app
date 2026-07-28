@@ -88,7 +88,7 @@ const AIVoiceAssistantModal: React.FC<Props> = ({ open, onCancel, onApplyParsedD
             type="success"
             showIcon
             icon={<CheckCircleOutlined />}
-            message={<b>AI Recognition Score: {(parsedResult.confidence_score * 100).toFixed(0)}%</b>}
+            title={<b>AI Recognition Score: {(parsedResult.confidence_score * 100).toFixed(0)}%</b>}
             description={
               <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <div><b>Detected Amount:</b> <Tag color="orange">₹ {parsedResult.amount || 'Not found'}</Tag></div>

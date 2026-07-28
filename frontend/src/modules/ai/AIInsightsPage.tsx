@@ -144,7 +144,7 @@ const AIInsightsPage: React.FC = () => {
               type="info"
               showIcon
               icon={<BulbOutlined style={{ color: '#0EA5E9' }} />}
-              message="Upcoming Ganesh Utsav Collection Projection"
+              title="Upcoming Ganesh Utsav Collection Projection"
               description="Based on past donor contributions and active financial year trends, AI projects a +24% increase in digital UPI donations for the upcoming festival season."
               style={{ marginBottom: 16 }}
             />

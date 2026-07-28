@@ -180,11 +180,14 @@ body {
   flex-wrap: wrap !important;
   align-items: stretch !important;
   gap: 16px !important;
+  width: 100% !important;
+  max-width: 100% !important;
 }
 
 .hissob-stat-col {
-  flex: 1 1 0 !important;
-  min-width: 120px !important;
+  flex: 1 1 calc(25% - 16px) !important;
+  min-width: 180px !important;
+  max-width: 100% !important;
   display: flex !important;
   flex-direction: column !important;
 }
@@ -216,8 +219,22 @@ body {
 }
 
 @media (max-width: 768px) {
+  .hissob-stat-row {
+    gap: 12px !important;
+  }
+  .hissob-stat-col {
+    flex: 1 1 calc(50% - 12px) !important;
+    min-width: calc(50% - 12px) !important;
+  }
   .hissob-stat-card {
-    padding: 10px 8px !important;
+    padding: 12px 10px !important;
+  }
+}
+
+@media (max-width: 500px) {
+  .hissob-stat-col {
+    flex: 1 1 100% !important;
+    min-width: 100% !important;
   }
 }
 

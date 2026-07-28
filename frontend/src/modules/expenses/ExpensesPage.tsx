@@ -439,12 +439,12 @@ const ExpensesPage: React.FC = () => {
       {/* ── Main Directory Controls ── */}
       <Card className="hissob-card" style={{ borderRadius: 14, boxShadow: '0 4px 16px rgba(11,35,71,0.06)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', flex: '1 1 300px' }}>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', flex: '1 1 auto', maxWidth: '100%' }}>
             <Input
               placeholder="Search vouchers, category, vendor, or applicant..."
               prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
               allowClear
-              style={{ width: 300, borderRadius: 8 }}
+              style={{ flex: '1 1 220px', minWidth: 180, maxWidth: '100%', borderRadius: 8 }}
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               size="middle"
@@ -452,7 +452,7 @@ const ExpensesPage: React.FC = () => {
             <Select
               placeholder="Filter by Status"
               allowClear
-              style={{ width: 200 }}
+              style={{ flex: '1 1 150px', minWidth: 140, maxWidth: '100%' }}
               onChange={(val) => setFilterStatus(val || '')}
               size="middle"
             >
