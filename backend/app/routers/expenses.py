@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from app.core.database import get_db
+from app.core.config import settings
 from app.auth.deps import get_current_active_user
 from app.permissions.rbac import require
 from app.models.user import User
@@ -19,6 +20,21 @@ from app.repositories.expense import ExpenseRepository
 from app.schemas.expense import ExpenseCreate, ExpenseUpdate, ExpenseApproval, ExpenseResponse
 
 router = APIRouter(prefix="/expenses", tags=["Expenses"])
+
+
+def delete_attached_file(bill_url: Optional[str]):
+    """Removes the associated bill image/PDF document from physical disk when an expense is deleted or replaced."""
+    if not bill_url:
+        return
+    try:
+        clean_path = bill_url.split("?")[0]
+        if "uploads/" in clean_path:
+            rel_path = clean_path.split("uploads/", 1)[1]
+            file_path = os.path.join(settings.UPLOAD_DIR, rel_path.lstrip("/"))
+            if os.path.exists(file_path) and os.path.isfile(file_path):
+                os.remove(file_path)
+    except Exception:
+        pass
 
 
 @router.get("", response_model=List[ExpenseResponse], summary="List & Filter Expenses")
@@ -214,7 +230,7 @@ async def upload_expense_bill(
     if ext not in allowed_exts:
         raise HTTPException(status_code=400, detail="Invalid file type. Only JPG, PNG, WEBP and PDF files are allowed.")
 
-    upload_dir = os.path.join("uploads", "bills")
+    upload_dir = os.path.join(settings.UPLOAD_DIR, "bills")
     os.makedirs(upload_dir, exist_ok=True)
 
     filename = f"bill_{uuid.uuid4().hex}{ext}"
@@ -246,6 +262,13 @@ async def attach_expense_bill(
     if not expense or (expense.tenant_id != current_user.tenant_id and not current_user.is_super_admin):
         raise HTTPException(status_code=404, detail="Expense not found")
 
+    user_role_strings = {str(getattr(r, 'slug', '') or '').lower() for r in getattr(current_user, 'roles', [])} | {str(getattr(r, 'name', '') or '').lower() for r in getattr(current_user, 'roles', [])}
+    is_privileged = current_user.is_super_admin or any(role in user_role_strings for role in ("treasurer", "org_admin", "org admin", "organization admin", "organization_admin", "admin", "president", "super_admin", "super admin"))
+    if expense.status == "paid" and not is_privileged:
+        raise HTTPException(status_code=400, detail="Cannot replace bill attachment for an expense that is already paid/settled.")
+
+    if expense.bill_url and expense.bill_url != bill_url:
+        delete_attached_file(expense.bill_url)
     expense.bill_url = bill_url
     db.commit()
     db.refresh(expense)
@@ -264,6 +287,11 @@ async def update_expense(
     if not expense or (expense.tenant_id != current_user.tenant_id and not current_user.is_super_admin):
         raise HTTPException(status_code=404, detail="Expense not found")
 
+    user_role_strings = {str(getattr(r, 'slug', '') or '').lower() for r in getattr(current_user, 'roles', [])} | {str(getattr(r, 'name', '') or '').lower() for r in getattr(current_user, 'roles', [])}
+    is_privileged = current_user.is_super_admin or any(role in user_role_strings for role in ("treasurer", "org_admin", "org admin", "organization admin", "organization_admin", "admin", "president", "super_admin", "super admin"))
+    if expense.status == "paid" and not is_privileged:
+        raise HTTPException(status_code=400, detail="Cannot modify details of a paid/settled expense.")
+
     if payload.category is not None:
         expense.category = payload.category
     if payload.vendor_name is not None:
@@ -275,6 +303,8 @@ async def update_expense(
     if payload.voucher_number is not None:
         expense.voucher_number = payload.voucher_number
     if payload.bill_url is not None:
+        if expense.bill_url and expense.bill_url != payload.bill_url:
+            delete_attached_file(expense.bill_url)
         expense.bill_url = payload.bill_url
     if payload.expense_date is not None:
         expense.expense_date = payload.expense_date
@@ -295,7 +325,15 @@ async def delete_expense(
     if not expense or (expense.tenant_id != current_user.tenant_id and not current_user.is_super_admin):
         raise HTTPException(status_code=404, detail="Expense not found")
 
+    user_role_strings = {str(getattr(r, 'slug', '') or '').lower() for r in getattr(current_user, 'roles', [])} | {str(getattr(r, 'name', '') or '').lower() for r in getattr(current_user, 'roles', [])}
+    is_privileged = current_user.is_super_admin or any(role in user_role_strings for role in ("treasurer", "org_admin", "org admin", "organization admin", "organization_admin", "admin", "president", "super_admin", "super admin"))
+    if expense.status == "paid" and not is_privileged:
+        raise HTTPException(status_code=400, detail="Cannot delete an expense that is already paid/settled.")
+
+    old_bill_url = expense.bill_url
     db.delete(expense)
     db.commit()
+    if old_bill_url:
+        delete_attached_file(old_bill_url)
     return {"message": "Expense deleted successfully", "id": str(expense_id)}
 

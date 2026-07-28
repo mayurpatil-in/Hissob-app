@@ -1,5 +1,8 @@
+import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 class Settings(BaseSettings):
@@ -29,7 +32,7 @@ class Settings(BaseSettings):
         return [o.strip() for o in self.ALLOWED_ORIGINS.split(",")]
 
     # Uploads
-    UPLOAD_DIR: str = "uploads"
+    UPLOAD_DIR: str = os.path.join(BASE_DIR, "uploads")
     MAX_UPLOAD_SIZE_MB: int = 10
 
     # Rate Limiting

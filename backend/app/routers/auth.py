@@ -95,6 +95,7 @@ async def login(
             tenant_id=user.tenant_id,
             avatar_url=user.avatar_url,
             permissions=permissions,
+            roles=getattr(user, "roles", []),
         ),
     )
 
@@ -179,4 +180,5 @@ async def me(current_user: User = Depends(get_current_active_user)):
         tenant_id=current_user.tenant_id,
         avatar_url=current_user.avatar_url,
         permissions=permissions,
+        roles=getattr(current_user, "roles", []),
     )

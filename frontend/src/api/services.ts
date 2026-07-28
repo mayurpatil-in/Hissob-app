@@ -57,6 +57,10 @@ export interface Expense {
   amount: number;
   description?: string;
   status: string;
+  requested_by_name?: string;
+  bill_url?: string;
+  voucher_number?: string;
+  financial_year_id?: string;
 }
 
 export interface DailyCollection {

@@ -22,6 +22,14 @@ class RefreshRequest(BaseModel):
     refresh_token: str
 
 
+class RoleInfo(BaseModel):
+    id: UUID
+    name: str
+    slug: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
 class UserInfo(BaseModel):
     id: UUID
     email: str
@@ -30,6 +38,7 @@ class UserInfo(BaseModel):
     tenant_id: Optional[UUID]
     avatar_url: Optional[str]
     permissions: dict[str, list[str]]
+    roles: list[RoleInfo] = []
 
     model_config = {"from_attributes": True}
 

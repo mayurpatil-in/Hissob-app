@@ -3,8 +3,9 @@ import os
 
 os.environ["SERVER_ENV"] = "passenger"
 
-# ── Ensure backend directory is first on Python path ────────────────────────
+# ── Ensure backend directory is first on Python path and set working dir ──────
 BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
+os.chdir(BACKEND_DIR)
 if BACKEND_DIR not in sys.path:
     sys.path.insert(0, BACKEND_DIR)
 
@@ -12,7 +13,7 @@ if BACKEND_DIR not in sys.path:
 from dotenv import load_dotenv
 load_dotenv(dotenv_path=os.path.join(BACKEND_DIR, ".env"), override=True)
 
-for _subdir in ("uploads", "logs", "backups"):
+for _subdir in ("uploads", "uploads/bills", "logs", "backups"):
     os.makedirs(os.path.join(BACKEND_DIR, _subdir), exist_ok=True)
 
 

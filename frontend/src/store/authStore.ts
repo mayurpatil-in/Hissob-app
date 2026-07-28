@@ -9,6 +9,7 @@ export interface UserInfo {
   tenant_id: string | null;
   avatar_url: string | null;
   permissions: Record<string, string[]>;
+  roles?: { id: string; name: string; slug?: string }[];
 }
 
 interface AuthState {
