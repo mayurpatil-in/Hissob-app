@@ -64,6 +64,19 @@ async def login(
     def _update_last_login():
         user.last_login = datetime.now(timezone.utc)
         db.commit()
+        try:
+            from app.services.audit_service import log_audit_event
+            log_audit_event(
+                db=db,
+                user=user,
+                module="auth",
+                action="login",
+                record_label=f"User Login ({user.full_name})",
+                ip_address=request.client.host if request.client else "127.0.0.1",
+                notes="Successful system login"
+            )
+        except Exception:
+            pass
 
     background_tasks.add_task(_update_last_login)
 

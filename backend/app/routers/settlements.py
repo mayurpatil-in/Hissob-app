@@ -111,6 +111,12 @@ async def submit_settlement(
     except Exception:
         pass
 
+    try:
+        from app.services.audit_service import log_audit_event
+        log_audit_event(db=db, user=current_user, module="cash_settlement", action="create", record_id=str(created.id), record_label=f"Submitted Cash Settlement {settlement_num} (₹{total_amount:,.2f})", notes=f"Included {len(receipts)} receipts")
+    except Exception:
+        pass
+
     return created
 
 
@@ -148,6 +154,13 @@ async def verify_settlement(
 
     db.commit()
     db.refresh(settlement)
+
+    try:
+        from app.services.audit_service import log_audit_event
+        audit_act = "approve" if payload.action == "approve" else "reject"
+        log_audit_event(db=db, user=current_user, module="cash_settlement", action=audit_act, record_id=str(settlement.id), record_label=f"Cash Settlement {settlement.settlement_number} {payload.action.upper()} (₹{settlement.total_amount:,.2f})", notes=f"Reviewed by {current_user.full_name}")
+    except Exception:
+        pass
 
     # 🔔 Notify the collector about approval or rejection
     try:

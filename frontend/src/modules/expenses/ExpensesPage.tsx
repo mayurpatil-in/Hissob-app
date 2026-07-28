@@ -463,40 +463,46 @@ const ExpensesPage: React.FC = () => {
       </Modal>
 
       {/* Bill Preview Modal */}
-      {previewUrl && (
-        <Modal
-          open={Boolean(previewUrl)}
-          onCancel={() => setPreviewUrl(null)}
-          title="Expense Bill / Receipt Voucher Preview"
-          footer={[
-            <Button key="close" onClick={() => setPreviewUrl(null)}>Close</Button>,
-            <Button
-              key="open"
-              type="primary"
-              onClick={() => window.open(previewUrl.startsWith('http') ? previewUrl : `${window.location.origin}${previewUrl}`, '_blank')}
-            >
-              Open Original Document
-            </Button>
-          ]}
-          width={700}
-        >
-          <div style={{ textAlign: 'center', padding: 10 }}>
-            {previewUrl.toLowerCase().endsWith('.pdf') ? (
-              <iframe
-                src={previewUrl}
-                style={{ width: '100%', height: 450, border: 'none', borderRadius: 8 }}
-                title="Bill PDF Preview"
-              />
-            ) : (
-              <Image
-                src={previewUrl.startsWith('http') ? previewUrl : `${window.location.origin}${previewUrl}`}
-                style={{ maxHeight: 450, objectFit: 'contain', borderRadius: 8 }}
-                alt="Bill Receipt"
-              />
-            )}
-          </div>
-        </Modal>
-      )}
+      {previewUrl && (() => {
+        const apiHost = import.meta.env.VITE_API_URL?.replace('/api/v1', '') || '';
+        const fullUrl = previewUrl.startsWith('http') ? previewUrl : `${apiHost}${previewUrl}`;
+        const isPdf = previewUrl.toLowerCase().endsWith('.pdf');
+
+        return (
+          <Modal
+            open={Boolean(previewUrl)}
+            onCancel={() => setPreviewUrl(null)}
+            title="Expense Bill / Receipt Voucher Preview"
+            footer={[
+              <Button key="close" onClick={() => setPreviewUrl(null)}>Close</Button>,
+              <Button
+                key="open"
+                type="primary"
+                onClick={() => window.open(fullUrl, '_blank')}
+              >
+                Open Original Document
+              </Button>
+            ]}
+            width={700}
+          >
+            <div style={{ textAlign: 'center', padding: 10 }}>
+              {isPdf ? (
+                <iframe
+                  src={fullUrl}
+                  style={{ width: '100%', height: 500, border: 'none', borderRadius: 8 }}
+                  title="Bill PDF Preview"
+                />
+              ) : (
+                <Image
+                  src={fullUrl}
+                  style={{ maxHeight: 500, objectFit: 'contain', borderRadius: 8 }}
+                  alt="Bill Receipt"
+                />
+              )}
+            </div>
+          </Modal>
+        );
+      })()}
 
       {/* Attach Bill to Existing Expense Modal */}
       {attachExpenseId && (

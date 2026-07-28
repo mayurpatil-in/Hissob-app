@@ -108,6 +108,12 @@ async def create_expense(
     except Exception:
         pass
 
+    try:
+        from app.services.audit_service import log_audit_event
+        log_audit_event(db=db, user=current_user, module="expenses", action="create", record_id=str(created.id), record_label=f"Requested Expense {created.expense_number} (₹{created.amount})", notes=f"Category: {created.category} | Vendor: {created.vendor_name or 'N/A'}")
+    except Exception:
+        pass
+
     return created
 
 
@@ -143,6 +149,13 @@ async def approve_expense(
 
     db.commit()
     db.refresh(expense)
+
+    try:
+        from app.services.audit_service import log_audit_event
+        audit_act = "approve" if payload.action in ["approve", "pay"] else "reject"
+        log_audit_event(db=db, user=current_user, module="expenses", action=audit_act, record_id=str(expense.id), record_label=f"Expense {expense.expense_number} marked as {expense.status.upper()} (₹{expense.amount})", notes=f"Action: {payload.action.upper()}")
+    except Exception:
+        pass
 
     # 🔔 Notify the requester about approval/rejection/payment
     try:

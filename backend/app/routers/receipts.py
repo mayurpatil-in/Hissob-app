@@ -279,6 +279,11 @@ async def update_receipt(
 
     db.commit()
     db.refresh(receipt)
+    try:
+        from app.services.audit_service import log_audit_event
+        log_audit_event(db=db, user=current_user, module="receipts", action="update", record_id=str(receipt.id), record_label=f"Updated Receipt {receipt.receipt_number}", notes=f"Amount: ₹{receipt.amount}")
+    except Exception:
+        pass
     return receipt
 
 
@@ -303,6 +308,11 @@ async def cancel_receipt(
     receipt.cancelled_by = current_user.id
     db.commit()
     db.refresh(receipt)
+    try:
+        from app.services.audit_service import log_audit_event
+        log_audit_event(db=db, user=current_user, module="receipts", action="reject", record_id=str(receipt.id), record_label=f"Cancelled Receipt {receipt.receipt_number}", notes=f"Reason: {reason_str}")
+    except Exception:
+        pass
     return receipt
 
 
@@ -338,6 +348,11 @@ async def settle_receipt(
     receipt.status = ReceiptStatus.SETTLED
     db.commit()
     db.refresh(receipt)
+    try:
+        from app.services.audit_service import log_audit_event
+        log_audit_event(db=db, user=current_user, module="receipts", action="settle", record_id=str(receipt.id), record_label=f"Settled Receipt {receipt.receipt_number}", notes="Digital/Bank reconciliation")
+    except Exception:
+        pass
     return receipt
 
 
@@ -357,6 +372,11 @@ async def delete_receipt(
 
     db.delete(receipt)
     db.commit()
+    try:
+        from app.services.audit_service import log_audit_event
+        log_audit_event(db=db, user=current_user, module="receipts", action="delete", record_id=str(receipt.id), record_label=f"Deleted Receipt {receipt.receipt_number}", notes=f"Amount: ₹{receipt.amount}")
+    except Exception:
+        pass
     return {"message": "Receipt permanently deleted", "id": str(receipt_id)}
 
 

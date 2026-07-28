@@ -1,37 +1,44 @@
-"""
-Passenger WSGI entry point for shared hosting (WebHostMost / DirectAdmin / cPanel).
-App Root Target: domains/api.hisob.in/hissob-app/backend
-
-Passenger calls application() to get the WSGI app.
-Since FastAPI is an ASGI application, we wrap it with a2wsgi for Phusion Passenger.
-"""
 import sys
 import os
 
-# Determine directory containing app/ main module
-CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+os.environ["SERVER_ENV"] = "passenger"
 
-if os.path.exists(os.path.join(CURRENT_DIR, "app", "main.py")):
-    BACKEND_DIR = CURRENT_DIR
-elif os.path.exists(os.path.join(CURRENT_DIR, "backend", "app", "main.py")):
-    BACKEND_DIR = os.path.join(CURRENT_DIR, "backend")
-else:
-    BACKEND_DIR = CURRENT_DIR
-
+# ── Ensure backend directory is first on Python path ────────────────────────
+BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
 if BACKEND_DIR not in sys.path:
     sys.path.insert(0, BACKEND_DIR)
 
-# Load environment variables (.env or .env.production)
+# ── Load production .env ─────────────────────────────────────────────────────
 from dotenv import load_dotenv
-env_path = os.path.join(BACKEND_DIR, ".env")
-env_prod_path = os.path.join(BACKEND_DIR, ".env.production")
-if os.path.exists(env_path):
-    load_dotenv(env_path)
-elif os.path.exists(env_prod_path):
-    load_dotenv(env_prod_path)
+load_dotenv(dotenv_path=os.path.join(BACKEND_DIR, ".env"), override=True)
 
-from app.main import app as fastapi_app
-from a2wsgi import ASGIMiddleware
+for _subdir in ("uploads", "logs", "backups"):
+    os.makedirs(os.path.join(BACKEND_DIR, _subdir), exist_ok=True)
 
-# Phusion Passenger entrypoint
-application = ASGIMiddleware(fastapi_app)
+
+# ── Lazy ASGI Initialization to Prevent Fork Deadlocks ───────────────────────
+# In Passenger, the master process imports this file, then forks workers.
+# If a2wsgi creates background threads or asyncio loops during import,
+# the fork process destroys or orphans those threads, causing infinite loading.
+# By lazily instantiating ASGIMiddleware INSIDE the first request, 
+# we ensure the threads are safely created inside the worker process!
+
+_application = None
+
+def application(environ, start_response):
+    global _application
+    if _application is None:
+        try:
+            from app.main import app as _asgi_app
+            from a2wsgi import ASGIMiddleware
+            _application = ASGIMiddleware(_asgi_app)
+        except Exception as e:
+            # If import fails, show the error on the webpage instead of 500/hanging
+            body = f"Initialization Error: {str(e)}".encode('utf-8')
+            start_response("500 Internal Server Error", [
+                ("Content-Type", "text/plain"),
+                ("Content-Length", str(len(body)))
+            ])
+            return [body]
+
+    return _application(environ, start_response)
