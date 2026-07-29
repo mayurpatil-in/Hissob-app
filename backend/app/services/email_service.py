@@ -540,7 +540,7 @@ def build_donor_welcome_html(
     logo_html = ""
     if org_logo_url:
         full_logo_url = org_logo_url if org_logo_url.startswith("http") else f"https://api.hisob.in{org_logo_url}"
-        logo_html = f'<img src="{full_logo_url}" alt="{org_name} Logo" style="max-height: 55px; margin-bottom: 10px; border-radius: 8px;" />'
+        logo_html = f'<img src="{full_logo_url}" alt="{org_name} Logo" style="max-height: 60px; margin-bottom: 12px; border-radius: 10px; background: #FFFFFF; padding: 4px;" />'
 
     location_str = f" • {org_city}" if org_city else ""
 
@@ -551,62 +551,101 @@ def build_donor_welcome_html(
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Welcome to {org_name}</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #F8FAFC; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #F8FAFC; padding: 24px 12px;">
+<body style="margin: 0; padding: 0; background-color: #F1F5F9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #F1F5F9; padding: 32px 12px;">
         <tr>
             <td align="center">
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 580px; background-color: #FFFFFF; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.06); border: 1px solid #E2E8F0;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 580px; background-color: #FFFFFF; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 40px rgba(15,23,42,0.08); border: 1px solid #E2E8F0;">
                     
+                    <!-- Top Accent Line -->
+                    <tr>
+                        <td style="height: 5px; background: linear-gradient(90deg, #F97316 0%, #EA580C 50%, #2563EB 100%);"></td>
+                    </tr>
+
                     <!-- Header -->
                     <tr>
-                        <td style="background: linear-gradient(135deg, #F97316 0%, #EA580C 100%); padding: 32px 24px; text-align: center; color: #FFFFFF;">
+                        <td style="background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); padding: 36px 28px; text-align: center; color: #FFFFFF;">
                             {logo_html}
-                            <h1 style="margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.5px;">Welcome to {org_name}!</h1>
-                            <p style="margin: 6px 0 0 0; font-size: 13px; color: #FFEDD5; font-weight: 500;">
-                                Official Donor Registration Confirmation{location_str}
+                            <div style="display: inline-block; background: rgba(249,115,22,0.15); color: #FB923C; font-size: 11px; font-weight: 800; padding: 4px 14px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; border: 1px solid rgba(249,115,22,0.3);">
+                                ✓ OFFICIAL DONOR WELCOME
+                            </div>
+                            <h1 style="margin: 0; font-size: 24px; font-weight: 900; letter-spacing: -0.5px; color: #FFFFFF;">Welcome to {org_name}!</h1>
+                            <p style="margin: 8px 0 0 0; font-size: 13px; color: #94A3B8; font-weight: 500;">
+                                Official Registration Confirmation{location_str}
                             </p>
                         </td>
                     </tr>
 
                     <!-- Body Content -->
                     <tr>
-                        <td style="padding: 32px 28px;">
-                            <p style="margin: 0 0 16px 0; font-size: 16px; font-weight: 700; color: #0F172A;">
+                        <td style="padding: 36px 32px;">
+                            <p style="margin: 0 0 16px 0; font-size: 17px; font-weight: 800; color: #0F172A;">
                                 Namaste & Warm Greetings, {donor_name}! 🙏
                             </p>
-                            <p style="margin: 0 0 20px 0; font-size: 14px; line-height: 1.6; color: #334155;">
-                                Thank you for registering as an official donor with <strong>{org_name}</strong>. Your generosity and patronage empower our cultural celebrations, community programs, and charitable initiatives.
+                            <p style="margin: 0 0 24px 0; font-size: 14px; line-height: 1.6; color: #334155;">
+                                On behalf of <strong>{org_name}</strong>, we extend our heartfelt appreciation for registering as an official donor. Your generosity fuels our festivals, cultural initiatives, and community service projects.
                             </p>
 
-                            <!-- Donor Info Card -->
-                            <div style="background-color: #FFF7ED; border: 1px solid #FFEDD5; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
-                                <div style="font-size: 11px; font-weight: 800; color: #C2410C; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">
-                                    🏷️ YOUR OFFICIAL DONOR PROFILE DETAILS
-                                </div>
+                            <!-- Official Membership ID Card -->
+                            <div style="background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%); border: 1px solid #FED7AA; border-radius: 16px; padding: 22px; margin-bottom: 28px; box-shadow: 0 4px 14px rgba(249,115,22,0.06);">
+                                <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                                    <tr>
+                                        <td>
+                                            <div style="font-size: 10px; font-weight: 800; color: #C2410C; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">
+                                                OFFICIAL DONOR IDENTIFICATION
+                                            </div>
+                                            <div style="font-size: 20px; font-weight: 900; color: #EA580C; letter-spacing: 0.5px;">
+                                                {donor_number}
+                                            </div>
+                                        </td>
+                                        <td align="right" valign="top">
+                                            <span style="display: inline-block; background: #EA580C; color: #FFFFFF; font-size: 10px; font-weight: 800; padding: 4px 10px; border-radius: 8px; text-transform: uppercase;">
+                                                REGISTERED
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </table>
+
+                                <hr style="border: none; border-top: 1px dashed #FDBA74; margin: 16px 0;" />
+
                                 <table width="100%" cellspacing="0" cellpadding="4" border="0" style="font-size: 13px;">
                                     <tr>
-                                        <td style="color: #64748B; width: 40%;">Donor Name:</td>
-                                        <td style="color: #0F172A; font-weight: 700;">{donor_name}</td>
+                                        <td style="color: #7C2D12; width: 35%; font-weight: 600;">Donor Name:</td>
+                                        <td style="color: #0F172A; font-weight: 800;">{donor_name}</td>
                                     </tr>
                                     <tr>
-                                        <td style="color: #64748B;">Official Donor ID:</td>
-                                        <td style="color: #EA580C; font-weight: 800;">{donor_number}</td>
+                                        <td style="color: #7C2D12; font-weight: 600;">Organization:</td>
+                                        <td style="color: #0F172A; font-weight: 700;">{org_name}</td>
                                     </tr>
-                                    <tr>
-                                        <td style="color: #64748B;">Organization:</td>
-                                        <td style="color: #0F172A; font-weight: 600;">{org_name}</td>
-                                    </tr>
+                                    {f'<tr><td style="color: #7C2D12; font-weight: 600;">Location:</td><td style="color: #0F172A; font-weight: 700;">{org_city}</td></tr>' if org_city else ''}
                                 </table>
                             </div>
 
-                            <p style="margin: 0 0 20px 0; font-size: 13px; line-height: 1.5; color: #475569;">
-                                Every time you make a donation, you will automatically receive an instant electronic receipt with a unique QR code directly to your email inbox.
-                            </p>
+                            <!-- Benefits Highlights -->
+                            <div style="margin-bottom: 28px;">
+                                <div style="font-size: 12px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px;">
+                                    WHAT YOU CAN EXPECT:
+                                </div>
+                                <div style="margin-bottom: 12px; display: flex; align-items: flex-start;">
+                                    <div style="background: #EFF6FF; border-radius: 8px; padding: 6px 10px; font-size: 14px; margin-right: 12px;">📧</div>
+                                    <div>
+                                        <div style="font-size: 13px; font-weight: 700; color: #0F172A;">Instant Electronic Receipts</div>
+                                        <div style="font-size: 12px; color: #64748B;">Receive verified e-receipts with QR code verification instantly in your email for every contribution.</div>
+                                    </div>
+                                </div>
+                                <div style="display: flex; align-items: flex-start;">
+                                    <div style="background: #F0FDF4; border-radius: 8px; padding: 6px 10px; font-size: 14px; margin-right: 12px;">🔒</div>
+                                    <div>
+                                        <div style="font-size: 13px; font-weight: 700; color: #0F172A;">100% Transparency & Audit Record</div>
+                                        <div style="font-size: 12px; color: #64748B;">Your contributions are securely audited and accounted for on the Hisob ERP platform.</div>
+                                    </div>
+                                </div>
+                            </div>
 
                             <!-- CTA Button -->
-                            <div style="text-align: center; margin-top: 24px;">
-                                <a href="https://hisob.in" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #F97316 0%, #EA580C 100%); color: #FFFFFF; font-size: 13px; font-weight: 800; padding: 12px 28px; border-radius: 10px; text-decoration: none; box-shadow: 0 4px 14px rgba(249, 115, 22, 0.3);">
-                                    🌐 Visit Hisob ERP Platform
+                            <div style="text-align: center; margin-top: 28px;">
+                                <a href="https://hisob.in" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #F97316 0%, #EA580C 100%); color: #FFFFFF; font-size: 14px; font-weight: 800; padding: 14px 36px; border-radius: 12px; text-decoration: none; box-shadow: 0 6px 20px rgba(249, 115, 22, 0.35); text-transform: uppercase; letter-spacing: 0.5px;">
+                                    ✨ Visit Hisob ERP Platform
                                 </a>
                             </div>
                         </td>
@@ -614,11 +653,11 @@ def build_donor_welcome_html(
 
                     <!-- Footer -->
                     <tr>
-                        <td style="background-color: #F1F5F9; padding: 16px 24px; text-align: center; border-top: 1px solid #E2E8F0;">
-                            <p style="margin: 0 0 4px 0; font-size: 11px; color: #64748B;">
-                                Sent with gratitude by <strong>{org_name}</strong> via Hisob ERP Platform.
+                        <td style="background-color: #F8FAFC; padding: 20px 24px; text-align: center; border-top: 1px solid #E2E8F0;">
+                            <p style="margin: 0 0 6px 0; font-size: 11px; color: #64748B;">
+                                Delivered with honor by <strong>{org_name}</strong> via Hisob ERP Platform.
                             </p>
-                            <p style="margin: 0; font-size: 10px; color: #64748B;">
+                            <p style="margin: 0; font-size: 10px; color: #94A3B8;">
                                 Developed by <a href="https://www.mayurpatil.in" target="_blank" style="color: #EA580C; text-decoration: none; font-weight: 700;">www.mayurpatil.in</a>
                             </p>
                         </td>

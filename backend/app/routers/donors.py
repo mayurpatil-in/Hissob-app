@@ -110,6 +110,18 @@ async def list_donors(
     return donors
 
 
+def normalize_phone(phone: Optional[str]) -> Optional[str]:
+    """Cleans phone numbers into a 10-digit normalized string for comparison."""
+    if not phone:
+        return None
+    cleaned = ''.join(c for c in phone if c.isdigit())
+    if len(cleaned) == 12 and cleaned.startswith("91"):
+        cleaned = cleaned[2:]
+    elif len(cleaned) == 11 and cleaned.startswith("0"):
+        cleaned = cleaned[1:]
+    return cleaned if len(cleaned) >= 10 else None
+
+
 from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
 from app.models.tenant import Tenant
 
@@ -122,6 +134,37 @@ async def create_donor(
 ):
     if not current_user.tenant_id:
         raise HTTPException(status_code=400, detail="Tenant context required")
+
+    # Validate duplicate phone number in tenant
+    if payload.phone and payload.phone.strip():
+        norm_phone = normalize_phone(payload.phone)
+        if norm_phone:
+            existing_donors = db.query(Donor).filter(
+                Donor.tenant_id == current_user.tenant_id,
+                Donor.is_active == True,
+                Donor.phone.isnot(None),
+            ).all()
+            for existing in existing_donors:
+                if existing.phone and normalize_phone(existing.phone) == norm_phone:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"A donor with phone number '{payload.phone}' already exists: {existing.donor_number} ({existing.full_name})"
+                    )
+
+    # Validate duplicate email address in tenant
+    if payload.email and payload.email.strip():
+        clean_email = payload.email.strip().lower()
+        existing_email_donor = db.query(Donor).filter(
+            Donor.tenant_id == current_user.tenant_id,
+            Donor.is_active == True,
+            Donor.email.isnot(None),
+        ).all()
+        for existing in existing_email_donor:
+            if existing.email and existing.email.strip().lower() == clean_email:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"A donor with email address '{payload.email}' already exists: {existing.donor_number} ({existing.full_name})"
+                )
 
     repo = DonorRepository(db)
     donor_number = payload.donor_number or repo.generate_donor_number(current_user.tenant_id)
@@ -264,7 +307,39 @@ async def update_donor(
     if not donor or (donor.tenant_id != current_user.tenant_id and not current_user.is_super_admin):
         raise HTTPException(status_code=404, detail="Donor not found")
 
-    return repo.update(donor, payload.model_dump(exclude_unset=True))
+    update_data = payload.model_dump(exclude_unset=True)
+    if "phone" in update_data and update_data["phone"] and update_data["phone"].strip():
+        norm_phone = normalize_phone(update_data["phone"])
+        if norm_phone:
+            existing_donors = db.query(Donor).filter(
+                Donor.tenant_id == current_user.tenant_id,
+                Donor.id != donor_id,
+                Donor.is_active == True,
+                Donor.phone.isnot(None),
+            ).all()
+            for existing in existing_donors:
+                if existing.phone and normalize_phone(existing.phone) == norm_phone:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"A donor with phone number '{update_data['phone']}' already exists: {existing.donor_number} ({existing.full_name})"
+                    )
+
+    if "email" in update_data and update_data["email"] and update_data["email"].strip():
+        clean_email = update_data["email"].strip().lower()
+        existing_email_donors = db.query(Donor).filter(
+            Donor.tenant_id == current_user.tenant_id,
+            Donor.id != donor_id,
+            Donor.is_active == True,
+            Donor.email.isnot(None),
+        ).all()
+        for existing in existing_email_donors:
+            if existing.email and existing.email.strip().lower() == clean_email:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"A donor with email address '{update_data['email']}' already exists: {existing.donor_number} ({existing.full_name})"
+                )
+
+    return repo.update(donor, update_data)
 
 
 @router.delete("/{donor_id}", status_code=204, summary="Delete Donor")
