@@ -308,6 +308,24 @@ async def cancel_receipt(
     receipt.status = ReceiptStatus.CANCELLED
     receipt.cancel_reason = reason_str
     receipt.cancelled_by = current_user.id
+
+    if receipt.settlement_id:
+        from app.models.finance import CashSettlement
+        settlement_id = receipt.settlement_id
+        receipt.settlement_id = None
+        db.flush()
+        settlement = db.get(CashSettlement, settlement_id)
+        if settlement:
+            active_receipts = db.query(Receipt).filter(
+                Receipt.settlement_id == settlement_id,
+                Receipt.status != ReceiptStatus.CANCELLED
+            ).all()
+            if not active_receipts:
+                db.delete(settlement)
+            else:
+                settlement.receipt_count = len(active_receipts)
+                settlement.total_amount = sum(r.amount for r in active_receipts)
+
     db.commit()
     db.refresh(receipt)
     try:
@@ -358,7 +376,7 @@ async def settle_receipt(
     return receipt
 
 
-@router.delete("/{receipt_id}", summary="Permanently Delete Receipt (Hard Delete)")
+@router.delete("/{receipt_id}", summary="Permanently Delete Receipt (Organization Admin Only)")
 async def delete_receipt(
     receipt_id: UUID,
     current_user: User = Depends(require("receipts", "delete")),
@@ -369,17 +387,70 @@ async def delete_receipt(
     if not receipt or (receipt.tenant_id != current_user.tenant_id and not current_user.is_super_admin):
         raise HTTPException(status_code=404, detail="Receipt not found")
 
+    user_role_slugs = {
+        str(getattr(r, 'slug', '') or '').lower() for r in getattr(current_user, 'roles', [])
+    } | {
+        str(getattr(r, 'name', '') or '').lower() for r in getattr(current_user, 'roles', [])
+    }
+    is_org_admin = current_user.is_super_admin or any(
+        role in user_role_slugs for role in (
+            'org_admin', 'org admin', 'organization admin', 'organization_admin', 'admin', 'president', 'super_admin', 'super admin'
+        )
+    )
+
+    if not is_org_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only Organization Administrators can permanently delete receipts from the database."
+        )
+
+    # Verify if Super Admin enabled permanent deletion permission for this Organization
+    if not current_user.is_super_admin and current_user.tenant_id:
+        from app.models.tenant import Tenant
+        tenant = db.get(Tenant, current_user.tenant_id)
+        if tenant and not getattr(tenant, "allow_permanent_deletion", True):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Permanent receipt deletion is disabled for your Organization by Super Admin."
+            )
+
     if receipt.donor and receipt.status != ReceiptStatus.CANCELLED:
         receipt.donor.total_donations = max(0, receipt.donor.total_donations - int(receipt.amount))
+
+    if receipt.settlement_id:
+        from app.models.finance import CashSettlement
+        settlement_id = receipt.settlement_id
+        receipt.settlement_id = None
+        db.flush()
+        settlement = db.get(CashSettlement, settlement_id)
+        if settlement:
+            active_receipts = db.query(Receipt).filter(
+                Receipt.settlement_id == settlement_id,
+                Receipt.id != receipt.id,
+                Receipt.status != ReceiptStatus.CANCELLED
+            ).all()
+            if not active_receipts:
+                db.delete(settlement)
+            else:
+                settlement.receipt_count = len(active_receipts)
+                settlement.total_amount = sum(r.amount for r in active_receipts)
 
     db.delete(receipt)
     db.commit()
     try:
         from app.services.audit_service import log_audit_event
-        log_audit_event(db=db, user=current_user, module="receipts", action="delete", record_id=str(receipt.id), record_label=f"Deleted Receipt {receipt.receipt_number}", notes=f"Amount: ₹{receipt.amount}")
+        log_audit_event(
+            db=db,
+            user=current_user,
+            module="receipts",
+            action="delete",
+            record_id=str(receipt.id),
+            record_label=f"Permanently Deleted Receipt {receipt.receipt_number}",
+            notes=f"Amount: ₹{receipt.amount} | Permanently deleted by Org Admin {current_user.full_name}"
+        )
     except Exception:
         pass
-    return {"message": "Receipt permanently deleted", "id": str(receipt_id)}
+    return {"message": "Receipt permanently deleted by Organization Admin", "id": str(receipt_id)}
 
 
 @router.get("/public/{receipt_id}/verify", response_model=PublicReceiptVerificationResponse, summary="Publicly Verify Receipt")

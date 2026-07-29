@@ -90,36 +90,92 @@ export interface AuditLog {
   module: string;
   record_label?: string;
   ip_address?: string;
-  old_values?: any;
-  new_values?: any;
+  old_values?: unknown;
+  new_values?: unknown;
   notes?: string;
   created_at: string;
 }
 
+export interface CreateReceiptData {
+  donor_id: string;
+  amount: number;
+  payment_mode: string;
+  financial_year_id?: string;
+  festival_id?: string;
+  receipt_date?: string;
+  purpose?: string;
+  notes?: string;
+  upi_reference?: string;
+  cheque_number?: string;
+  bank_name?: string;
+}
+
+export interface CreateExpenseData {
+  category: string;
+  amount: number;
+  vendor_name?: string;
+  description?: string;
+  expense_date?: string;
+  financial_year_id?: string;
+  festival_id?: string;
+  voucher_number?: string;
+  bill_url?: string;
+}
+
+export interface CreateDonorData {
+  full_name: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  city?: string;
+  area_id?: string;
+  is_80g_eligible?: boolean;
+  is_vip?: boolean;
+  notes?: string;
+}
+
+export interface CreateFestivalData {
+  name: string;
+  financial_year_id: string;
+  start_date: string;
+  end_date: string;
+  budget?: number;
+  deity?: string;
+  location?: string;
+}
+
+export interface CashSettlementData {
+  financial_year_id?: string;
+  festival_id?: string;
+  receipt_ids: string[];
+  settlement_date?: string;
+  notes?: string;
+}
+
 // ── Financial Year API ──
 export const getFinancialYears = async () => (await apiClient.get<FinancialYear[]>('/financial-years')).data;
-export const createFinancialYear = async (data: any) => (await apiClient.post<FinancialYear>('/financial-years', data)).data;
+export const createFinancialYear = async (data: Record<string, unknown>) => (await apiClient.post<FinancialYear>('/financial-years', data)).data;
 export const setFYActive = async (id: string) => (await apiClient.post<FinancialYear>(`/financial-years/${id}/set-current`)).data;
 
 export const getFestivals = async (fy_id?: string) => (await apiClient.get<Festival[]>('/festivals', { params: { fy_id } })).data;
-export const createFestival = async (data: any) => (await apiClient.post<Festival>('/festivals', data)).data;
-export const updateFestival = async ({ id, data }: { id: string; data: any }) => (await apiClient.put<Festival>(`/festivals/${id}`, data)).data;
-export const deleteFestival = async (id: string) => (await apiClient.delete<any>(`/festivals/${id}`)).data;
+export const createFestival = async (data: CreateFestivalData) => (await apiClient.post<Festival>('/festivals', data)).data;
+export const updateFestival = async ({ id, data }: { id: string; data: Partial<CreateFestivalData> }) => (await apiClient.put<Festival>(`/festivals/${id}`, data)).data;
+export const deleteFestival = async (id: string) => (await apiClient.delete<{ message: string }>(`/festivals/${id}`)).data;
 
 // ── Donor API ──
 export const getDonors = async (q?: string) => (await apiClient.get<Donor[]>('/donors', { params: { q } })).data;
-export const createDonor = async (data: any) => (await apiClient.post<Donor>('/donors', data)).data;
-export const updateDonor = async ({ id, data }: { id: string; data: any }) => (await apiClient.put<Donor>(`/donors/${id}`, data)).data;
-export const deleteDonor = async (id: string) => (await apiClient.delete<any>(`/donors/${id}`)).data;
+export const createDonor = async (data: CreateDonorData) => (await apiClient.post<Donor>('/donors', data)).data;
+export const updateDonor = async ({ id, data }: { id: string; data: Partial<CreateDonorData> }) => (await apiClient.put<Donor>(`/donors/${id}`, data)).data;
+export const deleteDonor = async (id: string) => (await apiClient.delete<{ message: string }>(`/donors/${id}`)).data;
 export const getDonorSummary = async (id: string) => (await apiClient.get<any>(`/donors/${id}/summary`)).data;
 
 // ── Receipt API ──
-export const getReceipts = async (params?: any) => (await apiClient.get<Receipt[]>('/receipts', { params })).data;
-export const createReceipt = async (data: any) => (await apiClient.post<Receipt>('/receipts', data)).data;
-export const updateReceipt = async (id: string, data: any) => (await apiClient.put<Receipt>(`/receipts/${id}`, data)).data;
+export const getReceipts = async (params?: Record<string, unknown>) => (await apiClient.get<Receipt[]>('/receipts', { params })).data;
+export const createReceipt = async (data: CreateReceiptData) => (await apiClient.post<Receipt>('/receipts', data)).data;
+export const updateReceipt = async (id: string, data: Partial<CreateReceiptData>) => (await apiClient.put<Receipt>(`/receipts/${id}`, data)).data;
 export const cancelReceipt = async (id: string, reason?: string) => (await apiClient.post<Receipt>(`/receipts/${id}/cancel`, { reason: reason || 'Cancelled by user' })).data;
 export const deleteReceipt = async (id: string) => (await apiClient.delete(`/receipts/${id}`)).data;
-export const settleReceipt = async (id: string, data?: any) => (await apiClient.post<Receipt>(`/receipts/${id}/settle`, data)).data;
+export const settleReceipt = async (id: string, data?: Record<string, unknown>) => (await apiClient.post<Receipt>(`/receipts/${id}/settle`, data)).data;
 
 // Public Verification (No Auth Required)
 export const verifyPublicReceipt = async (id: string) => {

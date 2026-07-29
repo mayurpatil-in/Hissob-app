@@ -4,7 +4,7 @@ Receipt model — core financial collection document.
 import uuid
 import enum
 from datetime import date
-from sqlalchemy import String, Boolean, ForeignKey, Date, Text, Numeric, Integer
+from sqlalchemy import String, Boolean, ForeignKey, Date, Text, Numeric, Integer, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID
 from app.core.database import Base
@@ -31,6 +31,10 @@ class ReceiptStatus(str, enum.Enum):
 
 class Receipt(Base, UUIDMixin, TimestampMixin, TenantMixin):
     __tablename__ = "receipts"
+    __table_args__ = (
+        Index("idx_receipts_tenant_status", "tenant_id", "status"),
+        Index("idx_receipts_tenant_date", "tenant_id", "receipt_date"),
+    )
 
     # References
     financial_year_id: Mapped[uuid.UUID] = mapped_column(

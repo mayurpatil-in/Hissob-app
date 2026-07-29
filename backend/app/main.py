@@ -64,7 +64,23 @@ def create_app() -> FastAPI:
     # Health check
     @app.get("/health", tags=["Health"])
     async def health():
-        return {"status": "ok", "app": settings.APP_NAME, "version": settings.APP_VERSION}
+        db_status = "unhealthy"
+        try:
+            from app.core.database import SessionLocal
+            from sqlalchemy import text
+            db = SessionLocal()
+            db.execute(text("SELECT 1"))
+            db.close()
+            db_status = "connected"
+        except Exception as e:
+            db_status = f"error: {str(e)}"
+
+        return {
+            "status": "ok" if db_status == "connected" else "degraded",
+            "app": settings.APP_NAME,
+            "version": settings.APP_VERSION,
+            "database": db_status,
+        }
 
     return app
 

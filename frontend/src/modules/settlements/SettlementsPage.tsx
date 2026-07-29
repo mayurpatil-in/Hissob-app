@@ -10,7 +10,7 @@ import {
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  getSettlements, submitSettlement, verifySettlement, getReceipts, getFinancialYears, settleReceipt
+  getSettlements, submitSettlement, verifySettlement, getReceipts, getFinancialYears, settleReceipt, getMyOrganization
 } from '../../api/services';
 import { useAuthStore } from '../../store/authStore';
 import CashDenominationModal from './CashDenominationModal';
@@ -81,6 +81,11 @@ const SettlementsPage: React.FC = () => {
   const { data: fiscalYears = [] } = useQuery({
     queryKey: ['financialYears'],
     queryFn: getFinancialYears,
+  });
+
+  const { data: myOrg } = useQuery({
+    queryKey: ['myOrganization'],
+    queryFn: getMyOrganization,
   });
 
   // Mutations
@@ -222,6 +227,7 @@ const SettlementsPage: React.FC = () => {
                 receiptCount: record.receipt_count,
                 notes: record.notes,
                 status: record.status,
+                orgName: myOrg?.name,
               })}
             />
           </Tooltip>

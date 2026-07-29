@@ -13,6 +13,7 @@ export interface HandoverSlipData {
   receiptCount: number;
   notes?: string;
   status: string;
+  orgName?: string;
 }
 
 interface Props {
@@ -45,8 +46,8 @@ const PrintHandoverSlipModal: React.FC<Props> = ({ open, onClose, data }) => {
     >
       <div style={{ padding: 20, border: '2px solid #0B2347', borderRadius: 8, background: '#FFF' }}>
         <div style={{ textAlign: 'center', marginBottom: 16, borderBottom: '1px dashed #CCC', paddingBottom: 12 }}>
-          <Title level={4} style={{ color: '#0B2347', margin: 0, fontWeight: 900 }}>
-            HISSOB ERP — CASH HANDOVER VOUCHER
+          <Title level={4} style={{ color: '#0B2347', margin: 0, fontWeight: 900, textTransform: 'uppercase' }}>
+            {(data.orgName || 'HISSOB ERP').toUpperCase()} — CASH HANDOVER VOUCHER
           </Title>
           <Text type="secondary">Physical Cash Settlement Verification Slip</Text>
         </div>

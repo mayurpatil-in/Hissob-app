@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { ConfigProvider, theme, App as AntApp } from 'antd';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import ErrorBoundary from './components/ErrorBoundary';
 import AppRouter from './routes/AppRouter';
 import './styles/global.css';
 
@@ -41,7 +42,9 @@ const App: React.FC = () => (
     <ConfigProvider theme={hissobTheme}>
       <AntApp>
         <BrowserRouter>
-          <AppRouter />
+          <ErrorBoundary>
+            <AppRouter />
+          </ErrorBoundary>
         </BrowserRouter>
       </AntApp>
     </ConfigProvider>

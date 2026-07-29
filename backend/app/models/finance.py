@@ -4,7 +4,7 @@ Cash Settlement model — Collector → Treasurer → Settled → CashBook workf
 import uuid
 import enum
 from datetime import date, datetime
-from sqlalchemy import String, ForeignKey, Date, Text, Numeric, Integer, DateTime
+from sqlalchemy import String, ForeignKey, Date, Text, Numeric, Integer, DateTime, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID
 from app.core.database import Base
@@ -58,6 +58,9 @@ class ExpenseStatus(str, enum.Enum):
 
 class Expense(Base, UUIDMixin, TimestampMixin, TenantMixin):
     __tablename__ = "expenses"
+    __table_args__ = (
+        Index("idx_expenses_tenant_status", "tenant_id", "status"),
+    )
 
     financial_year_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("financial_years.id"), nullable=False

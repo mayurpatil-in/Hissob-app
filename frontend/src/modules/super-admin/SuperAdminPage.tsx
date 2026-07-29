@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Card, Row, Col, Typography, Statistic, Table, Tag, Button, Modal, Form,
-  Input, Space, App, Select, Popconfirm, InputNumber, Tabs
+  Input, Space, App, Select, Popconfirm, InputNumber, Tabs, Switch
 } from 'antd';
 import {
   BankOutlined, TeamOutlined, DollarOutlined, SafetyOutlined,
@@ -92,6 +92,7 @@ const SuperAdminPage: React.FC = () => {
       status: org.status,
       max_users: org.max_users,
       storage_limit_mb: org.storage_limit_mb,
+      allow_permanent_deletion: org.allow_permanent_deletion !== false,
     });
     setIsEditModalOpen(true);
   };
@@ -431,6 +432,10 @@ const SuperAdminPage: React.FC = () => {
               </Form.Item>
             </Col>
           </Row>
+
+          <Form.Item name="allow_permanent_deletion" valuePropName="checked" label="Allow Permanent Receipt Deletion (Org Admin)">
+            <Switch checkedChildren="Enabled" unCheckedChildren="Disabled" />
+          </Form.Item>
 
           <Form.Item style={{ marginBottom: 0, textAlign: 'right', marginTop: 16 }}>
             <Space>

@@ -29,6 +29,7 @@ class TenantBase(BaseModel):
     currency: str = "INR"
     fiscal_year_start_month: int = Field(4, ge=1, le=12)
     receipt_template: str = "modern"
+    allow_permanent_deletion: bool = True
 
 
 class TenantCreate(TenantBase):
@@ -60,6 +61,7 @@ class TenantUpdate(BaseModel):
     max_users: Optional[int] = None
     is_active: Optional[bool] = None
     receipt_template: Optional[str] = None
+    allow_permanent_deletion: Optional[bool] = None
 
 
 class TenantResponse(TenantBase):
@@ -68,6 +70,7 @@ class TenantResponse(TenantBase):
     storage_limit_mb: int
     max_users: int
     is_active: bool
+    allow_permanent_deletion: bool = True
     created_at: datetime
     updated_at: datetime
 
