@@ -4,7 +4,7 @@ Receipts Router — Create receipt, list receipts, cancel receipt.
 from typing import List, Optional
 from uuid import UUID
 from datetime import date, datetime, timezone
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from app.core.database import get_db
@@ -12,12 +12,64 @@ from app.permissions.rbac import require
 from app.models.user import User
 from app.models.tenant import Tenant
 from app.models.receipt import Receipt, ReceiptStatus, PaymentMode
+from app.models.donor import Donor
 from app.models.financial_year import FinancialYear
 from app.repositories.receipt import ReceiptRepository
 from app.repositories.donor import DonorRepository
 from app.schemas.receipt import ReceiptCreate, ReceiptCancel, ReceiptUpdate, ReceiptResponse, PublicReceiptVerificationResponse
 
 router = APIRouter(prefix="/receipts", tags=["Receipts"])
+
+
+class PublicDonorLookupResponse(BaseModel):
+    exists: bool
+    donor_number: Optional[str] = None
+    full_name: Optional[str] = None
+    email: Optional[str] = None
+    pan_number: Optional[str] = None
+    city: Optional[str] = None
+    total_donations: Optional[int] = 0
+    is_80g_eligible: Optional[bool] = False
+
+
+@router.get("/public-donor-lookup", response_model=PublicDonorLookupResponse, summary="Public Lookup Donor by Phone")
+async def public_donor_lookup(
+    phone: Optional[str] = Query(None),
+    slug_or_id: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+):
+    if not phone or len(phone.strip()) < 10:
+        return PublicDonorLookupResponse(exists=False)
+    tenant = None
+    if slug_or_id:
+        tenant = db.query(Tenant).filter(Tenant.slug == slug_or_id).first()
+        if not tenant:
+            try:
+                val_uuid = UUID(slug_or_id)
+                tenant = db.query(Tenant).filter(Tenant.id == val_uuid).first()
+            except ValueError:
+                pass
+
+    if not tenant:
+        tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
+
+    if not tenant:
+        return PublicDonorLookupResponse(exists=False)
+
+    donor = db.query(Donor).filter(Donor.tenant_id == tenant.id, Donor.phone == phone.strip()).first()
+    if not donor:
+        return PublicDonorLookupResponse(exists=False)
+
+    return PublicDonorLookupResponse(
+        exists=True,
+        donor_number=donor.donor_number,
+        full_name=donor.full_name,
+        email=donor.email,
+        pan_number=donor.pan_number,
+        city=donor.city,
+        total_donations=donor.total_donations or 0,
+        is_80g_eligible=donor.is_80g_eligible or False,
+    )
 
 
 from app.auth.deps import get_current_active_user
@@ -479,3 +531,112 @@ async def verify_receipt_public(
         org_logo_url=tenant.logo_url if tenant else None,
         verified_at=datetime.now(timezone.utc)
     )
+
+
+class PublicDonationPayload(BaseModel):
+    slug_or_id: Optional[str] = None
+    full_name: str = Field(..., min_length=2, max_length=200)
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    pan_number: Optional[str] = None
+    city: Optional[str] = None
+    amount: float = Field(..., gt=0)
+    payment_mode: str = "upi"
+    upi_reference: Optional[str] = None
+    transaction_ref: Optional[str] = None
+    purpose: Optional[str] = "General Donation"
+    notes: Optional[str] = None
+
+
+@router.post("/public-donate", response_model=ReceiptResponse, status_code=status.HTTP_201_CREATED, summary="Public Donor Submit UPI Donation")
+async def create_public_donation_receipt(
+    payload: PublicDonationPayload,
+    db: Session = Depends(get_db),
+):
+    tenant = None
+    if payload.slug_or_id:
+        tenant = db.query(Tenant).filter(Tenant.slug == payload.slug_or_id).first()
+        if not tenant:
+            try:
+                val_uuid = UUID(payload.slug_or_id)
+                tenant = db.query(Tenant).filter(Tenant.id == val_uuid).first()
+            except ValueError:
+                pass
+
+    if not tenant:
+        tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
+
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    donor = None
+    if payload.phone:
+        donor = db.query(Donor).filter(Donor.tenant_id == tenant.id, Donor.phone == payload.phone).first()
+
+    if donor:
+        # Update existing donor's details if provided
+        if payload.pan_number and not donor.pan_number:
+            donor.pan_number = payload.pan_number
+            donor.is_80g_eligible = True
+        if payload.email and not donor.email:
+            donor.email = payload.email
+        if payload.city and not donor.city:
+            donor.city = payload.city
+    else:
+        donor_num = f"DNR-{tenant.slug[:4].upper()}-{db.query(Donor).filter(Donor.tenant_id == tenant.id).count() + 1:05d}"
+        donor = Donor(
+            tenant_id=tenant.id,
+            donor_number=donor_num,
+            full_name=payload.full_name,
+            phone=payload.phone,
+            email=payload.email,
+            pan_number=payload.pan_number,
+            city=payload.city,
+            total_donations=0,
+            is_80g_eligible=bool(payload.pan_number),
+        )
+        db.add(donor)
+        db.commit()
+        db.refresh(donor)
+
+    from app.models.financial_year import FinancialYear
+    active_fy = db.query(FinancialYear).filter(
+        FinancialYear.tenant_id == tenant.id,
+        FinancialYear.is_current == True
+    ).first()
+    fy_id = active_fy.id if active_fy else None
+    fy_name = active_fy.name if active_fy else "2025-26"
+
+    repo = ReceiptRepository(db)
+    receipt_num = repo.generate_receipt_number(tenant.id, fy_name=fy_name)
+
+    ref_str = payload.upi_reference or payload.transaction_ref
+
+    # Find tenant user to assign as collector
+    collector_user = db.query(User).filter(User.tenant_id == tenant.id).first()
+    if not collector_user:
+        collector_user = db.query(User).first()
+    if not collector_user:
+        raise HTTPException(status_code=500, detail="No system user found to record receipt")
+
+    receipt = Receipt(
+        tenant_id=tenant.id,
+        financial_year_id=fy_id,
+        donor_id=donor.id,
+        collector_id=collector_user.id,
+        receipt_number=receipt_num,
+        receipt_date=date.today(),
+        amount=payload.amount,
+        payment_mode=PaymentMode.UPI if payload.payment_mode.lower() == 'upi' else PaymentMode.DIGITAL,
+        upi_reference=ref_str,
+        transaction_ref=ref_str,
+        purpose=payload.purpose,
+        notes=payload.notes or "Self-donated via UPI QR Portal",
+        status=ReceiptStatus.ISSUED,
+    )
+
+    created_receipt = repo.create(receipt)
+    donor.total_donations += int(payload.amount)
+    db.commit()
+
+    return created_receipt

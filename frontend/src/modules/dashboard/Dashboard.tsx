@@ -4,7 +4,7 @@ import {
   ArrowUpOutlined, DollarOutlined, FileTextOutlined,
   TeamOutlined, CheckCircleOutlined, BankOutlined,
   PlusOutlined, AuditOutlined, ThunderboltOutlined,
-  SwapOutlined, CalendarOutlined
+  SwapOutlined, CalendarOutlined, QrcodeOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -262,6 +262,15 @@ const Dashboard: React.FC = () => {
                 </Button>
               </Tooltip>
             )}
+            <Tooltip title="Public QR Code UPI Payment & Donation Portal">
+              <Button
+                icon={<QrcodeOutlined style={{ color: '#F97316' }} />}
+                className="hero-action-btn"
+                onClick={() => navigate('/pay')}
+              >
+                UPI QR Portal
+              </Button>
+            </Tooltip>
           </div>
         </div>
 

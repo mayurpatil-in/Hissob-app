@@ -146,3 +146,35 @@ async def update_organization(
         tenant.is_active = (update_data["status"] == TenantStatus.ACTIVE)
 
     return repo.update(tenant, update_data)
+
+
+@router.get("/public/info", response_model=TenantResponse, summary="Get Public Organization Info for Payment Page")
+async def get_public_organization_info(
+    db: Session = Depends(get_db),
+):
+    first_tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
+    if not first_tenant:
+        raise HTTPException(status_code=404, detail="No active organization found")
+    return first_tenant
+
+
+@router.get("/public/info/{slug_or_id}", response_model=TenantResponse, summary="Get Public Organization Info by Slug or ID")
+async def get_public_organization_by_identifier(
+    slug_or_id: str,
+    db: Session = Depends(get_db),
+):
+    tenant = db.query(Tenant).filter(Tenant.slug == slug_or_id).first()
+    if not tenant:
+        try:
+            val_uuid = UUID(slug_or_id)
+            tenant = db.query(Tenant).filter(Tenant.id == val_uuid).first()
+        except ValueError:
+            pass
+
+    if not tenant:
+        tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
+
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    return tenant

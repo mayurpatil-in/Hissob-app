@@ -281,3 +281,15 @@ export const markNotificationRead = async (id: string): Promise<NotificationItem
 export const markAllNotificationsRead = async (): Promise<void> =>
   (await apiClient.post('/notifications/read-all')).data;
 
+// ── Public UPI Payment Services ──
+export const getPublicOrgInfo = async (slugOrId?: string) => {
+  const url = slugOrId ? `/organizations/public/info/${slugOrId}` : '/organizations/public/info';
+  return (await apiClient.get<any>(url)).data;
+};
+
+export const submitPublicDonation = async (payload: any) =>
+  (await apiClient.post<any>('/receipts/public-donate', payload)).data;
+
+export const lookupPublicDonor = async (phone: string, slugOrId?: string) =>
+  (await apiClient.get<any>('/receipts/public-donor-lookup', { params: { phone, slug_or_id: slugOrId } })).data;
+

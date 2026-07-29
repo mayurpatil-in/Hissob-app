@@ -7,6 +7,7 @@ import AppShell from '../layouts/AppShell';
 // Lazy-loaded pages
 const LoginPage         = lazy(() => import('../modules/auth/LoginPage'));
 const VerifyReceiptPage = lazy(() => import('../modules/receipts/VerifyReceiptPage'));
+const UpiPaymentPage    = lazy(() => import('../modules/payments/UpiPaymentPage'));
 const Dashboard         = lazy(() => import('../modules/dashboard/Dashboard'));
 const ReceiptsPage      = lazy(() => import('../modules/receipts/ReceiptsPage'));
 const ExpensesPage      = lazy(() => import('../modules/expenses/ExpensesPage'));
@@ -34,6 +35,8 @@ const AppRouter: React.FC = () => (
       {/* Public */}
       <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
       <Route path="/verify/:id" element={<VerifyReceiptPage />} />
+      <Route path="/pay" element={<UpiPaymentPage />} />
+      <Route path="/pay/:slug" element={<UpiPaymentPage />} />
 
       {/* Private — wrapped in AppShell */}
       <Route path="/*" element={
