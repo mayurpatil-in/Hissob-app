@@ -188,7 +188,8 @@ async def get_donor_summary(
     first_date = str(receipts_raw[-1].receipt_date) if receipts_raw else None
     last_date = str(receipts_raw[0].receipt_date) if receipts_raw else None
 
-    user_map = {u.id: u.full_name for u in db.query(User).all()}
+    collector_ids = {r.collector_id for r in receipts_raw if r.collector_id}
+    user_map = {u.id: u.full_name for u in db.query(User.id, User.full_name).filter(User.id.in_(collector_ids)).all()} if collector_ids else {}
     receipt_list = []
     for r in receipts_raw:
         collector_name = user_map.get(r.collector_id, "Collector")

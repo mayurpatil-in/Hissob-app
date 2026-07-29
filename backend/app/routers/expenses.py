@@ -59,7 +59,8 @@ async def list_expenses(
         skip=skip,
         limit=limit,
     )
-    user_map = {u.id: u.full_name for u in db.query(User).all()}
+    requested_by_ids = {e.requested_by for e in expenses if e.requested_by}
+    user_map = {u.id: u.full_name for u in db.query(User.id, User.full_name).filter(User.id.in_(requested_by_ids)).all()} if requested_by_ids else {}
     for e in expenses:
         e.requested_by_name = user_map.get(e.requested_by, "Member")
     return expenses

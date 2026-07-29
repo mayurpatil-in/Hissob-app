@@ -1,6 +1,9 @@
 import os
+import logging
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List
+
+logger = logging.getLogger(__name__)
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -42,5 +45,14 @@ class Settings(BaseSettings):
     SUPER_ADMIN_EMAIL: str = "admin@hisob.in"
     SUPER_ADMIN_PASSWORD: str = "ChangeMe@396"
 
+    def check_security(self):
+        if self.SECRET_KEY in ("change-me", "secret") or self.JWT_SECRET_KEY in ("change-me-jwt", "secret"):
+            if self.ENVIRONMENT == "production":
+                logger.critical("SECURITY CRITICAL: Default SECRET_KEY or JWT_SECRET_KEY used in production environment!")
+            else:
+                logger.warning("SECURITY WARNING: Insecure default SECRET_KEY / JWT_SECRET_KEY detected. Please update .env before deployment.")
+
 
 settings = Settings()
+settings.check_security()
+

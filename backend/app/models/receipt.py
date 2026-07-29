@@ -69,7 +69,9 @@ class Receipt(Base, UUIDMixin, TimestampMixin, TenantMixin):
     cancelled_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
 
     # Settlement
-    settlement_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    settlement_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("cash_settlements.id", ondelete="SET NULL"), nullable=True
+    )
 
     # Relationships
     donor: Mapped["Donor"] = relationship("Donor", back_populates="receipts")

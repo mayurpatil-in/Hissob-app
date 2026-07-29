@@ -34,7 +34,7 @@ class ReceiptCancel(BaseModel):
 
 
 class ReceiptUpdate(BaseModel):
-    amount: Optional[float] = None
+    amount: Optional[float] = Field(None, gt=0)
     payment_mode: Optional[PaymentMode] = None
     receipt_date: Optional[date] = None
     donor_id: Optional[UUID] = None
@@ -66,7 +66,7 @@ class ReceiptResponse(ReceiptBase):
 
 # ── Cash Settlement Schemas ──
 class CashSettlementCreate(BaseModel):
-    financial_year_id: UUID
+    financial_year_id: Optional[UUID] = None
     festival_id: Optional[UUID] = None
     receipt_ids: List[UUID]
     settlement_date: Optional[date] = None

@@ -1,12 +1,12 @@
-"""
-Audit Logging Helper Service
-"""
+import logging
 import uuid
 from typing import Optional, Any
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from app.models.audit import AuditLog
 from app.models.user import User
+
+logger = logging.getLogger(__name__)
 
 def log_audit_event(
     db: Session,
@@ -37,6 +37,6 @@ def log_audit_event(
         )
         db.add(log)
         db.commit()
-    except Exception as e:
+    except Exception:
         db.rollback()
-        print(f"Warning: Failed to log audit event: {e}")
+        logger.exception("Failed to log audit event (%s:%s)", module, action)

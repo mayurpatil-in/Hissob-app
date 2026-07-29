@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 from typing import Optional
 from uuid import UUID
 from datetime import date, datetime
+from app.models.finance import ExpenseStatus
 
 
 class ExpenseBase(BaseModel):
@@ -25,7 +26,7 @@ class ExpenseCreate(ExpenseBase):
 class ExpenseUpdate(BaseModel):
     category: Optional[str] = None
     vendor_name: Optional[str] = None
-    amount: Optional[float] = None
+    amount: Optional[float] = Field(None, gt=0)
     description: Optional[str] = None
     voucher_number: Optional[str] = None
     bill_url: Optional[str] = None
@@ -44,7 +45,7 @@ class ExpenseResponse(ExpenseBase):
     requested_by_name: Optional[str] = None
     expense_number: str
     expense_date: date
-    status: str
+    status: ExpenseStatus | str
     approved_by: Optional[UUID] = None
     approved_at: Optional[datetime] = None
     paid_at: Optional[datetime] = None

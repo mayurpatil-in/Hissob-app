@@ -1,11 +1,10 @@
-"""
-Notification Service — Helper functions to create in-app notifications.
-Used by settlements.py, expenses.py, receipts.py, etc.
-"""
+import logging
 from uuid import UUID
 from sqlalchemy.orm import Session
 from app.models.notification import Notification
 from app.models.user import User
+
+logger = logging.getLogger(__name__)
 
 
 def create_notification(
@@ -18,7 +17,7 @@ def create_notification(
     related_id: str | None = None,
     tenant_id: UUID | None = None,
 ) -> None:
-    """Create a notification for a specific user. Silently ignores errors."""
+    """Create a notification for a specific user. Logs errors without blocking flow."""
     try:
         notif = Notification(
             user_id=user_id,
@@ -32,7 +31,7 @@ def create_notification(
         db.add(notif)
         db.flush()  # don't commit — let the caller commit
     except Exception:
-        pass  # notifications should never block main flow
+        logger.exception("Failed to create notification for user %s", user_id)
 
 
 def notify_role(
@@ -81,4 +80,4 @@ def notify_role(
                     tenant_id=tenant_id,
                 )
     except Exception:
-        pass
+        logger.exception("Failed to notify role %s for tenant %s", role_slug, tenant_id)

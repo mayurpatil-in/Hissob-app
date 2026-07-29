@@ -126,14 +126,16 @@ const SettlementsPage: React.FC = () => {
   });
 
   const handleOpenSubmitModal = () => {
-    const activeFy = fiscalYears.find((fy: any) => fy.is_current) || fiscalYears[0];
-    form.resetFields();
-    if (activeFy) {
-      form.setFieldsValue({
-        financial_year_id: activeFy.id,
-      });
-    }
     setIsSubmitModalOpen(true);
+    setTimeout(() => {
+      const activeFy = fiscalYears.find((fy: any) => fy.is_current) || fiscalYears[0];
+      form.resetFields();
+      if (activeFy) {
+        form.setFieldsValue({
+          financial_year_id: activeFy.id,
+        });
+      }
+    }, 50);
   };
 
   const handleFormSubmit = (values: any) => {
@@ -803,7 +805,6 @@ const SettlementsPage: React.FC = () => {
         open={isSubmitModalOpen}
         onCancel={() => setIsSubmitModalOpen(false)}
         footer={null}
-        destroyOnHidden
       >
         <Form form={form} layout="vertical" onFinish={handleFormSubmit}>
           <div style={{ padding: 12, background: '#FFF7ED', borderRadius: 8, marginBottom: 16, border: '1px solid #FFEDD5' }}>

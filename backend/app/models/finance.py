@@ -49,6 +49,13 @@ class CashSettlement(Base, UUIDMixin, TimestampMixin, TenantMixin):
         return f"<CashSettlement {self.settlement_number}>"
 
 
+class ExpenseStatus(str, enum.Enum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    PAID = "paid"
+    REJECTED = "rejected"
+
+
 class Expense(Base, UUIDMixin, TimestampMixin, TenantMixin):
     __tablename__ = "expenses"
 
@@ -71,7 +78,7 @@ class Expense(Base, UUIDMixin, TimestampMixin, TenantMixin):
     voucher_number: Mapped[str | None] = mapped_column(String(50))
     bill_url: Mapped[str | None] = mapped_column(String(500))
 
-    status: Mapped[str] = mapped_column(String(20), default="pending")
+    status: Mapped[ExpenseStatus] = mapped_column(String(20), default=ExpenseStatus.PENDING)
     approved_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     paid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
