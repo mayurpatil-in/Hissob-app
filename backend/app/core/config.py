@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # CORS
-    ALLOWED_ORIGINS: str = "http://localhost:5173,http://localhost:3000"
+    ALLOWED_ORIGINS: str = "https://hisob.in,https://www.hisob.in,https://api.hisob.in,http://localhost:5173,http://localhost:3000"
 
     @property
     def cors_origins(self) -> List[str]:

@@ -41,17 +41,18 @@ def create_app() -> FastAPI:
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-    # Middleware (order matters — CORSMiddleware must be added LAST so it runs FIRST)
-    app.add_middleware(TenantMiddleware)
-    app.add_middleware(AuditMiddleware)
+    # Middleware (CORSMiddleware must be added FIRST so it wraps all requests)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.cors_origins if "*" not in settings.cors_origins else ["*"],
+        allow_origins=settings.cors_origins,
+        allow_origin_regex=r"https://.*\.hisob\.in",
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
         expose_headers=["*"],
     )
+    app.add_middleware(TenantMiddleware)
+    app.add_middleware(AuditMiddleware)
 
     # Routes
     app.include_router(api_v1_router, prefix="/api/v1")
