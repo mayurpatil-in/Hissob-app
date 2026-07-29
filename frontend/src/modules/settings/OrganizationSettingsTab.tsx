@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Form, Input, Button, Typography, App, Row, Col, Upload, Spin, Divider, Select, Switch } from 'antd';
-import { SaveOutlined, UploadOutlined, BankOutlined, QrcodeOutlined, MailOutlined } from '@ant-design/icons';
+import { SaveOutlined, UploadOutlined, BankOutlined, QrcodeOutlined, MailOutlined, RobotOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getMyOrganization, updateMyOrganization, uploadFile } from '../../api/services';
 
@@ -34,6 +34,7 @@ const OrganizationSettingsTab: React.FC = () => {
         enable_daily_digest: org.enable_daily_digest ?? true,
         enable_welcome_email: org.enable_welcome_email ?? true,
         digest_recipients: org.digest_recipients || '',
+        ai_provider: org.ai_provider || 'gemini',
       });
     }
   }, [org, form]);
@@ -97,6 +98,7 @@ const OrganizationSettingsTab: React.FC = () => {
       enable_daily_digest: values.enable_daily_digest,
       enable_welcome_email: values.enable_welcome_email,
       digest_recipients: values.digest_recipients,
+      ai_provider: values.ai_provider,
     });
   };
 
@@ -249,11 +251,27 @@ const OrganizationSettingsTab: React.FC = () => {
           </Form.Item>
         </div>
 
+        <Divider style={{ margin: '24px 0 16px 0' }} />
+
+        {/* ── AI LLM Engine Provider Selection Section ── */}
+        <Title level={5} style={{ color: '#0066FF', marginTop: 0 }}><RobotOutlined /> AI Assistant & LLM Intelligence Engine</Title>
+        <Text type="secondary">Choose which Large Language Model (LLM) powers your organization's AI financial chatbot, voice parser & audit intelligence.</Text>
+
+        <div style={{ marginTop: 16, background: '#F8FAFC', padding: '16px', borderRadius: 12, border: '1px solid #E2E8F0' }}>
+          <Form.Item label="Preferred AI Engine Model Provider" name="ai_provider" tooltip="Select between Google Gemini 2.0 Flash (Recommended, Ultra Fast) and OpenAI GPT-4o-Mini. Both support context-aware financial Q&A.">
+            <Select style={{ width: '100%' }}>
+              <Select.Option value="gemini">✨ Google Gemini 2.0 Flash (Recommended • Fast & High Accuracy)</Select.Option>
+              <Select.Option value="openai">🤖 OpenAI GPT-4o-Mini (Powerful Natural Language Reasoning)</Select.Option>
+            </Select>
+          </Form.Item>
+        </div>
+
         <Form.Item style={{ textAlign: 'right', marginTop: 24, marginBottom: 0 }}>
           <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={updateMutation.isPending} block={window.innerWidth < 576} style={{ background: '#F97316', borderColor: '#F97316', borderRadius: 8, fontWeight: 700 }}>
             Save Preferences
           </Button>
         </Form.Item>
+
       </Form>
     </Card>
   );

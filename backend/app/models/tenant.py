@@ -56,6 +56,7 @@ class Tenant(Base, UUIDMixin, TimestampMixin):
     enable_daily_digest: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
     enable_welcome_email: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
     digest_recipients: Mapped[str | None] = mapped_column(Text)
+    ai_provider: Mapped[str] = mapped_column(String(50), default="gemini", server_default="gemini")
 
     # Relationships
     users: Mapped[list["User"]] = relationship("User", back_populates="tenant")

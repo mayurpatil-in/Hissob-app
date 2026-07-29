@@ -55,6 +55,13 @@ class Settings(BaseSettings):
     SMTP_USE_TLS: bool = True
     EMAIL_ENABLED: bool = True
 
+    # AI Integration Settings (Google Gemini & OpenAI LLM)
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL_NAME: str = "gemini-2.0-flash" 
+    OPENAI_API_KEY: str = ""
+    OPENAI_MODEL_NAME: str = "gpt-4o-mini"
+    
+
     def check_security(self):
         if self.SECRET_KEY in ("change-me", "secret") or self.JWT_SECRET_KEY in ("change-me-jwt", "secret"):
             if self.ENVIRONMENT == "production":

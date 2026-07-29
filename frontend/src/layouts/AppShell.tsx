@@ -50,6 +50,7 @@ const ORG_NAV: NavItem[] = [
 ];
 
 import CollectorDailySummaryModal from '../modules/settlements/CollectorDailySummaryModal';
+import AIChatWidget from '../modules/ai/AIChatWidget';
 
 interface Props {
   children: React.ReactNode;
@@ -535,6 +536,9 @@ const AppShell: React.FC<Props> = ({ children }) => {
           navigate('/settlements', { state: { preselectedReceiptIds: receiptIds } });
         }}
       />
+
+      {/* Global Floating AI Financial Chatbot Widget */}
+      <AIChatWidget />
     </Layout>
   );
 };

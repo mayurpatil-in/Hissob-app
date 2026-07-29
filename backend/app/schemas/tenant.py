@@ -34,6 +34,7 @@ class TenantBase(BaseModel):
     enable_daily_digest: bool = True
     enable_welcome_email: bool = True
     digest_recipients: Optional[str] = None
+    ai_provider: Optional[str] = "gemini"
 
 
 class TenantCreate(TenantBase):
@@ -70,6 +71,7 @@ class TenantUpdate(BaseModel):
     enable_daily_digest: Optional[bool] = None
     enable_welcome_email: Optional[bool] = None
     digest_recipients: Optional[str] = None
+    ai_provider: Optional[str] = None
 
 
 class TenantResponse(TenantBase):

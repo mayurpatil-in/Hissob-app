@@ -293,3 +293,51 @@ export const submitPublicDonation = async (payload: any) =>
 export const lookupPublicDonor = async (phone: string, slugOrId?: string) =>
   (await apiClient.get<any>('/receipts/public-donor-lookup', { params: { phone, slug_or_id: slugOrId } })).data;
 
+// ── AI LLM Assistant Services ──
+export interface AIChatResponse {
+  question: string;
+  answer: string;
+  suggested_followups: string[];
+  generated_at: string;
+  is_llm_powered: boolean;
+  ai_provider?: string;
+}
+
+
+export const chatWithAI = async (question: string): Promise<AIChatResponse> =>
+  (await apiClient.post<AIChatResponse>('/ai/chat', { question })).data;
+
+// ── AI Audit & Report Services ──
+export interface AuditFinding {
+  category: string;
+  severity: string;
+  title: string;
+  description: string;
+  suggestion: string;
+  affected_records: string[];
+}
+
+export interface AIAuditResponse {
+  generated_at: string;
+  tenant_name?: string;
+  total_findings: number;
+  high_count: number;
+  medium_count: number;
+  info_count: number;
+  health_score: number;
+  findings: AuditFinding[];
+}
+
+export interface AIReportResponse {
+  generated_at: string;
+  tenant_name?: string;
+  report_text: string;
+  ai_provider?: string;
+  is_llm_powered: boolean;
+}
+
+export const runAIAudit = async (): Promise<AIAuditResponse> =>
+  (await apiClient.post<AIAuditResponse>('/ai/audit')).data;
+
+export const getAIExecutiveReport = async (): Promise<AIReportResponse> =>
+  (await apiClient.get<AIReportResponse>('/ai/executive-report')).data;
