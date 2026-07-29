@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     # App
-    APP_NAME: str = "Hissob ERP"
+    APP_NAME: str = "Hisob ERP"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = False
     ENVIRONMENT: str = "development"
@@ -44,6 +44,16 @@ class Settings(BaseSettings):
     # Super Admin Seed
     SUPER_ADMIN_EMAIL: str = "admin@hisob.in"
     SUPER_ADMIN_PASSWORD: str = "ChangeMe@396"
+
+    # SMTP Email Settings
+    SMTP_HOST: str = "mail.hisob.in"
+    SMTP_PORT: int = 587
+    SMTP_USER: str = "noreply@hisob.in"
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM_EMAIL: str = "noreply@hisob.in"
+    SMTP_FROM_NAME: str = "Hisob ERP Receipts"
+    SMTP_USE_TLS: bool = True
+    EMAIL_ENABLED: bool = True
 
     def check_security(self):
         if self.SECRET_KEY in ("change-me", "secret") or self.JWT_SECRET_KEY in ("change-me-jwt", "secret"):

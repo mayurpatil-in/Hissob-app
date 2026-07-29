@@ -52,6 +52,10 @@ class Tenant(Base, UUIDMixin, TimestampMixin):
     fiscal_year_start_month: Mapped[int] = mapped_column(Integer, default=4)  # April
     receipt_template: Mapped[str] = mapped_column(String(50), default="modern", server_default="modern")
     allow_permanent_deletion: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    enable_email_receipts: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    enable_daily_digest: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    enable_welcome_email: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    digest_recipients: Mapped[str | None] = mapped_column(Text)
 
     # Relationships
     users: Mapped[list["User"]] = relationship("User", back_populates="tenant")

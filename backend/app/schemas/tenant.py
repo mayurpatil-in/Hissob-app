@@ -30,6 +30,10 @@ class TenantBase(BaseModel):
     fiscal_year_start_month: int = Field(4, ge=1, le=12)
     receipt_template: str = "modern"
     allow_permanent_deletion: bool = True
+    enable_email_receipts: bool = True
+    enable_daily_digest: bool = True
+    enable_welcome_email: bool = True
+    digest_recipients: Optional[str] = None
 
 
 class TenantCreate(TenantBase):
@@ -62,6 +66,10 @@ class TenantUpdate(BaseModel):
     is_active: Optional[bool] = None
     receipt_template: Optional[str] = None
     allow_permanent_deletion: Optional[bool] = None
+    enable_email_receipts: Optional[bool] = None
+    enable_daily_digest: Optional[bool] = None
+    enable_welcome_email: Optional[bool] = None
+    digest_recipients: Optional[str] = None
 
 
 class TenantResponse(TenantBase):
@@ -71,6 +79,10 @@ class TenantResponse(TenantBase):
     max_users: int
     is_active: bool
     allow_permanent_deletion: bool = True
+    enable_email_receipts: bool = True
+    enable_daily_digest: bool = True
+    enable_welcome_email: bool = True
+    digest_recipients: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 

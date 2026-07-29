@@ -110,9 +110,13 @@ async def list_donors(
     return donors
 
 
+from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
+from app.models.tenant import Tenant
+
 @router.post("", response_model=DonorResponse, status_code=status.HTTP_201_CREATED, summary="Create Donor")
 async def create_donor(
     payload: DonorCreate,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(require("donors", "create")),
     db: Session = Depends(get_db),
 ):
@@ -137,7 +141,24 @@ async def create_donor(
         is_vip=payload.is_vip,
         notes=payload.notes,
     )
-    return repo.create(donor)
+    created = repo.create(donor)
+
+    # Dispatch Welcome Email if donor email is provided and enabled in tenant settings
+    if created.email and "@" in created.email:
+        tenant = db.get(Tenant, current_user.tenant_id)
+        if tenant and getattr(tenant, "enable_welcome_email", True):
+            from app.services.email_service import send_donor_welcome_email
+            background_tasks.add_task(
+                send_donor_welcome_email,
+                to_email=created.email,
+                donor_name=created.full_name,
+                donor_number=created.donor_number,
+                org_name=tenant.name,
+                org_city=tenant.city,
+                org_logo_url=tenant.logo_url,
+            )
+
+    return created
 
 
 @router.get("/{donor_id}", response_model=DonorResponse, summary="Get Donor Details")

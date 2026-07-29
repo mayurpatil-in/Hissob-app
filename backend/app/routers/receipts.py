@@ -5,7 +5,7 @@ from typing import List, Optional
 from uuid import UUID
 from datetime import date, datetime, timezone
 from pydantic import BaseModel, Field
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.permissions.rbac import require
@@ -187,6 +187,7 @@ async def get_collector_daily_summary(
 @router.post("", response_model=ReceiptResponse, status_code=status.HTTP_201_CREATED, summary="Create Receipt")
 async def create_receipt(
     payload: ReceiptCreate,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(require("receipts", "create")),
     db: Session = Depends(get_db),
 ):
@@ -255,6 +256,28 @@ async def create_receipt(
     # Increment donor total donations
     donor.total_donations += int(payload.amount)
     db.commit()
+
+    # Trigger Automated Email Delivery if donor email exists and enabled in settings
+    tenant = db.get(Tenant, current_user.tenant_id)
+    if donor and donor.email and getattr(tenant, "enable_email_receipts", True):
+        from app.services.email_service import send_receipt_email_notification
+        background_tasks.add_task(
+            send_receipt_email_notification,
+            to_email=donor.email,
+            donor_name=donor.full_name,
+            receipt_number=created.receipt_number,
+            receipt_date=str(created.receipt_date),
+            amount=float(created.amount),
+            purpose=created.purpose or "General Donation",
+            payment_mode=created.payment_mode.value if hasattr(created.payment_mode, "value") else str(created.payment_mode),
+            org_name=tenant.name if tenant else "Hisob ERP",
+            org_city=tenant.city if tenant else None,
+            org_logo_url=tenant.logo_url if tenant else None,
+            org_pan=tenant.pan if tenant else None,
+            pan_number=donor.pan_number,
+            receipt_id=str(created.id),
+            transaction_ref=created.upi_reference or created.transaction_ref,
+        )
 
     # Log Audit Event
     try:
@@ -551,6 +574,7 @@ class PublicDonationPayload(BaseModel):
 @router.post("/public-donate", response_model=ReceiptResponse, status_code=status.HTTP_201_CREATED, summary="Public Donor Submit UPI Donation")
 async def create_public_donation_receipt(
     payload: PublicDonationPayload,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ):
     tenant = None
@@ -665,5 +689,26 @@ async def create_public_donation_receipt(
     created_receipt = repo.create(receipt)
     donor.total_donations += int(payload.amount)
     db.commit()
+
+    # Trigger Automated Email Delivery if donor email exists and enabled in settings
+    if donor and donor.email and getattr(tenant, "enable_email_receipts", True):
+        from app.services.email_service import send_receipt_email_notification
+        background_tasks.add_task(
+            send_receipt_email_notification,
+            to_email=donor.email,
+            donor_name=donor.full_name,
+            receipt_number=created_receipt.receipt_number,
+            receipt_date=str(created_receipt.receipt_date),
+            amount=float(created_receipt.amount),
+            purpose=created_receipt.purpose or "General Donation",
+            payment_mode=created_receipt.payment_mode.value if hasattr(created_receipt.payment_mode, "value") else str(created_receipt.payment_mode),
+            org_name=tenant.name if tenant else "Hisob ERP",
+            org_city=tenant.city if tenant else None,
+            org_logo_url=tenant.logo_url if tenant else None,
+            org_pan=tenant.pan if tenant else None,
+            pan_number=donor.pan_number,
+            receipt_id=str(created_receipt.id),
+            transaction_ref=created_receipt.upi_reference or created_receipt.transaction_ref,
+        )
 
     return created_receipt

@@ -19,6 +19,7 @@ from app.routers.dashboard import router as dashboard_router
 from app.routers.notifications import router as notifications_router
 
 from app.routers.upload import router as upload_router
+from app.routers.cron import router as cron_router
 
 router = APIRouter()
 router.include_router(auth_router)
@@ -38,4 +39,5 @@ router.include_router(users_router)
 router.include_router(dashboard_router)
 router.include_router(notifications_router)
 router.include_router(upload_router)
+router.include_router(cron_router)
 
