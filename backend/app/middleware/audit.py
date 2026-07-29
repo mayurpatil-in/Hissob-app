@@ -24,6 +24,9 @@ class AuditMiddleware(BaseHTTPMiddleware):
 
         start_time = time.time()
 
+        if "state" not in request.scope:
+            request.scope["state"] = {}
+
         # Inject request context for use in service layer
         request.state.ip_address = request.client.host if request.client else "unknown"
         request.state.user_agent = request.headers.get("user-agent", "")
@@ -43,6 +46,8 @@ class TenantMiddleware(BaseHTTPMiddleware):
     """
 
     async def dispatch(self, request: Request, call_next) -> Response:
+        if "state" not in request.scope:
+            request.scope["state"] = {}
         request.state.tenant_id = None  # Will be set by auth deps
         if request.method == "OPTIONS":
             return await call_next(request)

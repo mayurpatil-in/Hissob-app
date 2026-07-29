@@ -64,13 +64,8 @@ export default defineConfig({
             options: { cacheName: 'uploads-cache', expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 30 } },
           },
           {
-            urlPattern: /.*\/api\/v1\/.*/i,
-            handler: 'NetworkFirst',
-            options: { 
-              cacheName: 'api-cache', 
-              expiration: { maxEntries: 200, maxAgeSeconds: 60 * 5 },
-              networkTimeoutSeconds: 10,
-            },
+            urlPattern: /.*\/api\/.*/i,
+            handler: 'NetworkOnly',
           },
         ],
       },

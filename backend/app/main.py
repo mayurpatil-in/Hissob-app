@@ -2,7 +2,10 @@
 Hissob ERP — FastAPI Application Entry Point
 """
 import os
-from fastapi import FastAPI
+import logging
+import traceback
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.openapi.utils import get_openapi
@@ -53,6 +56,18 @@ def create_app() -> FastAPI:
     )
     app.add_middleware(TenantMiddleware)
     app.add_middleware(AuditMiddleware)
+
+    # ─── Global Exception Handler ──────────────────────────────
+    # Ensures unhandled 500 errors still get CORS headers applied
+    @app.exception_handler(Exception)
+    async def global_exception_handler(request: Request, exc: Exception):
+        logger = logging.getLogger("hissob.error")
+        logger.error(f"Unhandled exception on {request.method} {request.url}: {exc}")
+        logger.error(traceback.format_exc())
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "Internal server error"},
+        )
 
     # Routes
     app.include_router(api_v1_router, prefix="/api/v1")
