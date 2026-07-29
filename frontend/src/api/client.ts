@@ -79,4 +79,20 @@ apiClient.interceptors.response.use(
   }
 );
 
+export const formatApiError = (err: any, fallback: string = 'An error occurred'): string => {
+  const detail = err?.response?.data?.detail;
+  if (!detail) return fallback;
+  if (typeof detail === 'string') return detail;
+  if (Array.isArray(detail)) {
+    return detail.map((e: any) => {
+      const field = Array.isArray(e.loc) ? e.loc[e.loc.length - 1] : '';
+      return field ? `${field}: ${e.msg}` : (e.msg || JSON.stringify(e));
+    }).join(' | ');
+  }
+  if (typeof detail === 'object') {
+    return detail.msg || JSON.stringify(detail);
+  }
+  return String(detail);
+};
+
 export default apiClient;

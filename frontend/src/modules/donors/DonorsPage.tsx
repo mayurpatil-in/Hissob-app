@@ -12,6 +12,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { getDonors, createDonor, updateDonor, deleteDonor } from '../../api/services';
+import { formatApiError } from '../../api/client';
 import Tax80GCertificateModal, { type Tax80GData } from '../reports/Tax80GCertificateModal';
 import DonorDetailDrawer from './DonorDetailDrawer';
 import dayjs from 'dayjs';
@@ -52,7 +53,7 @@ const DonorsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['donors'] });
     },
     onError: (err: any) => {
-      message.error(err?.response?.data?.detail || 'Failed to register donor');
+      message.error(formatApiError(err, 'Failed to register donor'));
     },
   });
 
@@ -66,7 +67,7 @@ const DonorsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['donors'] });
     },
     onError: (err: any) => {
-      message.error(err?.response?.data?.detail || 'Failed to update donor');
+      message.error(formatApiError(err, 'Failed to update donor'));
     },
   });
 
@@ -77,7 +78,7 @@ const DonorsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['donors'] });
     },
     onError: (err: any) => {
-      message.error(err?.response?.data?.detail || 'Failed to delete donor');
+      message.error(formatApiError(err, 'Failed to delete donor'));
     },
   });
 
