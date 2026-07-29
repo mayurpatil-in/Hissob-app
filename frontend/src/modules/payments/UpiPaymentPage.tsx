@@ -82,8 +82,10 @@ const UpiPaymentPage: React.FC = () => {
     },
   });
 
-  const upiId = org?.upi_id || '9876543210@upi';
+  const upiId = org?.upi_id || '8275831212@upi';
   const orgName = org?.name || 'Festival Trust / Mandal';
+  const apiHost = import.meta.env.VITE_API_URL?.replace('/api/v1', '') || '';
+  const logoUrl = org?.logo_url ? (org.logo_url.startsWith('http') ? org.logo_url : apiHost + org.logo_url) : null;
 
   // Construct standard UPI Payment URI
   const upiUri = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(orgName)}&am=${effectiveAmount}&tn=${encodeURIComponent(purpose)}&cu=INR`;
@@ -139,8 +141,8 @@ const UpiPaymentPage: React.FC = () => {
       {/* ── Top Header Brand ── */}
       <div style={{ maxWidth: 840, margin: '0 auto 24px auto', textAlign: 'center' }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-          {org?.logo_url ? (
-            <Avatar src={org.logo_url} size={54} style={{ border: '2px solid #F97316' }} />
+          {logoUrl ? (
+            <Avatar src={logoUrl} size={54} style={{ border: '2px solid #F97316' }} />
           ) : (
             <Avatar size={54} style={{ backgroundColor: '#F97316', fontWeight: 900, fontSize: 24 }}>
               {(orgName[0] || 'H').toUpperCase()}

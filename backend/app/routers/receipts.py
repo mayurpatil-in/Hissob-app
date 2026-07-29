@@ -599,13 +599,40 @@ async def create_public_donation_receipt(
         db.commit()
         db.refresh(donor)
 
-    from app.models.financial_year import FinancialYear
+    from app.models.financial_year import FinancialYear, FYStatus
     active_fy = db.query(FinancialYear).filter(
         FinancialYear.tenant_id == tenant.id,
         FinancialYear.is_current == True
     ).first()
-    fy_id = active_fy.id if active_fy else None
-    fy_name = active_fy.name if active_fy else "2025-26"
+
+    # Auto-create financial year if none exists (critical for public donations)
+    if not active_fy:
+        from datetime import datetime as dt
+        now = dt.now()
+        # Indian fiscal year: April to March
+        if now.month >= 4:
+            fy_start = date(now.year, 4, 1)
+            fy_end = date(now.year + 1, 3, 31)
+            fy_name = f"{now.year}-{str(now.year + 1)[-2:]}"
+        else:
+            fy_start = date(now.year - 1, 4, 1)
+            fy_end = date(now.year, 3, 31)
+            fy_name = f"{now.year - 1}-{str(now.year)[-2:]}"
+
+        active_fy = FinancialYear(
+            tenant_id=tenant.id,
+            name=fy_name,
+            start_date=fy_start,
+            end_date=fy_end,
+            status=FYStatus.ACTIVE,
+            is_current=True,
+        )
+        db.add(active_fy)
+        db.commit()
+        db.refresh(active_fy)
+
+    fy_id = active_fy.id
+    fy_name = active_fy.name
 
     repo = ReceiptRepository(db)
     receipt_num = repo.generate_receipt_number(tenant.id, fy_name=fy_name)
