@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Layout, Menu, Button, Avatar, Badge, Drawer, List, Tag, Typography, Tooltip, Select } from 'antd';
+import { Layout, Menu, Button, Avatar, Badge, Drawer, Tag, Typography, Tooltip, Select } from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   DashboardOutlined, FileTextOutlined, DollarOutlined, UserOutlined,
@@ -122,12 +122,13 @@ const AppShell: React.FC<Props> = ({ children }) => {
     }).catch(() => {});
   }, []);
 
-  // Live notifications (poll every 30s)
+  // Live notifications (poll every 30s when authenticated)
   const { data: notifData } = useQuery({
     queryKey: ['notifications'],
     queryFn: getNotifications,
     refetchInterval: 30_000,
     staleTime: 20_000,
+    enabled: !!user && !!localStorage.getItem('hissob_token'),
   });
 
   const markReadMutation = useMutation({
@@ -191,23 +192,46 @@ const AppShell: React.FC<Props> = ({ children }) => {
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>You have no unread system notifications right now.</Typography.Text>
           </div>
         ) : (
-          <List
-            dataSource={notifications}
-            renderItem={(item) => (
-              <List.Item
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {notifications.map((item) => (
+              <div
+                key={item.id}
                 style={{
                   padding: '12px 16px',
                   background: item.is_read ? '#fff' : '#FFF7ED',
                   cursor: 'pointer',
                   borderLeft: item.is_read ? '3px solid transparent' : '4px solid #F97316',
+                  borderBottom: '1px solid #F1F5F9',
                   transition: 'background 0.2s ease',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  justifyContent: 'space-between',
+                  gap: 12,
                 }}
                 onClick={() => {
                   if (!item.is_read) markReadMutation.mutate(item.id);
                   if (item.related_module) navigate(`/${item.related_module}`);
                   setNotifOpen(false);
                 }}
-                extra={!item.is_read && (
+              >
+                <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', flex: 1 }}>
+                  <span style={{ fontSize: 20 }}>{NOTIF_ICONS[item.notification_type] || '🔔'}</span>
+                  <div style={{ flex: 1 }}>
+                    <span style={{ fontSize: 13, fontWeight: item.is_read ? 600 : 800, color: '#0B2347', display: 'block' }}>
+                      {item.title}
+                    </span>
+                    <div style={{ fontSize: 11, color: '#475569', marginBottom: 4, lineHeight: 1.4 }}>{item.message}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Tag color={NOTIF_TYPE_COLOR[item.notification_type] || 'default'} style={{ fontSize: 10, borderRadius: 4 }}>
+                        {item.notification_type.toUpperCase()}
+                      </Tag>
+                      <span style={{ fontSize: 10, color: '#94A3B8' }}>
+                        {new Date(item.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                {!item.is_read && (
                   <Button
                     type="text"
                     size="small"
@@ -216,31 +240,9 @@ const AppShell: React.FC<Props> = ({ children }) => {
                     style={{ color: '#F97316', fontSize: 12 }}
                   />
                 )}
-              >
-                <List.Item.Meta
-                  avatar={<span style={{ fontSize: 20 }}>{NOTIF_ICONS[item.notification_type] || '🔔'}</span>}
-                  title={
-                    <span style={{ fontSize: 13, fontWeight: item.is_read ? 600 : 800, color: '#0B2347' }}>
-                      {item.title}
-                    </span>
-                  }
-                  description={
-                    <div>
-                      <div style={{ fontSize: 11, color: '#475569', marginBottom: 4, lineHeight: 1.4 }}>{item.message}</div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <Tag color={NOTIF_TYPE_COLOR[item.notification_type] || 'default'} style={{ fontSize: 10, borderRadius: 4 }}>
-                          {item.notification_type.toUpperCase()}
-                        </Tag>
-                        <span style={{ fontSize: 10, color: '#94A3B8' }}>
-                          {new Date(item.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </div>
-                    </div>
-                  }
-                />
-              </List.Item>
-            )}
-          />
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>
