@@ -47,293 +47,322 @@ export function getMarathiReceiptHtml(
   const defaultUpiQrUrl = defaultUpiQrUrlOverride || `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(orgName)}&am=${receipt.amount}`;
 
   return `<!DOCTYPE html>
-<html lang="mr">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <title>Donation Receipt ${receipt.receipt_number}</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;700;800&family=Inter:wght@400;500;600;700&family=Yatra+One&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800&family=Yatra+One&display=swap');
     
     * { margin: 0; padding: 0; box-sizing: border-box; }
     
     body {
-      font-family: 'Mukta', 'Inter', sans-serif;
-      background: #e2e8f0;
+      font-family: 'Inter', 'Mukta', sans-serif;
+      background: #cbd5e1;
       display: flex; justify-content: center; align-items: center; min-height: 100vh;
       -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
     }
     
     .receipt-wrapper {
       width: 1050px; height: 742px; /* A4 Landscape */
-      background: #fdfaf0;
+      background: #ffffff;
       position: relative; overflow: hidden;
-      border: 8px solid #6b1718;
-      border-radius: 4px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-      padding: 24px 32px;
+      border: 8px solid #fdfdfd;
+      border-radius: 12px;
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.15);
       display: flex; flex-direction: column;
     }
-    /* Inner Gold Border */
+    /* Inner Gold/Orange Border */
     .receipt-wrapper::after {
-      content: ''; position: absolute; top: 8px; right: 8px; bottom: 8px; left: 8px;
-      border: 1.5px solid #c89c3c; z-index: 1; pointer-events: none;
+      content: ''; position: absolute; top: 6px; right: 6px; bottom: 6px; left: 6px;
+      border: 2px solid #e8a268; z-index: 1; pointer-events: none; border-radius: 8px;
     }
     
-    /* Bottom curved swoosh decoration */
-    .swoosh-left, .swoosh-right {
-      position: absolute; bottom: 0; width: 300px; height: 100px; background: #6b1718;
-      z-index: 0;
+    /* Faint Center Watermark */
+    .receipt-wrapper::before {
+      content: 'ॐ'; position: absolute; top: 55%; left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 450px; color: #cf671f; opacity: 0.03;
+      z-index: 0; font-family: 'Mukta', sans-serif; pointer-events: none; line-height: 1;
     }
-    .swoosh-left { left: 0; border-top-right-radius: 100% 80%; }
-    .swoosh-right { right: 0; border-top-left-radius: 100% 80%; }
-    .swoosh-left-gold, .swoosh-right-gold {
-      position: absolute; bottom: 0; width: 310px; height: 110px; background: #c89c3c;
-      z-index: -1;
-    }
-    .swoosh-left-gold { left: 0; border-top-right-radius: 100% 80%; }
-    .swoosh-right-gold { right: 0; border-top-left-radius: 100% 80%; }
 
     /* Top corner decorations */
-    .corner-tl, .corner-tr {
-      position: absolute; top: 12px; width: 40px; height: 40px; border: 4px solid #6b1718; z-index: 1;
-    }
-    .corner-tl { left: 12px; border-right: none; border-bottom: none; }
-    .corner-tr { right: 12px; border-left: none; border-bottom: none; }
+    .corner-icon { position: absolute; width: 65px; height: 65px; opacity: 0.8; z-index: 2; color: #cf671f;}
+    .corner-tl-svg { top: 10px; left: 10px; }
+    .corner-tr-svg { top: 10px; right: 10px; transform: scaleX(-1); }
 
     /* Top Header */
     .header {
-      display: flex; justify-content: space-between; align-items: stretch;
-      margin-bottom: 24px; z-index: 2; position: relative; padding: 0 10px;
+      display: flex; justify-content: space-between; align-items: flex-start;
+      padding: 16px 24px 0 24px; z-index: 2; position: relative;
     }
 
     /* Left Logo */
     .logo-area {
-      width: 180px; text-align: center;
+      width: 240px; text-align: center; position: relative; display: flex; justify-content: center; align-items: center;
     }
-    .logo-area img {
-      width: 150px; height: 150px; object-fit: contain;
-      filter: drop-shadow(0 4px 6px rgba(107,23,24,0.3));
+    .logo-circle {
+      width: 170px; height: 170px; border-radius: 50%;
+      background: #fff;
+      border: 2px dashed #cf671f;
+      display: flex; justify-content: center; align-items: center;
+      position: relative; margin-top: 10px;
+      padding: 6px;
+      transform: scale(1.15);
+      transform-origin: center left;
+    }
+    .logo-circle::after {
+      content: ''; position: absolute; top: -8px; right: -8px; bottom: -8px; left: -8px; border-radius: 50%; border: 1.5px solid #ffd4b3; z-index: 0;
+    }
+    .logo-inner {
+      width: 140px; height: 140px; border-radius: 50%; overflow: hidden;
+      display: flex; justify-content: center; align-items: center;
+      background: #fff; box-shadow: 0 4px 12px rgba(225, 149, 81, 0.4); z-index: 1;
+    }
+    .logo-inner img {
+      width: 100%; height: 100%; object-fit: contain; padding: 2px; background: #fff; transform: scale(1.05);
     }
 
     /* Center Info */
     .center-info {
-      flex: 1; text-align: center; padding-top: 10px;
+      flex: 1; text-align: center; padding-top: 0px;
     }
     .shree-namah {
-      font-size: 18px; color: #6b1718; font-weight: 700; letter-spacing: 2px;
-      margin-bottom: 4px;
+      font-family: 'Yatra One', cursive; font-size: 24px; color: #b91c1c; font-weight: 400; letter-spacing: 2px;
+      margin-bottom: -4px; display: flex; justify-content: center; align-items: center; gap: 8px;
     }
     .org-name {
-      font-family: 'Yatra One', cursive; font-size: 56px; color: #6b1718;
-      line-height: 1.1; margin-bottom: 10px;
-      display: flex; justify-content: center; align-items: center; gap: 15px;
-    }
-    .org-name::before, .org-name::after {
-      content: '❖'; font-size: 28px; color: #b8860b; font-family: 'Inter', sans-serif;
+      font-family: 'Yatra One', cursive; font-size: 60px; color: #1e3a8a; font-weight: 800;
+      line-height: 1.1; margin-bottom: 4px; text-shadow: 1px 2px 2px rgba(0,0,0,0.08);
     }
     .address-line {
-      font-size: 16px; color: #333; font-weight: 600;
-    }
-    .address-line span {
-      display: inline-block; padding-bottom: 4px; border-bottom: 1px solid #d1d5db;
+      font-size: 16px; color: #334155; font-weight: 700; display: flex; justify-content: center; align-items: center; gap: 6px;
     }
     .reg-info {
-      font-size: 13px; color: #555; margin-top: 6px; font-weight: 500;
+      font-size: 13px; color: #64748b; margin-top: 4px; font-weight: 600; letter-spacing: 0.5px;
     }
+
+    /* Ribbon */
+    .ribbon-wrapper {
+      margin-top: 18px; position: relative; display: inline-block;
+    }
+    .ribbon {
+      background: linear-gradient(90deg, #c2410c, #ea580c, #c2410c); color: #fff; padding: 6px 60px; font-size: 26px; font-weight: 900; font-family: 'Inter', sans-serif;
+      position: relative; border-radius: 4px; z-index: 2; letter-spacing: 1.5px;
+      box-shadow: 0 6px 15px rgba(234, 88, 12, 0.35);
+      border: 1px solid #f97316;
+    }
+    .ribbon::before, .ribbon::after {
+      content: ''; position: absolute; top: 50%; transform: translateY(-50%);
+      border-style: solid; border-color: transparent; z-index: -1;
+    }
+    .ribbon-decor-left, .ribbon-decor-right {
+      position: absolute; top: 12px; z-index: -1;
+      border: 22px solid #c2410c;
+    }
+    .ribbon-decor-left {
+      left: -35px; border-left-color: transparent; border-right-width: 45px;
+    }
+    .ribbon-decor-right {
+      right: -35px; border-right-color: transparent; border-left-width: 45px;
+    }
+    .ribbon-shadow-left { position: absolute; left: 0; bottom: -10px; border: 5px solid transparent; border-top-color: #7c2d12; border-right-color: #7c2d12; z-index: 1;}
+    .ribbon-shadow-right { position: absolute; right: 0; bottom: -10px; border: 5px solid transparent; border-top-color: #7c2d12; border-left-color: #7c2d12; z-index: 1;}
+    .ribbon-sub { font-size: 22px; color: #1e3a8a; font-weight: 800; margin-top: 16px; font-family: 'Yatra One', cursive; display: flex; justify-content: center; align-items: center; gap: 10px;}
+    .ribbon-sub::before, .ribbon-sub::after { content: '❖'; color: #ea580c; font-size: 16px; opacity: 0.8;}
 
     /* Right Info */
     .right-info {
-      width: 240px; display: flex; flex-direction: column; align-items: flex-end; padding-top: 10px; gap: 20px;
+      width: 270px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
     }
-    .receipt-badge {
-      background: #6b1718; color: #fff; font-family: 'Mukta', sans-serif;
-      font-size: 24px; font-weight: 800; padding: 4px 36px;
-      border: 3px solid #6b1718; border-radius: 30px;
-      position: relative;
-      box-shadow: inset 0 0 0 2px #c89c3c;
+    .info-box-group {
+      display: flex; flex-direction: column; gap: 6px; width: 100%;
     }
-    .receipt-badge::before, .receipt-badge::after {
-      content: '✦'; position: absolute; top: 50%; transform: translateY(-50%); color: #c89c3c; font-size: 16px;
+    .info-box {
+      width: 250px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; display: flex; align-items: center; padding: 4px 10px; gap: 10px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
     }
-    .receipt-badge::before { left: 14px; }
-    .receipt-badge::after { right: 14px; }
+    .info-icon {
+      width: 28px; height: 28px; background: linear-gradient(135deg, #ea580c, #c2410c); border-radius: 6px; display: flex; justify-content: center; align-items: center; color: #fff; font-size: 14px; box-shadow: 0 2px 5px rgba(234, 88, 12, 0.3);
+    }
+    .info-icon.purple { background: linear-gradient(135deg, #4f46e5, #4338ca); box-shadow: 0 2px 5px rgba(79, 70, 229, 0.3); }
+    .info-text { display: flex; flex-direction: column; }
+    .info-lbl { font-size: 11px; color: #64748b; font-weight: 800; line-height: 1.2; text-transform: uppercase; letter-spacing: 0.5px;}
+    .info-val { font-size: 15px; color: #0f172a; font-weight: 800; line-height: 1.2;}
     
-    .meta-box-group {
-      width: 100%; border: 1.5px solid #d1d5db; border-radius: 4px; background: #fff;
+    .qr-verify-box {
+      width: 250px; background: #fff; border: 1px solid #cbd5e1; border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 6px 12px; gap: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.03);
     }
-    .meta-row {
-      display: flex; justify-content: space-between; padding: 10px 16px; font-size: 15px; align-items: center;
-    }
-    .meta-row:first-child { border-bottom: 1.5px solid #d1d5db; }
-    .meta-label { color: #555; font-weight: 600; }
-    .meta-value { color: #6b1718; font-weight: 800; font-size: 18px; letter-spacing: 1px;}
-    
-    .marathi-verify-qr {
-      width: 100%; display: flex; align-items: center; justify-content: center; gap: 12px;
-      border: 1.5px solid #d1d5db; border-radius: 4px; padding: 6px; background: #fff;
-    }
-    .marathi-verify-qr img { width: 50px; height: 50px; }
-    .marathi-verify-qr span { font-size: 11px; font-weight: 800; color: #333; text-align: left; line-height: 1.3;}
+    .qr-verify-box img { width: 44px; height: 44px; border-radius: 4px; mix-blend-mode: multiply;}
+    .qr-verify-box span { font-size: 13px; font-weight: 800; color: #1e3a8a; text-align: left; line-height: 1.2; letter-spacing: 0.5px;}
 
     /* Main Body */
     .main-body {
-      display: flex; gap: 24px; flex: 1; z-index: 2; position: relative;
+      display: flex; gap: 24px; flex: 1; z-index: 2; position: relative; padding: 12px 28px 0 28px;
     }
-
-    /* Section Headings (3D Ribbon) */
-    .section-ribbon-container {
-      text-align: center; margin-bottom: 18px; margin-top: -30px;
-    }
-    .section-ribbon {
-      background: #7a1e1f; color: #fff; display: inline-block;
-      padding: 6px 40px; font-size: 16px; font-weight: 700;
-      position: relative; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .section-ribbon::before, .section-ribbon::after {
-      content: ''; position: absolute; bottom: -8px; border: 4px solid transparent; border-top-color: #4a0d0e;
-    }
-    .section-ribbon::before { left: 0; border-right-color: #4a0d0e; }
-    .section-ribbon::after { right: 0; border-left-color: #4a0d0e; }
-    .ribbon-end-left, .ribbon-end-right {
-      position: absolute; top: 4px; bottom: -4px; width: 20px; background: #6b1718; z-index: -1;
-    }
-    .ribbon-end-left { left: -16px; clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 10px 50%); }
-    .ribbon-end-right { right: -16px; clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 50%, 100% 100%, 0 100%); }
 
     /* Left Box (Donor Info) */
-    .left-box {
-      flex: 1.1; border: 1.5px solid #d1d5db; border-radius: 6px; padding: 24px 20px 20px;
-      background: #fdfaf0; display: flex; flex-direction: column; position: relative;
+    .left-panel {
+      flex: 1.05; display: flex; flex-direction: column; gap: 14px;
     }
-    .form-group {
-      display: flex; align-items: flex-end; margin-bottom: 18px; font-size: 16px;
+    .donor-box {
+      border: 1px solid #cbd5e1; border-radius: 10px; background: #fff; overflow: hidden;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.04); flex: 1; display: flex; flex-direction: column;
     }
-    .form-label {
-      width: 100px; font-weight: 600; color: #333; display: flex; justify-content: space-between;
+    .donor-header {
+      background: linear-gradient(90deg, #1e3a8a, #312e81); color: #fff; padding: 10px 18px; font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 10px; border-bottom: 3px solid #ea580c; letter-spacing: 0.5px;
     }
-    .form-line {
-      flex: 1; border-bottom: 1.5px solid #a1a1aa; margin-left: 12px; padding-bottom: 2px;
-      color: #111; font-weight: 700; min-height: 26px; padding-left: 8px;
-    }
+    .donor-header-icon { font-size: 20px; font-weight: 400; opacity: 0.9; margin-bottom: 2px;}
+    .donor-body { padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; flex: 1;}
     
-    .amount-display {
-      margin-top: auto; display: flex; align-items: stretch; border: 1.5px solid #c89c3c;
-      border-radius: 6px; background: #fff; overflow: hidden;
-    }
-    .amt-box {
-      background: #6b1718; color: #fff; display: flex;
-      padding: 12px 24px; align-items: center; gap: 16px; min-width: 180px; justify-content: center;
-    }
-    .amt-rupee { font-size: 42px; font-weight: 800; color: #e5e7eb; line-height: 1;}
-    .amt-val { font-size: 38px; font-weight: 800; letter-spacing: 1px; line-height: 1;}
-    .amt-words {
-      flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 12px 20px;
-      border-left: 1.5px solid #c89c3c;
-    }
-    .amt-words-lbl { color: #c89c3c; font-size: 13px; font-weight: 700; margin-bottom: 4px; }
-    .amt-words-val { font-weight: 700; color: #111; font-size: 16px;}
+    .form-group { display: flex; align-items: flex-start; font-size: 15px; }
+    .form-icon { width: 30px; display: flex; justify-content: flex-start; color: #3b82f6; font-size: 18px; opacity: 0.9;}
+    .form-label { width: 110px; font-weight: 700; color: #475569; }
+    .form-colon { width: 20px; text-align: center; font-weight: 700; color: #475569; }
+    .form-val { flex: 1; font-weight: 800; color: #0f172a; border-bottom: 1px dashed #cbd5e1; padding-bottom: 4px;}
 
-    .tip-msg { margin-top: 20px; font-size: 14px; color: #444; }
-    .tip-msg strong { color: #6b1718; }
+    .amount-box {
+      border: 2px solid #fed7aa; border-radius: 12px; background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); overflow: hidden; display: flex; align-items: stretch; position: relative;
+      box-shadow: 0 4px 12px rgba(234, 88, 12, 0.08);
+    }
+    .amount-box::after {
+      content: 'RECEIVED'; position: absolute; right: 20px; top: 15px; font-size: 36px; color: rgba(220, 38, 38, 0.1); font-weight: 900; transform: rotate(-15deg); pointer-events: none; border: 3px solid rgba(220, 38, 38, 0.1); border-radius: 8px; padding: 4px 12px; letter-spacing: 2px;
+    }
+    .amt-icon-box { background: linear-gradient(135deg, #ea580c, #c2410c); color: #fff; display: flex; justify-content: center; align-items: center; padding: 15px 25px; border-radius: 10px; margin: 12px; box-shadow: 0 4px 10px rgba(234, 88, 12, 0.3);}
+    .amt-icon-box span { font-size: 42px; font-weight: 800; line-height: 1;}
+    .amt-details { padding: 15px 12px; display: flex; flex-direction: column; justify-content: center; gap: 4px; z-index: 1;}
+    .amt-val-lbl { font-size: 12px; color: #9a3412; font-weight: 900; letter-spacing: 0.5px;}
+    .amt-val { font-size: 36px; font-weight: 900; color: #0f172a; line-height: 1; letter-spacing: -0.5px;}
+    
+    .amt-words-sec { border-left: 2px solid #fdba74; margin: 15px 0; padding: 0 15px; display: flex; flex-direction: column; justify-content: center; gap: 6px; flex: 1; z-index: 1;}
+    .amt-words-lbl { font-size: 12px; color: #9a3412; font-weight: 900; letter-spacing: 0.5px;}
+    .amt-words-val { font-size: 15px; font-weight: 700; color: #0f172a; line-height: 1.3;}
+
+    .remarks-box {
+      border: 1px solid #bae6fd; border-radius: 8px; background: #f0f9ff; padding: 12px 20px; font-size: 15px; display: flex; align-items: center; gap: 12px; color: #0369a1; font-weight: 600;
+    }
+    .remarks-box .icon { color: #0284c7; font-size: 20px;}
+    .remarks-box strong { color: #075985; font-weight: 800;}
 
     /* Right Box (Purpose & Payment) */
-    .right-box {
-      flex: 0.9; display: flex; flex-direction: column; gap: 20px;
+    .right-panel {
+      flex: 0.95; display: flex; flex-direction: column; gap: 14px;
     }
     .purpose-box, .payment-box {
-      border: 1.5px solid #d1d5db; border-radius: 6px; padding: 24px 20px 20px; background: #fdfaf0; position: relative;
+      border: 1px solid #cbd5e1; border-radius: 10px; background: #fff; padding: 18px 20px; position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.04);
     }
-    .grid-3col {
-      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px 12px; font-size: 14px;
+    .box-title { font-size: 17px; font-weight: 800; color: #1e3a8a; margin-bottom: 12px; display: flex; align-items: center; gap: 10px;}
+    .box-title .icon { color: #3b82f6; font-size: 20px; margin-bottom: 2px;}
+    .divider { border-bottom: 2px solid #e2e8f0; margin-bottom: 16px; margin-top: -6px;}
+    
+    .grid-2col {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 14px 10px; font-size: 15px;
     }
-    .grid-4col {
-      display: grid; grid-template-columns: auto auto auto auto; gap: 16px 12px; font-size: 14px; align-items: center; justify-content: space-between;
-    }
-    .cb-item { display: flex; align-items: center; gap: 8px; font-weight: 600; color: #333; white-space: nowrap;}
+    .cb-item { display: flex; align-items: center; gap: 10px; font-weight: 600; color: #334155;}
     .cb-square {
-      width: 16px; height: 16px; border: 1.5px solid #444; border-radius: 2px;
-      display: flex; justify-content: center; align-items: center; font-size: 14px; background: #fff;
+      width: 22px; height: 22px; border: 2px solid #94a3b8; border-radius: 5px;
+      display: flex; justify-content: center; align-items: center; font-size: 16px; background: #fff; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
     }
-    .cb-square.checked { color: #000; font-weight: 900;}
+    .cb-square.checked { background: #ea580c; border-color: #ea580c; color: #fff; font-weight: 900; box-shadow: 0 2px 5px rgba(234, 88, 12, 0.4);}
 
     .payment-box { flex: 1; display: flex; flex-direction: column; }
-    .utr-row { display: flex; align-items: flex-end; margin-top: 20px; font-size: 15px; font-weight: 600; color: #333;}
+    .utr-box { background: #f8fafc; border-radius: 8px; padding: 14px 16px; margin-top: auto; display: flex; align-items: center; gap: 10px; font-size: 15px; color: #475569; width: 62%; border: 1px solid #e2e8f0;}
+    .utr-val { font-weight: 800; color: #0f172a; flex: 1; min-height: 20px;}
+    .utr-val span { border-bottom: 1.5px dashed #94a3b8; width: 100%; display: inline-block;}
     
-    .qr-thankyou {
-      margin-top: 20px; display: flex; gap: 20px; background: #fff;
-      border: 1.5px solid #d1d5db; border-radius: 6px; padding: 12px 16px; align-items: center; flex: 1;
+    .qr-upi-box {
+      position: absolute; right: 20px; bottom: 20px; width: 145px; border: 1px solid #cbd5e1; border-radius: 10px; background: #f8fafc; padding: 12px; text-align: center; box-shadow: 0 6px 12px rgba(0,0,0,0.05);
     }
-    .qr-img {
-      width: 90px; height: 90px; padding: 0; text-align: center;
-    }
-    .qr-img img { width: 100%; height: 100%; object-fit: contain; }
-    .qr-img span { font-size: 10px; font-weight: 700; display: block; margin-top: 4px; color: #333;}
-    .ty-text { flex: 1; text-align: center;}
-    .ty-text .upi { font-size: 13px; color: #555; font-weight: 700; margin-bottom: 4px;}
-    .ty-text .upi-val { font-size: 12px; color: #111; margin-bottom: 12px; font-weight: 600;}
-    .ty-text .lbl { font-size: 13px; color: #555; font-weight: 600;}
-    .ty-text .msg { font-size: 20px; color: #6b1718; font-weight: 800;}
+    .qr-upi-box .title { font-size: 13px; font-weight: 900; color: #1e3a8a; margin-bottom: 10px;}
+    .qr-upi-box img { width: 95px; height: 95px; margin: 0 auto; display: block; border-radius: 6px; mix-blend-mode: multiply;}
+    .qr-upi-box .upi-id-lbl { font-size: 11px; color: #64748b; margin-top: 8px; font-weight: 700;}
+    .qr-upi-box .upi-id-val { font-size: 12px; color: #0f172a; font-weight: 800; word-break: break-all;}
 
-    /* Signatures */
-    .signatures {
-      display: flex; justify-content: space-between; align-items: flex-end;
-      margin-top: 20px; z-index: 2; position: relative; padding: 0 40px;
+    /* Footer */
+    .footer {
+      margin-top: 12px; z-index: 2; position: relative; display: flex; flex-direction: column; align-items: center; width: 100%;
     }
-    .sig-block { text-align: center; width: 220px; }
-    .sig-line { border-bottom: 1.5px solid #a1a1aa; height: 30px; margin-bottom: 8px;}
-    .sig-lbl { font-size: 15px; font-weight: 600; color: #6b1718;}
-    .footer-msg { font-size: 28px; font-weight: 800; color: #6b1718; letter-spacing: 2px; padding: 0 20px; position: relative;}
-    .footer-msg::before, .footer-msg::after {
-      content: ''; position: absolute; top: 50%; width: 60px; height: 2px; background: #c89c3c;
+    .footer-msg {
+      font-size: 26px; font-weight: 800; color: #ea580c; margin-bottom: 4px; display: flex; align-items: center; gap: 20px; font-family: 'Mukta', sans-serif;
     }
-    .footer-msg::before { left: -50px; }
-    .footer-msg::after { right: -50px; }
+    .lotus-icon { color: #ea580c; font-size: 28px; opacity: 0.9;}
+    .footer-submsg { font-size: 18px; font-weight: 700; color: #334155; margin-bottom: 12px;}
+    
+    .bottom-bar {
+      width: 100%; background: linear-gradient(90deg, #0f172a, #1e293b, #0f172a); color: #f8fafc; padding: 12px 30px;
+      display: flex; justify-content: space-between; align-items: center; border-radius: 0 0 12px 12px; border-top: 2px solid #ea580c;
+    }
+    .bottom-item { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600;}
+    .bottom-item .icon { font-size: 20px; color: #94a3b8; }
+    .play-btn { background: #000; color: #fff; border-radius: 6px; padding: 6px 12px; display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; border: 1px solid #334155; box-shadow: 0 2px 4px rgba(0,0,0,0.5);}
+    .play-btn span { font-size: 16px;}
 
     @media print {
       @page { size: A4 landscape; margin: 0; }
       body { padding: 0; background: #fff; }
-      .receipt-wrapper { width: 297mm; height: 210mm; border-radius: 0; box-shadow: none; border-width: 4px;}
+      .receipt-wrapper { width: 297mm; height: 210mm; border: none; box-shadow: none; border-radius: 0;}
+      .receipt-wrapper::after { display: none; }
+      .receipt-wrapper::before { color: #000; opacity: 0.02; }
+      .bottom-bar { border-radius: 0; }
     }
   </style>
 </head>
 <body>
   <div class="receipt-wrapper">
-    <!-- Decorative Swooshes & Corners -->
-    <div class="corner-tl"></div><div class="corner-tr"></div>
-    <div class="swoosh-left-gold"></div><div class="swoosh-right-gold"></div>
-    <div class="swoosh-left"></div><div class="swoosh-right"></div>
-    
+    <!-- SVG Corners -->
+    <svg class="corner-icon corner-tl-svg" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="4"><path d="M0,40 C20,40 40,20 40,0" /><circle cx="20" cy="20" r="3" fill="currentColor"/></svg>
+    <svg class="corner-icon corner-tr-svg" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="4"><path d="M0,40 C20,40 40,20 40,0" /><circle cx="20" cy="20" r="3" fill="currentColor"/></svg>
+
     <!-- Header -->
     <div class="header">
       <div class="logo-area">
-        <img src="${logoUrl}" alt="Logo" />
+        <div class="logo-circle">
+          <div class="logo-inner">
+            <img src="${logoUrl}" alt="Logo" />
+          </div>
+        </div>
       </div>
       <div class="center-info">
         <div class="shree-namah">॥ श्री गणेशाय नमः ॥</div>
         <div class="org-name">${orgName}</div>
         <div class="address-line">
-          <span>&#x1F4CD; ${orgData?.address ? orgData.address + (orgData?.city ? ', ' + orgData.city : '') : (orgData?.city ? orgData.city + (orgData?.state ? ', ' + orgData.state : '') : 'Maharashtra, India')}</span>
+          <span style="color: #ea580c; font-size: 22px;">&#x1F4CD;</span> 
+          ${orgData?.address ? orgData.address + (orgData?.city ? ', ' + orgData.city : '') : (orgData?.city ? orgData.city + (orgData?.state ? ', ' + orgData.state : '') : 'Maharashtra, India')}
         </div>
         <div class="reg-info">
-          नोंदणी क्र.: ${orgData?.registration_number || '______________'} &nbsp;|&nbsp; PAN: ${orgData?.pan || '______________'}
+          Registered Organization &nbsp;|&nbsp; Official Receipt
         </div>
+        
+        <div class="ribbon-wrapper">
+          <div class="ribbon-shadow-left"></div>
+          <div class="ribbon-decor-left"></div>
+          <div class="ribbon">DONATION RECEIPT</div>
+          <div class="ribbon-decor-right"></div>
+          <div class="ribbon-shadow-right"></div>
+        </div>
+        <div class="ribbon-sub">देणगी पावती</div>
       </div>
       <div class="right-info">
-        <div class="receipt-badge">देणगी पावती</div>
-        <div class="meta-box-group">
-          <div class="meta-row">
-            <span class="meta-label">पावती क्र.</span>
-            <span class="meta-value">${receipt.receipt_number}</span>
+        <div class="info-box-group">
+          <div class="info-box">
+            <div class="info-icon purple">★</div>
+            <div class="info-text">
+              <span class="info-lbl">Receipt No.</span>
+              <span class="info-val">${receipt.receipt_number}</span>
+            </div>
           </div>
-          <div class="meta-row">
-            <span class="meta-label">दिनांक</span>
-            <span class="meta-value">${formatDateDDMMYYYY(receipt.receipt_date)}</span>
+          <div class="info-box">
+            <div class="info-icon">📅</div>
+            <div class="info-text">
+              <span class="info-lbl">Date</span>
+              <span class="info-val">${formatDateDDMMYYYY(receipt.receipt_date)}</span>
+            </div>
           </div>
         </div>
         ${verifyQrUrl ? `
-        <div class="marathi-verify-qr">
+        <div class="qr-verify-box">
           <img src="${verifyQrUrl}" alt="Verify QR" />
-          <span>स्कॅन करून<br/>पावती तपासा</span>
+          <span>SCAN TO<br/>VERIFY</span>
         </div>
         ` : ''}
       </div>
@@ -342,106 +371,122 @@ export function getMarathiReceiptHtml(
     <!-- Body -->
     <div class="main-body">
       <!-- Left Panel -->
-      <div class="left-box">
-        <div class="section-ribbon-container">
-          <div class="section-ribbon">देणगीदाराची माहिती<div class="ribbon-end-left"></div><div class="ribbon-end-right"></div></div>
-        </div>
-        
-        <div class="form-group">
-          <div class="form-label">नाव <span>:</span></div>
-          <div class="form-line">${receipt.donor?.full_name || ''}</div>
-        </div>
-        <div class="form-group">
-          <div class="form-label">पत्ता <span>:</span></div>
-          <div class="form-line">${receipt.donor?.address || ''}</div>
-        </div>
-        <div class="form-group">
-          <div class="form-label">शहर <span>:</span></div>
-          <div class="form-line">${receipt.donor?.city || ''}</div>
-        </div>
-        <div class="form-group">
-          <div class="form-label">मोबाईल क्र. <span>:</span></div>
-          <div class="form-line">${receipt.donor?.phone || ''}</div>
-        </div>
-        <div class="form-group">
-          <div class="form-label">ईमेल <span>:</span></div>
-          <div class="form-line">${receipt.donor?.email || ''}</div>
+      <div class="left-panel">
+        <div class="donor-box">
+          <div class="donor-header">
+            <span class="donor-header-icon">👤</span> Received With Thanks From
+          </div>
+          <div class="donor-body">
+            <div class="form-group">
+              <div class="form-icon">👤</div>
+              <div class="form-label">Donor Name</div>
+              <div class="form-colon">:</div>
+              <div class="form-val">${receipt.donor?.full_name || ''}</div>
+            </div>
+            <div class="form-group">
+              <div class="form-icon">📍</div>
+              <div class="form-label">Address</div>
+              <div class="form-colon">:</div>
+              <div class="form-val">${receipt.donor?.address || ''}${receipt.donor?.city ? ', ' + receipt.donor.city : ''}</div>
+            </div>
+            <div class="form-group">
+              <div class="form-icon">📞</div>
+              <div class="form-label">Mobile No.</div>
+              <div class="form-colon">:</div>
+              <div class="form-val">${receipt.donor?.phone || ''}</div>
+            </div>
+            <div class="form-group">
+              <div class="form-icon">✉️</div>
+              <div class="form-label">Email</div>
+              <div class="form-colon">:</div>
+              <div class="form-val">${receipt.donor?.email || ''}</div>
+            </div>
+          </div>
         </div>
 
-        <div class="amount-display">
-          <div class="amt-box">
-            <div class="amt-rupee">₹</div>
+        <div class="amount-box">
+          <div class="amt-icon-box">
+            <span>₹</span>
+          </div>
+          <div class="amt-details">
+            <div class="amt-val-lbl">AMOUNT</div>
             <div class="amt-val">${Number(receipt.amount).toLocaleString('en-IN')}/-</div>
           </div>
-          <div class="amt-words">
-            <div class="amt-words-lbl">रक्कम शब्दात</div>
-            <div class="amt-words-val">रुपये ${amountWords}</div>
+          <div class="amt-words-sec">
+            <div class="amt-words-lbl">AMOUNT IN WORDS</div>
+            <div class="amt-words-val">Rupees ${amountWords}</div>
           </div>
         </div>
-        <div class="tip-msg">
-          <strong>टीप / संदेश :</strong> ${receipt.notes || 'आपली देणगी आमच्यासाठी मोलाची आहे.'}
+
+        <div class="remarks-box">
+          <span class="icon">💬</span>
+          <div><strong>Remarks :</strong> ${receipt.notes || receipt.festival_name || 'Ganesh Utsav 2026'}</div>
         </div>
       </div>
 
       <!-- Right Panel -->
-      <div class="right-box">
+      <div class="right-panel">
         <div class="purpose-box">
-          <div class="section-ribbon-container">
-            <div class="section-ribbon">देणगीचा उद्देश<div class="ribbon-end-left"></div><div class="ribbon-end-right"></div></div>
-          </div>
-          <div class="grid-3col">
-            <div class="cb-item"><div class="cb-square ${isGanesh ? 'checked' : ''}">${isGanesh ? '✓' : ''}</div> गणेशोत्सव</div>
-            <div class="cb-item"><div class="cb-square ${isDonation ? 'checked' : ''}">${isDonation ? '✓' : ''}</div> सर्वसाधारण देणगी</div>
-            <div class="cb-item"><div class="cb-square ${isMahaprasad ? 'checked' : ''}">${isMahaprasad ? '✓' : ''}</div> महाप्रसाद</div>
-            <div class="cb-item"><div class="cb-square ${isDecoration ? 'checked' : ''}">${isDecoration ? '✓' : ''}</div> देखावा / सजावट</div>
-            <div class="cb-item"><div class="cb-square ${isSocial ? 'checked' : ''}">${isSocial ? '✓' : ''}</div> सामाजिक उपक्रम</div>
-            <div class="cb-item" style="grid-column: span 1;"><div class="cb-square ${isOther ? 'checked' : ''}">${isOther ? '✓' : ''}</div> अन्य <span style="border-bottom: 1.5px solid #a1a1aa; flex: 1; margin-left: 8px; display:inline-block; height: 20px;">${isOther ? receipt.purpose : ''}</span></div>
+          <div class="box-title"><span class="icon">★</span> Purpose of Donation</div>
+          <div class="divider"></div>
+          <div class="grid-2col">
+            <div class="cb-item"><div class="cb-square ${isGanesh ? 'checked' : ''}">${isGanesh ? '✓' : ''}</div> Ganesh Festival</div>
+            <div class="cb-item"><div class="cb-square ${isDonation ? 'checked' : ''}">${isDonation ? '✓' : ''}</div> Donation</div>
+            <div class="cb-item"><div class="cb-square ${isMahaprasad ? 'checked' : ''}">${isMahaprasad ? '✓' : ''}</div> Mahaprasad</div>
+            <div class="cb-item"><div class="cb-square ${isDecoration ? 'checked' : ''}">${isDecoration ? '✓' : ''}</div> Decoration</div>
+            <div class="cb-item"><div class="cb-square ${isSocial ? 'checked' : ''}">${isSocial ? '✓' : ''}</div> Social Activity</div>
+            <div class="cb-item"><div class="cb-square ${isOther ? 'checked' : ''}">${isOther ? '✓' : ''}</div> Other <span style="border-bottom: 1px dotted #a1a1aa; flex: 1; margin-left: 8px;">${isOther ? receipt.purpose : ''}</span></div>
           </div>
         </div>
 
         <div class="payment-box">
-          <div class="section-ribbon-container">
-            <div class="section-ribbon">भरणा पद्धत<div class="ribbon-end-left"></div><div class="ribbon-end-right"></div></div>
-          </div>
-          <div class="grid-4col">
-            <div class="cb-item"><div class="cb-square ${isCash ? 'checked' : ''}">${isCash ? '✓' : ''}</div> रोख</div>
+          <div class="box-title"><span class="icon">💳</span> Payment Mode</div>
+          <div class="divider"></div>
+          <div class="grid-2col" style="width: 65%;">
+            <div class="cb-item"><div class="cb-square ${isCash ? 'checked' : ''}">${isCash ? '✓' : ''}</div> Cash</div>
             <div class="cb-item"><div class="cb-square ${isUPI ? 'checked' : ''}">${isUPI ? '✓' : ''}</div> UPI</div>
-            <div class="cb-item"><div class="cb-square ${isBank ? 'checked' : ''}">${isBank ? '✓' : ''}</div> बँक ट्रान्सफर</div>
-            <div class="cb-item"><div class="cb-square ${isCheque ? 'checked' : ''}">${isCheque ? '✓' : ''}</div> चेक</div>
+            <div class="cb-item"><div class="cb-square ${isBank ? 'checked' : ''}">${isBank ? '✓' : ''}</div> Bank Transfer</div>
+            <div class="cb-item"><div class="cb-square ${isCheque ? 'checked' : ''}">${isCheque ? '✓' : ''}</div> Cheque</div>
           </div>
-          <div class="utr-row">
-            UTR / व्यवहार क्र. : <span style="border-bottom: 1.5px solid #a1a1aa; flex: 1; margin-left: 12px; display:inline-block; padding-left: 4px;">${receipt.transaction_ref || receipt.upi_reference || receipt.cheque_number || ''}</span>
+          
+          <div class="utr-box">
+            Transaction / UTR No. : 
+            <div class="utr-val"><span>${receipt.transaction_ref || receipt.upi_reference || receipt.cheque_number || ''}</span></div>
           </div>
 
-          <div class="qr-thankyou">
-            <div class="qr-img">
-              ${qrCodeUrl 
-                ? `<img src="${qrCodeUrl}" alt="QR" />`
-                : `<img src="${defaultUpiQrUrl}" alt="QR" />`
-              }
-              <span>Scan & Pay (UPI)</span>
-            </div>
-            <div class="ty-text">
-              <div class="upi">UPI ID</div>
-              <div class="upi-val">${upiId}</div>
-              <div class="lbl">आपल्या अमूल्य सहकार्याबद्दल</div>
-              <div class="msg">मनःपूर्वक धन्यवाद!</div>
-            </div>
+          <div class="qr-upi-box">
+            <div class="title">Scan & Pay<br/>(UPI)</div>
+            ${qrCodeUrl 
+              ? `<img src="${qrCodeUrl}" alt="QR" />`
+              : `<img src="${defaultUpiQrUrl}" alt="QR" />`
+            }
+            <div class="upi-id-lbl">UPI ID:</div>
+            <div class="upi-id-val">${upiId}</div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Signatures -->
-    <div class="signatures">
-      <div class="sig-block">
-        <div class="sig-line"></div>
-        <div class="sig-lbl">देणगीदाराची सही</div>
+    <!-- Footer -->
+    <div class="footer">
+      <div class="footer-msg">
+        <span class="lotus-icon">🪷</span> ॥ गणपती बाप्पा मोरया ॥ <span class="lotus-icon">🪷</span>
       </div>
-      <div class="footer-msg">॥ गणपती बाप्पा मोरया ॥</div>
-      <div class="sig-block">
-        <div class="sig-line"></div>
-        <div class="sig-lbl">अध्यक्ष / अधिकृत सही</div>
+      <div class="footer-submsg">आपल्या देणगीसाठी मनःपूर्वक धन्यवाद !</div>
+      
+      <div class="bottom-bar">
+        <div class="bottom-item">
+          <span class="icon">🌐</span> ${orgData?.website || 'www.hisob.in'}
+        </div>
+        <div class="bottom-item">
+          <span class="icon">📞</span> ${orgData?.phone || '+91 12345 67890'}
+        </div>
+        <div class="bottom-item" style="gap: 16px;">
+          <span>↓ आमचा ॲप डाउनलोड करा</span>
+          <div class="play-btn">
+            <span>▶</span> GET IT ON Google Play
+          </div>
+        </div>
       </div>
     </div>
   </div>

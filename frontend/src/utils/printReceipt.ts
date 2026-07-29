@@ -266,25 +266,23 @@ export async function getReceiptHtmlContent(receipt: PrintReceiptData, fallbackO
     
     .ganesha-wrapper {
       position: relative;
-      width: 140px; height: 140px;
-      transform: scale(1.3);
+      width: 150px; height: 150px;
+      display: flex; justify-content: center; align-items: center;
+      background: #fff;
+      border: 2px dashed #cf671f;
+      border-radius: 50%; padding: 6px;
+      transform: scale(1.15);
       transform-origin: center left;
     }
-    /* Sunburst effect */
-    .ganesha-wrapper::before {
-      content: ''; position: absolute; top: -10px; left: -10px; right: -10px; bottom: -10px;
-      background: repeating-conic-gradient(from 0deg, #fef08a 0deg 15deg, transparent 15deg 30deg);
-      border-radius: 50%; opacity: 0.5; z-index: -1; animation: spin 20s linear infinite;
+    .ganesha-wrapper::after {
+      content: ''; position: absolute; top: -8px; right: -8px; bottom: -8px; left: -8px; border-radius: 50%; border: 1.5px solid #ffd4b3; z-index: 0;
     }
-    @keyframes spin { 100% { transform: rotate(360deg); } }
-
     .ganesha-img {
-      width: 140px; height: 140px;
-      border-radius: 50%;
-      box-shadow: 0 0 25px rgba(255, 145, 0, 0.5), inset 0 0 10px rgba(255,145,0,0.2);
-      background: url('${logoUrl}') center/contain no-repeat, #fff;
-      border: 3px solid #ff9100;
-      position: relative; z-index: 1;
+      width: 100%; height: 100%; border-radius: 50%; overflow: hidden; display: flex; justify-content: center; align-items: center;
+      background: #fff; box-shadow: 0 4px 12px rgba(225, 149, 81, 0.4); z-index: 1;
+    }
+    .ganesha-img img {
+      width: 100%; height: 100%; object-fit: contain; padding: 2px; background: #fff; transform: scale(1.05);
     }
 
     .header-center {
@@ -297,7 +295,7 @@ export async function getReceiptHtmlContent(receipt: PrintReceiptData, fallbackO
     .mandal-reg { color: #475569; font-size: 12px; font-weight: 500; margin-top: 4px; letter-spacing: 0.5px;}
 
     .header-right {
-      display: flex; flex-direction: column; gap: 10px; justify-content: center; align-items: flex-end; width: 180px;
+      display: flex; flex-direction: column; gap: 8px; justify-content: center; align-items: flex-end; width: 230px;
     }
 
     /* Orange Donation Banner */
@@ -324,23 +322,31 @@ export async function getReceiptHtmlContent(receipt: PrintReceiptData, fallbackO
     .main-banner h2 { font-size: 24px; font-weight: 900; letter-spacing: 1.5px; line-height: 1.2; text-shadow: 0 2px 4px rgba(0,0,0,0.1);}
     .main-banner p { font-size: 20px; font-family: 'Yatra One', cursive; letter-spacing: 1px; color: #ffedd5; margin-top: -2px;}
 
-    /* Receipt No & Date Boxes */
-    .meta-box {
-      background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px;
-      padding: 6px 12px; font-size: 12px; color: #475569; font-weight: 600;
-      display: flex; align-items: center; justify-content: space-between; width: auto; gap: 8px;
-      white-space: nowrap;
-      box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+    /* Info Boxes (Right Side) */
+    .info-box-group {
+      display: flex; flex-direction: column; gap: 6px; width: 100%;
     }
-    .meta-box strong { font-size: 14px; color: #0f172a; font-weight: 800; }
+    .info-box {
+      width: 100%; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; display: flex; align-items: center; padding: 4px 10px; gap: 10px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+    }
+    .info-icon {
+      width: 28px; height: 28px; background: linear-gradient(135deg, #ea580c, #c2410c); border-radius: 6px; display: flex; justify-content: center; align-items: center; color: #fff; box-shadow: 0 2px 5px rgba(234, 88, 12, 0.3);
+    }
+    .info-icon svg { width: 16px; height: 16px; }
+    .info-icon.purple { background: linear-gradient(135deg, #7c3aed, #5b21b6); box-shadow: 0 2px 5px rgba(124, 58, 237, 0.3); }
+    .info-icon.orange { background: linear-gradient(135deg, #ea580c, #c2410c); }
+    .info-text { display: flex; flex-direction: column; text-align: left; }
+    .info-lbl { font-size: 11px; font-weight: 700; line-height: 1.2; letter-spacing: 0.3px;}
+    .info-box:nth-child(1) .info-lbl { color: #5b21b6; }
+    .info-box:nth-child(2) .info-lbl { color: #ea580c; }
+    .info-val { font-size: 15px; color: #0f172a; font-weight: 800; line-height: 1.2;}
     
-    .verify-qr-box {
-      margin-top: 6px; padding: 6px; background: #fff; border: 1px solid #cbd5e1; border-radius: 8px;
-      display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 10px; width: 100%;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+    .qr-verify-box {
+      width: 100%; background: #fff; border: 1px solid #cbd5e1; border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 6px 12px; gap: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.03);
     }
-    .verify-qr-box img { width: 44px; height: 44px; mix-blend-mode: multiply; }
-    .verify-qr-box span { font-size: 11px; font-weight: 800; color: #1e3a8a; text-transform: uppercase; letter-spacing: 0.5px; text-align: left; line-height: 1.2;}
+    .qr-verify-box img { width: 44px; height: 44px; border-radius: 4px; mix-blend-mode: multiply;}
+    .qr-verify-box span { font-size: 13px; font-weight: 800; color: #312e81; text-align: left; line-height: 1.3; letter-spacing: 0.5px; text-transform: uppercase;}
 
     /* Layout Body */
     .body-content {
@@ -351,15 +357,15 @@ export async function getReceiptHtmlContent(receipt: PrintReceiptData, fallbackO
     .left-panel {
       flex: 1.1;
       border: 1px solid #cbd5e1;
-      border-radius: 12px;
+      border-radius: 10px;
       background: #fff;
       display: flex; flex-direction: column;
       overflow: hidden;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.04);
     }
     .panel-head-blue {
-      background: linear-gradient(90deg, #4f46e5, #4338ca); color: #fff; padding: 10px 16px;
-      font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 10px; letter-spacing: 0.5px;
+      background: linear-gradient(90deg, #1e3a8a, #312e81); color: #fff; padding: 10px 18px;
+      font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 10px; border-bottom: 3px solid #ea580c; letter-spacing: 0.5px;
     }
     .donor-info { padding: 12px 16px; }
     .info-table { width: 100%; border-collapse: collapse; }
@@ -370,21 +376,15 @@ export async function getReceiptHtmlContent(receipt: PrintReceiptData, fallbackO
 
     /* Amount Box with Rubber Stamp */
     .amt-box-wrapper {
-      background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border-radius: 10px; border: 1px solid #fed7aa;
+      background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border-radius: 12px; border: 2px solid #fed7aa;
       margin: 10px 16px; display: flex; padding: 16px; align-items: center; gap: 16px;
-      box-shadow: inset 0 2px 5px rgba(255,255,255,0.8), 0 2px 8px rgba(234,88,12,0.08);
+      box-shadow: 0 4px 12px rgba(234, 88, 12, 0.08);
       position: relative; overflow: hidden;
     }
-    .rubber-stamp {
-      position: absolute; right: 20px; top: 10px;
-      transform: rotate(-15deg);
-      border: 3px solid rgba(220, 38, 38, 0.25);
-      color: rgba(220, 38, 38, 0.25);
-      font-size: 20px; font-weight: 900;
-      padding: 2px 10px; border-radius: 6px;
-      letter-spacing: 4px; pointer-events: none;
-      text-transform: uppercase;
+    .amt-box-wrapper::after {
+      content: 'RECEIVED'; position: absolute; right: 20px; top: 15px; font-size: 36px; color: rgba(220, 38, 38, 0.1); font-weight: 900; transform: rotate(-15deg); pointer-events: none; border: 3px solid rgba(220, 38, 38, 0.1); border-radius: 8px; padding: 4px 12px; letter-spacing: 2px;
     }
+    .rubber-stamp { display: none; }
     .rupee-icon {
       background: linear-gradient(135deg, #ea580c, #c2410c); color: #fff; width: 56px; height: 56px;
       border-radius: 10px; display: flex; justify-content: center; align-items: center;
@@ -417,8 +417,8 @@ export async function getReceiptHtmlContent(receipt: PrintReceiptData, fallbackO
     .purpose-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     
     .cb-item { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; color: #334155; }
-    .cb-box { width: 18px; height: 18px; border: 2px solid #94a3b8; border-radius: 4px; display: flex; justify-content: center; align-items: center; font-size: 13px; color: #fff; background: #fff;}
-    .cb-box.active { background: #ea580c; border-color: #ea580c; box-shadow: 0 2px 4px rgba(234,88,12,0.3);}
+    .cb-box { width: 20px; height: 20px; border: 2px solid #94a3b8; border-radius: 5px; display: flex; justify-content: center; align-items: center; font-size: 14px; color: #fff; background: #fff; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);}
+    .cb-box.active { background: #ea580c; border-color: #ea580c; font-weight: 900; box-shadow: 0 2px 5px rgba(234, 88, 12, 0.4);}
     .other-line { border-bottom: 1px dashed #94a3b8; flex: 1; display: inline-block; min-width: 40px; margin-left: 4px; }
 
     .payment-box {
@@ -445,11 +445,11 @@ export async function getReceiptHtmlContent(receipt: PrintReceiptData, fallbackO
       position: relative; z-index: 1; margin-top: 15px; padding-bottom: 10px;
     }
     .footer-yellow {
-      background: linear-gradient(90deg, #fef08a, #fde047, #fef08a); border-radius: 8px; padding: 8px 40px;
-      text-align: center; border: 1px solid #facc15; box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+      background: linear-gradient(90deg, #fef08a, #fde047, #fef08a); border-radius: 12px; padding: 12px 40px;
+      text-align: center; border: 1px solid #facc15; box-shadow: 0 4px 12px rgba(0,0,0,0.15); width: 90%;
     }
-    .footer-yellow h3 { color: #b45309; font-size: 20px; font-weight: 900; font-family: 'Mukta', sans-serif; margin-bottom: 2px; }
-    .footer-yellow p { color: #713f12; font-size: 13px; font-weight: 600; font-style: italic; }
+    .footer-yellow h3 { color: #b45309; font-size: 22px; font-weight: 900; font-family: 'Mukta', sans-serif; margin-bottom: 2px; letter-spacing: 1px; }
+    .footer-yellow p { color: #713f12; font-size: 14px; font-weight: 600; }
     
     .signatures {
       width: 100%; display: flex; justify-content: space-between; padding: 0 50px; margin-top: -10px;
@@ -502,7 +502,9 @@ export async function getReceiptHtmlContent(receipt: PrintReceiptData, fallbackO
     <!-- Header -->
     <div class="header">
       <div class="ganesha-wrapper">
-        <div class="ganesha-img"></div>
+        <div class="ganesha-img">
+          <img src="${logoUrl}" alt="Logo" />
+        </div>
       </div>
       <div class="header-center">
         <div class="shree-text">॥ श्री गणेशाय नमः ॥</div>
@@ -511,12 +513,30 @@ export async function getReceiptHtmlContent(receipt: PrintReceiptData, fallbackO
         <div class="mandal-reg">${orgData?.registration_number ? 'Reg. No: ' + orgData.registration_number + ' | Official Receipt' : 'Registered Organization | Official Receipt'}</div>
       </div>
       <div class="header-right">
-        <div class="meta-box"><span>Receipt No.</span> <strong>${receipt.receipt_number}</strong></div>
-        <div class="meta-box"><span>Date</span> <strong>${formatDateDDMMYYYY(receipt.receipt_date)}</strong></div>
+        <div class="info-box-group">
+          <div class="info-box">
+            <div class="info-icon purple">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+            </div>
+            <div class="info-text">
+              <span class="info-lbl">Receipt No.</span>
+              <span class="info-val">${receipt.receipt_number}</span>
+            </div>
+          </div>
+          <div class="info-box">
+            <div class="info-icon orange">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line><rect x="7" y="14" width="2" height="2"></rect><rect x="11" y="14" width="2" height="2"></rect><rect x="15" y="14" width="2" height="2"></rect></svg>
+            </div>
+            <div class="info-text">
+              <span class="info-lbl">Date</span>
+              <span class="info-val">${formatDateDDMMYYYY(receipt.receipt_date)}</span>
+            </div>
+          </div>
+        </div>
         ${verifyQrUrl ? `
-        <div class="verify-qr-box">
+        <div class="qr-verify-box">
           <img src="${verifyQrUrl}" alt="Verify QR" />
-          <span>Scan to<br/>Verify</span>
+          <span>SCAN TO<br/>VERIFY</span>
         </div>
         ` : ''}
       </div>
