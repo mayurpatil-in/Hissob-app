@@ -60,6 +60,11 @@ def generate_receipt_pdf_bytes(
     organization logo, QR verification code, and 80G tax notice.
     """
     pdf = FPDF(orientation="P", unit="mm", format="A4")
+    try:
+        pdf.set_text_shaping(True)
+    except Exception as shape_ex:
+        logger.warning("Could not enable HarfBuzz text shaping: %s", str(shape_ex))
+
     pdf.set_margins(12, 12, 12)
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=12)

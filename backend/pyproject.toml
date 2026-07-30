@@ -26,6 +26,8 @@ dependencies = [
     "qrcode>=8.2.0",
     "fpdf2>=2.8.7",
     "fonttools>=4.63.0",
+    "uharfbuzz>=0.55.0",
     "weasyprint>=69.0",
 ]
+
 

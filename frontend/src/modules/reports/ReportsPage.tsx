@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  Table, Button, Tabs, Card, Row, Col, Typography, Tag, Space, Select, Dropdown, Input, Segmented, Avatar, DatePicker, Alert, Progress, Modal, Form, App
+  Table, Button, Tabs, Card, Row, Col, Typography, Tag, Space, Select, Dropdown, Input, Segmented, Avatar, DatePicker, Alert, Progress, Modal, Form, App, type MenuProps
 } from 'antd';
 import {
   BarChartOutlined, BookOutlined, DollarOutlined, DownloadOutlined, FileExcelOutlined, FilePdfOutlined,
@@ -140,7 +140,7 @@ const ExportButtons: React.FC<{
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const filename = `${baseName}_${dayjs().format('YYYYMMDD')}`;
 
-  const menuItems = [
+  const menuItems: MenuProps['items'] = [
     {
       key: 'csv',
       icon: <DownloadOutlined />,

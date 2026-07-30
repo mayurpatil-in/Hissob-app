@@ -7,10 +7,10 @@ from sqlalchemy import String, Text, DateTime, JSON
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.dialects.postgresql import UUID
 from app.core.database import Base
-from app.models.base import UUIDMixin
+from app.models.base import UUIDMixin, TimestampMixin
 
 
-class EmailLog(Base, UUIDMixin):
+class EmailLog(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "email_logs"
 
     tenant_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
