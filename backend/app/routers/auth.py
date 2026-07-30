@@ -49,9 +49,15 @@ async def login(
         )
 
     # 2FA TOTP check
-    if getattr(user, "totp_enabled", False):
+    if bool(getattr(user, "totp_enabled", False)):
         if not payload.totp_code:
             return LoginResponse(requires_2fa=True)
+
+        if not user.totp_secret:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="2FA is enabled but secret is missing. Contact administrator.",
+            )
 
         totp = pyotp.TOTP(user.totp_secret)
         if not totp.verify(payload.totp_code.strip(), valid_window=1):
@@ -116,7 +122,7 @@ async def login(
             avatar_url=user.avatar_url,
             permissions=permissions,
             roles=getattr(user, "roles", []),
-            totp_enabled=getattr(user, "totp_enabled", False),
+            totp_enabled=bool(getattr(user, "totp_enabled", False)),
         ),
     )
 
@@ -202,7 +208,7 @@ async def me(current_user: User = Depends(get_current_active_user)):
         avatar_url=current_user.avatar_url,
         permissions=permissions,
         roles=getattr(current_user, "roles", []),
-        totp_enabled=getattr(current_user, "totp_enabled", False),
+        totp_enabled=bool(getattr(current_user, "totp_enabled", False)),
     )
 
 

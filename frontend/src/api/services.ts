@@ -217,7 +217,21 @@ export const getCashBookReport = async (fy_id?: string) => (await apiClient.get<
 export const getIncomeExpenseReport = async (fy_id?: string) => (await apiClient.get<any>('/reports/income-expense', { params: { fy_id } })).data;
 
 // ── Audit Log API ──
+export interface ActivityFeedItem {
+  id: string;
+  user_name: string;
+  user_email: string;
+  user_avatar?: string | null;
+  story: string;
+  action: string;
+  module: string;
+  created_at: string;
+  time_ago: string;
+}
+
 export const getAuditLogs = async (module?: string) => (await apiClient.get<AuditLog[]>('/audit', { params: { module } })).data;
+export const getActivityFeed = async (module?: string, limit: number = 20) =>
+  (await apiClient.get<ActivityFeedItem[]>('/audit/feed', { params: { module, limit } })).data;
 
 // ── Super Admin & Organizations API ──
 export const getSuperAdminStats = async () => (await apiClient.get<any>('/super-admin/dashboard-stats')).data;

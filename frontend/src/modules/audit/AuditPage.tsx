@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Table, Tag, Card, Select, Typography, Row, Col, Input } from 'antd';
+import { Table, Tag, Card, Select, Typography, Row, Col, Input, Segmented } from 'antd';
 import {
-  SearchOutlined, SafetyCertificateOutlined, ClockCircleOutlined
+  SearchOutlined, SafetyCertificateOutlined, ClockCircleOutlined,
+  ThunderboltOutlined, TableOutlined
 } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { getAuditLogs } from '../../api/services';
+import ActivityTimelineWidget from '../dashboard/ActivityTimelineWidget';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -31,6 +33,7 @@ const MODULE_COLORS: Record<string, string> = {
 };
 
 const AuditPage: React.FC = () => {
+  const [viewMode, setViewMode] = useState<'feed' | 'table'>('table');
   const [selectedModule, setSelectedModule] = useState<string | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState<string>('');
 
@@ -111,7 +114,7 @@ const AuditPage: React.FC = () => {
 
   return (
     <div className="audit-module animate-fadeIn">
-      <div className="page-header" style={{ marginBottom: 20 }}>
+      <div className="page-header" style={{ marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div>
           <Title level={3} style={{ margin: 0, color: '#0B2347', fontWeight: 900 }}>
             <SafetyCertificateOutlined style={{ color: '#F97316', marginRight: 8 }} />
@@ -119,6 +122,17 @@ const AuditPage: React.FC = () => {
           </Title>
           <Text type="secondary">Trace security events, user mutations, receipt issuances, and financial settlement approvals</Text>
         </div>
+
+        <Segmented
+          value={viewMode}
+          onChange={(val) => setViewMode(val as 'feed' | 'table')}
+          options={[
+            { label: <span><ThunderboltOutlined style={{ color: '#F97316' }} /> Social Activity Feed</span>, value: 'feed' },
+            { label: <span><TableOutlined /> Technical Audit Table</span>, value: 'table' },
+          ]}
+          style={{ border: '1px solid #CBD5E1', background: '#FFFFFF', padding: 2 }}
+          size="large"
+        />
       </div>
 
       <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
@@ -146,65 +160,69 @@ const AuditPage: React.FC = () => {
         </Col>
       </Row>
 
-      <Card className="hissob-card">
-        <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-          <Input
-            prefix={<SearchOutlined />}
-            placeholder="Search audit logs by user, record, or action..."
-            style={{ width: 340 }}
-            allowClear
-            onChange={(e) => setSearchQuery(e.target.value)}
+      {viewMode === 'feed' ? (
+        <ActivityTimelineWidget limit={50} showFilters={true} />
+      ) : (
+        <Card className="hissob-card">
+          <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+            <Input
+              prefix={<SearchOutlined />}
+              placeholder="Search audit logs by user, record, or action..."
+              style={{ width: 340 }}
+              allowClear
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+
+            <Select
+              placeholder="Filter by Module"
+              allowClear
+              style={{ width: 220 }}
+              onChange={(val) => setSelectedModule(val)}
+            >
+              <Option value="receipts">RECEIPTS</Option>
+              <Option value="expenses">EXPENSES</Option>
+              <Option value="cash_settlement">CASH SETTLEMENT</Option>
+              <Option value="donors">DONORS</Option>
+              <Option value="financial_year">FINANCIAL YEAR</Option>
+              <Option value="users">USERS</Option>
+              <Option value="auth">AUTH & SECURITY</Option>
+            </Select>
+          </div>
+
+          <Table
+            dataSource={filteredLogs}
+            columns={columns}
+            rowKey="id"
+            loading={isLoading}
+            pagination={{ pageSize: 10 }}
+            scroll={{ x: 700 }}
+            expandable={{
+              expandedRowRender: (record) => (
+                <div style={{ padding: 12, background: '#F8FAFC', borderRadius: 8, border: '1px solid #E2E8F0' }}>
+                  <Text style={{ fontWeight: 700, fontSize: 12, color: '#0B2347' }}>Event Payload & State Details:</Text>
+                  <pre style={{ margin: '8px 0 0 0', fontSize: 11, background: '#FFF', padding: 10, borderRadius: 6, border: '1px solid #CBD5E1' }}>
+                    {JSON.stringify(
+                      {
+                        id: record.id,
+                        user_email: record.user_email,
+                        module: record.module,
+                        action: record.action,
+                        record_label: record.record_label,
+                        old_values: record.old_values || null,
+                        new_values: record.new_values || null,
+                        ip_address: record.ip_address,
+                        created_at: record.created_at,
+                      },
+                      null,
+                      2
+                    )}
+                  </pre>
+                </div>
+              ),
+            }}
           />
-
-          <Select
-            placeholder="Filter by Module"
-            allowClear
-            style={{ width: 220 }}
-            onChange={(val) => setSelectedModule(val)}
-          >
-            <Option value="receipts">RECEIPTS</Option>
-            <Option value="expenses">EXPENSES</Option>
-            <Option value="cash_settlement">CASH SETTLEMENT</Option>
-            <Option value="donors">DONORS</Option>
-            <Option value="financial_year">FINANCIAL YEAR</Option>
-            <Option value="users">USERS</Option>
-            <Option value="auth">AUTH & SECURITY</Option>
-          </Select>
-        </div>
-
-        <Table
-          dataSource={filteredLogs}
-          columns={columns}
-          rowKey="id"
-          loading={isLoading}
-          pagination={{ pageSize: 10 }}
-          scroll={{ x: 700 }}
-          expandable={{
-            expandedRowRender: (record) => (
-              <div style={{ padding: 12, background: '#F8FAFC', borderRadius: 8, border: '1px solid #E2E8F0' }}>
-                <Text style={{ fontWeight: 700, fontSize: 12, color: '#0B2347' }}>Event Payload & State Details:</Text>
-                <pre style={{ margin: '8px 0 0 0', fontSize: 11, background: '#FFF', padding: 10, borderRadius: 6, border: '1px solid #CBD5E1' }}>
-                  {JSON.stringify(
-                    {
-                      id: record.id,
-                      user_email: record.user_email,
-                      module: record.module,
-                      action: record.action,
-                      record_label: record.record_label,
-                      old_values: record.old_values || null,
-                      new_values: record.new_values || null,
-                      ip_address: record.ip_address,
-                      created_at: record.created_at,
-                    },
-                    null,
-                    2
-                  )}
-                </pre>
-              </div>
-            ),
-          }}
-        />
-      </Card>
+        </Card>
+      )}
     </div>
   );
 };

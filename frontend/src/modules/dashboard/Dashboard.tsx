@@ -13,6 +13,7 @@ import { useAuthStore } from '../../store/authStore';
 import { getDashboardSummary, getFinancialYears, getOrganizations } from '../../api/services';
 import FinancialAnalyticsWidget from './FinancialAnalyticsWidget';
 import FestivalManagementWidget from './FestivalManagementWidget';
+import ActivityTimelineWidget from './ActivityTimelineWidget';
 import './dashboard.css';
 
 const STATUS_COLOR: Record<string, string> = {
@@ -459,6 +460,10 @@ const Dashboard: React.FC = () => {
                 <Progress percent={100 - metrics.settlement_pct} strokeColor="#F59E0B" showInfo={false} railColor="#F1F5F9" />
               </div>
             </div>
+          </div>
+
+          <div style={{ marginTop: 20 }}>
+            <ActivityTimelineWidget limit={6} />
           </div>
         </Col>
       </Row>

@@ -23,3 +23,17 @@ class AuditLogResponse(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class ActivityFeedItem(BaseModel):
+    id: UUID
+    user_name: str
+    user_email: str
+    user_avatar: Optional[str] = None
+    story: str
+    action: str
+    module: str
+    created_at: datetime
+    time_ago: str
+
+    model_config = {"from_attributes": True}
