@@ -110,9 +110,11 @@ const PARTICLES = Array.from({ length: 20 }, (_, i) => ({
 
 const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
+  const [requires2FA, setRequires2FA] = useState(false);
+  const [pendingCredentials, setPendingCredentials] = useState<{ email: string; password: string } | null>(null);
   const [activeStatIdx, setActiveStatIdx] = useState(0);
   const navigate = useNavigate();
-  const [form] = Form.useForm<LoginForm>();
+  const [form] = Form.useForm<LoginForm & { totp_code?: string }>();
   const { message } = App.useApp();
 
   // Cycle active stat highlight every 2.5s
@@ -124,14 +126,26 @@ const LoginPage: React.FC = () => {
   }, []);
 
   const handleQuickFill = (cred: typeof DEMO_CREDENTIALS[0]) => {
-    form.setFieldsValue({ email: cred.email, password: cred.password });
+    setRequires2FA(false);
+    setPendingCredentials(null);
+    form.setFieldsValue({ email: cred.email, password: cred.password, totp_code: '' });
     message.info({ content: `Credentials filled for ${cred.role}`, duration: 1.5 });
   };
 
-  const onFinish = async (values: LoginForm) => {
+  const onFinish = async (values: LoginForm & { totp_code?: string }) => {
     setLoading(true);
     try {
-      const res = await authService.login({ email: values.email, password: values.password });
+      const email = pendingCredentials?.email || values.email;
+      const password = pendingCredentials?.password || values.password;
+      const res = await authService.login({ email, password, totp_code: values.totp_code });
+
+      if (res.requires_2fa) {
+        setRequires2FA(true);
+        setPendingCredentials({ email, password });
+        message.info('🔒 Two-Factor Authentication required. Enter code from Google Authenticator.');
+        return;
+      }
+
       message.success(`Welcome back, ${res.user?.full_name || 'User'}! 👋`);
       if (res.user?.is_super_admin) {
         navigate('/super-admin');
@@ -338,55 +352,109 @@ const LoginPage: React.FC = () => {
             className="lp-form"
             initialValues={{ remember: true }}
           >
-            <Form.Item
-              name="email"
-              label="Work Email"
-              rules={[
-                { required: true, message: 'Email is required' },
-                { type: 'email', message: 'Enter a valid email address' },
-              ]}
-            >
-              <Input
-                prefix={<UserOutlined className="lp-input-icon" />}
-                placeholder="you@organization.org"
-                className="lp-input"
-                autoComplete="email"
-              />
-            </Form.Item>
+            {requires2FA ? (
+              <>
+                <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', padding: '16px', borderRadius: 12, marginBottom: 20, textAlign: 'center' }}>
+                  <SafetyOutlined style={{ fontSize: 32, color: '#2563EB', marginBottom: 8 }} />
+                  <div style={{ fontWeight: 800, fontSize: 16, color: '#1E3A8A' }}>Two-Factor Authentication</div>
+                  <div style={{ fontSize: 12, color: '#3B82F6', marginTop: 4 }}>
+                    Open your <strong>Google Authenticator</strong> app and enter the 6-digit code.
+                  </div>
+                </div>
 
-            <Form.Item
-              name="password"
-              label="Password"
-              rules={[{ required: true, message: 'Password is required' }]}
-            >
-              <Input.Password
-                prefix={<LockOutlined className="lp-input-icon" />}
-                placeholder="Enter your password"
-                className="lp-input"
-                autoComplete="current-password"
-              />
-            </Form.Item>
+                <Form.Item
+                  name="totp_code"
+                  label="6-Digit Verification Code"
+                  rules={[
+                    { required: true, message: 'Enter 6-digit code' },
+                  ]}
+                >
+                  <Input
+                    prefix={<KeyOutlined className="lp-input-icon" />}
+                    placeholder="e.g. 123456"
+                    className="lp-input"
+                    maxLength={6}
+                    autoFocus
+                    style={{ letterSpacing: 4, fontWeight: 800, fontSize: 18, textAlign: 'center' }}
+                  />
+                </Form.Item>
 
-            <div className="lp-options">
-              <Form.Item name="remember" valuePropName="checked" noStyle>
-                <Checkbox className="lp-remember">Remember me</Checkbox>
-              </Form.Item>
-              <a href="#" className="lp-forgot">Forgot password?</a>
-            </div>
+                <Form.Item style={{ marginTop: 24, marginBottom: 12 }}>
+                  <Button
+                    type="primary"
+                    htmlType="submit"
+                    block
+                    loading={loading}
+                    className="lp-submit-btn"
+                    icon={!loading && <ArrowRightOutlined />}
+                    iconPlacement="end"
+                  >
+                    {loading ? 'Verifying...' : 'Verify Code & Sign In'}
+                  </Button>
+                </Form.Item>
 
-            <Form.Item style={{ marginTop: 24, marginBottom: 0 }}>
-              <Button
-                type="primary"
-                htmlType="submit"
-                block
-                loading={loading}
-                className="lp-submit-btn"
-                icon={!loading && <ArrowRightOutlined />}
-                iconPlacement="end"
-              >
-                {loading ? 'Authenticating…' : 'Sign In'}
-              </Button>
-            </Form.Item>
+                <Button
+                  type="link"
+                  block
+                  onClick={() => { setRequires2FA(false); setPendingCredentials(null); }}
+                  style={{ color: '#64748B', fontSize: 13 }}
+                >
+                  ← Back to Email & Password
+                </Button>
+              </>
+            ) : (
+              <>
+                <Form.Item
+                  name="email"
+                  label="Work Email"
+                  rules={[
+                    { required: true, message: 'Email is required' },
+                    { type: 'email', message: 'Enter a valid email address' },
+                  ]}
+                >
+                  <Input
+                    prefix={<UserOutlined className="lp-input-icon" />}
+                    placeholder="you@organization.org"
+                    className="lp-input"
+                    autoComplete="email"
+                  />
+                </Form.Item>
+
+                <Form.Item
+                  name="password"
+                  label="Password"
+                  rules={[{ required: true, message: 'Password is required' }]}
+                >
+                  <Input.Password
+                    prefix={<LockOutlined className="lp-input-icon" />}
+                    placeholder="Enter your password"
+                    className="lp-input"
+                    autoComplete="current-password"
+                  />
+                </Form.Item>
+
+                <div className="lp-options">
+                  <Form.Item name="remember" valuePropName="checked" noStyle>
+                    <Checkbox className="lp-remember">Remember me</Checkbox>
+                  </Form.Item>
+                  <a href="#" className="lp-forgot">Forgot password?</a>
+                </div>
+
+                <Form.Item style={{ marginTop: 24, marginBottom: 0 }}>
+                  <Button
+                    type="primary"
+                    htmlType="submit"
+                    block
+                    loading={loading}
+                    className="lp-submit-btn"
+                    icon={!loading && <ArrowRightOutlined />}
+                    iconPlacement="end"
+                  >
+                    {loading ? 'Signing in...' : 'Sign In to Workspace'}
+                  </Button>
+                </Form.Item>
+              </>
+            )}
           </Form>
 
           {/* Divider */}

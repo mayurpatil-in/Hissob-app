@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Card, Row, Col, Typography, Input, Button, Form, Segmented,
-  Tag, App, Modal, Result, Avatar
+  Tag, App, Modal, Result, Avatar, Spin
 } from 'antd';
 import {
   SafetyOutlined, CheckCircleOutlined,
@@ -90,12 +90,12 @@ const UpiPaymentPage: React.FC = () => {
 
   // Construct standard UPI Payment URI
   const upiUri = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(orgName)}&am=${effectiveAmount}&tn=${encodeURIComponent(purpose)}&cu=INR`;
-  const [qrCodeImgUrl, setQrCodeImgUrl] = useState<string>('');
+  const [qrCodeImgUrl, setQrCodeImgUrl] = useState<string | null>(null);
 
   React.useEffect(() => {
     QRCode.toDataURL(upiUri, { margin: 1, width: 250 })
       .then((url: string) => setQrCodeImgUrl(url))
-      .catch(() => setQrCodeImgUrl(''));
+      .catch(() => setQrCodeImgUrl(null));
   }, [upiUri]);
 
   const handleCopyUpi = () => {
@@ -191,12 +191,16 @@ const UpiPaymentPage: React.FC = () => {
                 </Text>
                 
                 {/* Live Scannable QR Code */}
-                <div style={{ margin: '12px auto', width: 210, height: 210, padding: 8, background: '#FFF', borderRadius: 14, boxShadow: '0 4px 14px rgba(0,0,0,0.08)' }}>
-                  <img
-                    src={qrCodeImgUrl}
-                    alt="UPI Payment QR Code"
-                    style={{ width: '100%', height: '100%', borderRadius: 8 }}
-                  />
+                <div style={{ margin: '12px auto', width: 210, height: 210, padding: 8, background: '#FFF', borderRadius: 14, boxShadow: '0 4px 14px rgba(0,0,0,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {qrCodeImgUrl ? (
+                    <img
+                      src={qrCodeImgUrl}
+                      alt="UPI Payment QR Code"
+                      style={{ width: '100%', height: '100%', borderRadius: 8 }}
+                    />
+                  ) : (
+                    <Spin size="large" />
+                  )}
                 </div>
 
                 <Title level={3} style={{ margin: '4px 0', color: '#EA580C', fontWeight: 900 }}>

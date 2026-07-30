@@ -10,11 +10,18 @@ from app.core.security import verify_password
 from app.auth.jwt import create_access_token, create_refresh_token, decode_token
 from app.auth.deps import get_current_active_user
 from app.repositories.user import UserRepository, RefreshTokenRepository
-from app.schemas.auth import LoginRequest, LoginResponse, RefreshRequest, TokenResponse, UserInfo
+from app.schemas.auth import (
+    LoginRequest, LoginResponse, RefreshRequest, TokenResponse, UserInfo,
+    TOTPSetupResponse, TOTPVerifyRequest, TOTPDisableRequest
+)
 from app.schemas.common import SuccessResponse
 from app.permissions.rbac import get_user_permissions
 from app.models.user import User
 import uuid
+import pyotp
+import qrcode
+import io
+import base64
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -40,6 +47,18 @@ async def login(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Account is suspended. Contact administrator.",
         )
+
+    # 2FA TOTP check
+    if getattr(user, "totp_enabled", False):
+        if not payload.totp_code:
+            return LoginResponse(requires_2fa=True)
+
+        totp = pyotp.TOTP(user.totp_secret)
+        if not totp.verify(payload.totp_code.strip(), valid_window=1):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid 2FA authentication code. Please check Google Authenticator.",
+            )
 
     # Create tokens
     access_token = create_access_token(
@@ -87,6 +106,7 @@ async def login(
         refresh_token=refresh_token_str,
         token_type="bearer",
         expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        requires_2fa=False,
         user=UserInfo(
             id=user.id,
             email=user.email,
@@ -96,6 +116,7 @@ async def login(
             avatar_url=user.avatar_url,
             permissions=permissions,
             roles=getattr(user, "roles", []),
+            totp_enabled=getattr(user, "totp_enabled", False),
         ),
     )
 
@@ -181,4 +202,66 @@ async def me(current_user: User = Depends(get_current_active_user)):
         avatar_url=current_user.avatar_url,
         permissions=permissions,
         roles=getattr(current_user, "roles", []),
+        totp_enabled=getattr(current_user, "totp_enabled", False),
     )
+
+
+@router.post("/totp/setup", response_model=TOTPSetupResponse, summary="Setup 2FA TOTP secret & QR code")
+async def setup_totp(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    secret = pyotp.random_base32()
+    current_user.totp_secret = secret
+    db.commit()
+
+    otpauth_url = pyotp.TOTP(secret).provisioning_uri(
+        name=current_user.email,
+        issuer_name="Hisob ERP"
+    )
+
+    qr_img = qrcode.make(otpauth_url)
+    buffer = io.BytesIO()
+    qr_img.save(buffer, format="PNG")
+    b64_str = base64.b64encode(buffer.getvalue()).decode("utf-8")
+    qr_code_base64 = f"data:image/png;base64,{b64_str}"
+
+    return TOTPSetupResponse(
+        secret=secret,
+        otpauth_url=otpauth_url,
+        qr_code_base64=qr_code_base64,
+    )
+
+
+@router.post("/totp/verify-setup", response_model=SuccessResponse, summary="Verify 2FA test code and activate 2FA")
+async def verify_totp_setup(
+    payload: TOTPVerifyRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    if not current_user.totp_secret:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="2FA setup not initialized. Call /auth/totp/setup first.")
+
+    totp = pyotp.TOTP(current_user.totp_secret)
+    if not totp.verify(payload.code.strip(), valid_window=1):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid verification code. Please check your Google Authenticator app.")
+
+    current_user.totp_enabled = True
+    db.commit()
+    return SuccessResponse(message="Two-Factor Authentication (2FA) successfully activated!")
+
+
+@router.post("/totp/disable", response_model=SuccessResponse, summary="Disable 2FA TOTP")
+async def disable_totp(
+    payload: TOTPDisableRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    if payload.password:
+        if not verify_password(payload.password, current_user.hashed_password):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect password. Cannot disable 2FA.")
+
+    current_user.totp_enabled = False
+    current_user.totp_secret = None
+    db.commit()
+    return SuccessResponse(message="Two-Factor Authentication (2FA) has been disabled.")

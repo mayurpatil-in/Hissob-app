@@ -9,6 +9,7 @@ from uuid import UUID
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str = Field(min_length=6)
+    totp_code: Optional[str] = None
 
 
 class TokenResponse(BaseModel):
@@ -39,13 +40,30 @@ class UserInfo(BaseModel):
     avatar_url: Optional[str]
     permissions: dict[str, list[str]]
     roles: list[RoleInfo] = []
+    totp_enabled: bool = False
 
     model_config = {"from_attributes": True}
 
 
 class LoginResponse(BaseModel):
-    access_token: str
-    refresh_token: str
+    access_token: Optional[str] = None
+    refresh_token: Optional[str] = None
     token_type: str = "bearer"
-    expires_in: int
-    user: UserInfo
+    expires_in: Optional[int] = None
+    user: Optional[UserInfo] = None
+    requires_2fa: bool = False
+
+
+class TOTPSetupResponse(BaseModel):
+    secret: str
+    otpauth_url: str
+    qr_code_base64: str
+
+
+class TOTPVerifyRequest(BaseModel):
+    code: str
+
+
+class TOTPDisableRequest(BaseModel):
+    password: Optional[str] = None
+

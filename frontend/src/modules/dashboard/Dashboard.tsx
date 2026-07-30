@@ -4,7 +4,8 @@ import {
   ArrowUpOutlined, DollarOutlined, FileTextOutlined,
   TeamOutlined, CheckCircleOutlined, BankOutlined,
   PlusOutlined, AuditOutlined, ThunderboltOutlined,
-  SwapOutlined, CalendarOutlined, QrcodeOutlined
+  SwapOutlined, CalendarOutlined, QrcodeOutlined,
+  SafetyOutlined, SafetyCertificateFilled
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -204,8 +205,55 @@ const Dashboard: React.FC = () => {
               {user?.full_name?.charAt(0) || 'U'}
             </Avatar>
             <div>
-              <div className="hero-greeting">
-                {timeTheme.greeting}, {user?.full_name?.split(' ')[0]} {timeTheme.icon}
+              <div className="hero-greeting" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <span>{timeTheme.greeting}, {user?.full_name?.split(' ')[0]} {timeTheme.icon}</span>
+                {user?.totp_enabled ? (
+                  <Tooltip title="2FA Protection Active (Google Authenticator)">
+                    <Tag
+                      color="success"
+                      icon={<SafetyCertificateFilled style={{ color: '#10B981' }} />}
+                      style={{
+                        background: 'rgba(16, 185, 129, 0.2)',
+                        border: '1px solid rgba(16, 185, 129, 0.5)',
+                        color: '#FFFFFF',
+                        borderRadius: 20,
+                        fontWeight: 800,
+                        fontSize: 12,
+                        padding: '2px 10px',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                      }}
+                      onClick={() => navigate('/settings')}
+                    >
+                      2FA Active
+                    </Tag>
+                  </Tooltip>
+                ) : (
+                  <Tooltip title="2FA Security Disabled. Click to enable in Settings.">
+                    <Tag
+                      color="warning"
+                      icon={<SafetyOutlined style={{ color: '#F59E0B' }} />}
+                      style={{
+                        background: 'rgba(245, 158, 11, 0.2)',
+                        border: '1px solid rgba(245, 158, 11, 0.5)',
+                        color: '#FDE68A',
+                        borderRadius: 20,
+                        fontWeight: 800,
+                        fontSize: 12,
+                        padding: '2px 10px',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                      }}
+                      onClick={() => navigate('/settings')}
+                    >
+                      2FA Off
+                    </Tag>
+                  </Tooltip>
+                )}
               </div>
               <div className="hero-subtext">
                 <span className="hero-subtext-item">

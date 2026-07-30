@@ -10,6 +10,7 @@ export interface UserInfo {
   avatar_url: string | null;
   permissions: Record<string, string[]>;
   roles?: { id: string; name: string; slug?: string }[];
+  totp_enabled?: boolean;
 }
 
 interface AuthState {

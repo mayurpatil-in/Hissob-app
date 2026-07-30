@@ -42,6 +42,8 @@ class User(Base, UUIDMixin, TimestampMixin):
     status: Mapped[UserStatus] = mapped_column(String(20), default=UserStatus.ACTIVE)
     email_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     last_login: Mapped[DateTime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    totp_secret: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    totp_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     # Profile
     designation: Mapped[str | None] = mapped_column(String(100))

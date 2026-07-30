@@ -1,13 +1,14 @@
 import React from 'react';
 import {
-  Card, Form, Input, Button, Typography, App, Row, Col, Avatar, Tag, Tabs, Divider
+  Card, Form, Input, Button, Typography, App, Row, Col, Avatar, Tag, Tabs, Divider, Modal
 } from 'antd';
 import {
   SaveOutlined, UserOutlined, LockOutlined, SafetyCertificateOutlined,
   SettingOutlined, MailOutlined, BankOutlined, CrownOutlined, KeyOutlined,
-  UploadOutlined, DeleteOutlined
+  UploadOutlined, DeleteOutlined, SafetyOutlined
 } from '@ant-design/icons';
 import { useAuthStore } from '../../store/authStore';
+import { authService, type TOTPSetupResponse } from '../../auth/authService';
 import OrganizationSettingsTab from './OrganizationSettingsTab';
 
 const { Title, Text } = Typography;
@@ -29,6 +30,65 @@ const SettingsPage: React.FC = () => {
   const [profileForm] = Form.useForm();
   const [passwordForm] = Form.useForm();
   const logoInputRef = React.useRef<HTMLInputElement>(null);
+
+  const [totpModalOpen, setTotpModalOpen] = React.useState(false);
+  const [totpData, setTotpData] = React.useState<TOTPSetupResponse | null>(null);
+  const [totpLoading, setTotpLoading] = React.useState(false);
+  const [totpCodeInput, setTotpCodeInput] = React.useState('');
+  const [totpEnabled, setTotpEnabled] = React.useState<boolean>(!!user?.totp_enabled);
+
+  const handleStart2FASetup = async () => {
+    setTotpLoading(true);
+    try {
+      const data = await authService.setup2FA();
+      setTotpData(data);
+      setTotpCodeInput('');
+      setTotpModalOpen(true);
+    } catch (err: any) {
+      message.error(err?.response?.data?.detail || 'Failed to start 2FA setup');
+    } finally {
+      setTotpLoading(false);
+    }
+  };
+
+  const handleConfirm2FASetup = async () => {
+    if (!totpCodeInput || totpCodeInput.trim().length !== 6) {
+      message.error('Please enter 6-digit verification code from Google Authenticator');
+      return;
+    }
+    setTotpLoading(true);
+    try {
+      await authService.verify2FASetup(totpCodeInput.trim());
+      message.success('✅ Two-Factor Authentication (2FA) is now ACTIVE!');
+      setTotpEnabled(true);
+      setTotpModalOpen(false);
+      useAuthStore.setState((state) => ({
+        ...state,
+        user: state.user ? { ...state.user, totp_enabled: true } : null,
+      }));
+    } catch (err: any) {
+      message.error(err?.response?.data?.detail || 'Invalid verification code');
+    } finally {
+      setTotpLoading(false);
+    }
+  };
+
+  const handleDisable2FA = async () => {
+    setTotpLoading(true);
+    try {
+      await authService.disable2FA();
+      message.success('Two-Factor Authentication has been disabled.');
+      setTotpEnabled(false);
+      useAuthStore.setState((state) => ({
+        ...state,
+        user: state.user ? { ...state.user, totp_enabled: false } : null,
+      }));
+    } catch (err: any) {
+      message.error(err?.response?.data?.detail || 'Failed to disable 2FA');
+    } finally {
+      setTotpLoading(false);
+    }
+  };
 
   const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -220,6 +280,38 @@ const SettingsPage: React.FC = () => {
                 </Form.Item>
               </Form>
             </Card>
+
+            <Card className="hissob-card" style={{ marginTop: 16, borderRadius: 16, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }} title={<span><SafetyCertificateOutlined style={{ color: totpEnabled ? '#16A34A' : '#E11D48' }} /> Two-Factor Authentication (2FA TOTP)</span>}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                    {totpEnabled ? (
+                      <Tag color="success" style={{ fontWeight: 800, padding: '4px 12px', borderRadius: 20, fontSize: 13 }}>
+                        ✅ 2FA Active (Google Authenticator)
+                      </Tag>
+                    ) : (
+                      <Tag color="error" style={{ fontWeight: 800, padding: '4px 12px', borderRadius: 20, fontSize: 13 }}>
+                        🛡️ 2FA Disabled (Unprotected)
+                      </Tag>
+                    )}
+                  </div>
+                  <Text type="secondary" style={{ fontSize: 13, display: 'block', maxWidth: 460 }}>
+                    Protect your account with Google Authenticator or Authy. When enabled, signing in requires a 6-digit code generated on your phone.
+                  </Text>
+                </div>
+                <div>
+                  {totpEnabled ? (
+                    <Button danger icon={<DeleteOutlined />} onClick={handleDisable2FA} loading={totpLoading} style={{ borderRadius: 8, fontWeight: 700 }}>
+                      Disable 2FA
+                    </Button>
+                  ) : (
+                    <Button type="primary" icon={<SafetyOutlined />} onClick={handleStart2FASetup} loading={totpLoading} style={{ background: '#16A34A', borderColor: '#16A34A', borderRadius: 8, fontWeight: 700 }}>
+                      Enable 2FA
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </Card>
           </Col>
         </Row>
       ),
@@ -244,6 +336,48 @@ const SettingsPage: React.FC = () => {
       </div>
 
       <Tabs defaultActiveKey="profile" items={tabItems} size="large" />
+
+      <Modal
+        title={<span><SafetyCertificateOutlined style={{ color: '#2563EB' }} /> Enable Two-Factor Authentication</span>}
+        open={totpModalOpen}
+        onCancel={() => setTotpModalOpen(false)}
+        footer={[
+          <Button key="cancel" onClick={() => setTotpModalOpen(false)}>Cancel</Button>,
+          <Button key="confirm" type="primary" onClick={handleConfirm2FASetup} loading={totpLoading} style={{ background: '#2563EB', fontWeight: 700 }}>
+            Activate 2FA
+          </Button>,
+        ]}
+        width={480}
+      >
+        <div style={{ textAlign: 'center', padding: '12px 0' }}>
+          <Text style={{ fontSize: 13, display: 'block', marginBottom: 16 }}>
+            1. Open <strong>Google Authenticator</strong> or <strong>Authy</strong> on your phone.
+            <br />
+            2. Scan the QR code below:
+          </Text>
+
+          {totpData?.qr_code_base64 && (
+            <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: 16, borderRadius: 12, display: 'inline-block', marginBottom: 16 }}>
+              <img src={totpData.qr_code_base64} alt="2FA QR Code" style={{ width: 180, height: 180, display: 'block' }} />
+            </div>
+          )}
+
+          <div style={{ background: '#F1F5F9', padding: '8px 12px', borderRadius: 8, fontSize: 12, fontFamily: 'monospace', marginBottom: 20 }}>
+            Manual Key: <strong>{totpData?.secret}</strong>
+          </div>
+
+          <div style={{ textAlign: 'left', marginBottom: 8 }}>
+            <Text style={{ fontWeight: 700, fontSize: 13 }}>3. Enter 6-digit test code to confirm:</Text>
+          </div>
+          <Input
+            placeholder="000000"
+            maxLength={6}
+            value={totpCodeInput}
+            onChange={(e) => setTotpCodeInput(e.target.value)}
+            style={{ letterSpacing: 6, fontWeight: 800, fontSize: 20, textAlign: 'center', borderRadius: 8 }}
+          />
+        </div>
+      </Modal>
     </div>
   );
 };
