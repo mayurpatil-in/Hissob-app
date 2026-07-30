@@ -393,16 +393,19 @@ def build_receipt_html(
 
                     <!-- ── 5. Bottom Security Footer Bar ── -->
                     <tr>
-                        <td style="background-color: #0F172A; padding: 16px 24px; text-align: center; border-top: 2px solid #F59E0B; color: #94A3B8;">
+                        <td style="background-color: #0F172A; padding: 18px 24px; text-align: center; border-top: 2px solid #F59E0B; color: #94A3B8;">
                             <p style="margin: 0 0 6px 0; font-size: 12px; color: #FFFFFF; font-weight: 600;">
                                 🙏 Thank you for your generous contribution and blessings!
                             </p>
                             <p style="margin: 0 0 8px 0; font-size: 10px; color: #CBD5E1;">
                                 This is an official computer-generated electronic receipt issued through <strong>Hisob ERP Platform</strong>.
                             </p>
-                            <div style="font-size: 10px; color: #F59E0B; font-weight: 700; letter-spacing: 0.5px;">
+                            <div style="font-size: 10px; color: #F59E0B; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 8px;">
                                 🔒 SECURE &nbsp;|&nbsp; ✔ VERIFIED &nbsp;|&nbsp; 🔲 QR VERIFIED &nbsp;|&nbsp; 🏆 HISOB DIGITAL RECEIPT
                             </div>
+                            <p style="margin: 6px 0 0 0; font-size: 10px; color: #94A3B8; border-top: 1px solid #1E293B; padding-top: 8px;">
+                                Designed &amp; Developed by <a href="https://www.mayurpatil.in" target="_blank" style="color: #F59E0B; text-decoration: none; font-weight: 700;">www.mayurpatil.in</a>
+                            </p>
                         </td>
                     </tr>
 

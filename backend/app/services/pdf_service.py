@@ -289,7 +289,7 @@ def generate_receipt_pdf_bytes(
     pdf.set_font("Helvetica", "I", 8)
     pdf.set_text_color(148, 163, 184)
     pdf.cell(190, 4, "Thank you for your valuable contribution and blessings!", align="C", ln=True)
-    pdf.cell(190, 4, "Official computer-generated e-Receipt issued via Hisob ERP Platform - www.mayurpatil.in", align="C", ln=True)
+    pdf.cell(190, 4, "Official computer-generated e-Receipt issued via Hisob ERP Platform | Designed & Developed by www.mayurpatil.in", align="C", ln=True)
 
     out = pdf.output(dest='S') if hasattr(pdf, 'output') else pdf.output()
     if isinstance(out, str):
