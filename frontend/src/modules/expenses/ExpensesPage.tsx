@@ -1,18 +1,19 @@
 import React, { useState } from 'react';
 import {
   Table, Button, Tag, Space, Modal, Form, Input, InputNumber,
-  Select, Card, Row, Col, Typography, App, Tooltip, Upload, Image, Avatar, Segmented
+  Select, Card, Row, Col, Typography, App, Tooltip, Upload, Image, Avatar, Segmented, Alert, Spin, DatePicker
 } from 'antd';
 import {
   PlusOutlined, CheckOutlined, CloseOutlined, UploadOutlined,
   EyeOutlined, PaperClipOutlined, FilePdfOutlined, EditOutlined, DeleteOutlined,
   DollarOutlined, CheckCircleOutlined, ClockCircleOutlined, FileTextOutlined,
-  SearchOutlined, DownloadOutlined, UnorderedListOutlined, AppstoreOutlined
+  SearchOutlined, DownloadOutlined, UnorderedListOutlined, AppstoreOutlined,
+  ScanOutlined
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getExpenses, createExpense, updateExpense, deleteExpense, approveExpense, getFinancialYears,
-  uploadExpenseBill, attachExpenseBill
+  uploadExpenseBill, attachExpenseBill, scanVendorBillOCR
 } from '../../api/services';
 import { useAuthStore } from '../../store/authStore';
 import { exportToCSV, exportToExcel } from '../../utils/exportTable';
@@ -45,6 +46,8 @@ const ExpensesPage: React.FC = () => {
   // Bill preview & attach modal states
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [attachExpenseId, setAttachExpenseId] = useState<string | null>(null);
+  const [scanningAi, setScanningAi] = useState(false);
+  const [aiParsedResult, setAiParsedResult] = useState<any | null>(null);
 
   const privilegedRoles = ['treasurer', 'org_admin', 'org admin', 'organization admin', 'organization_admin', 'admin', 'president', 'super_admin', 'super admin', 'trustee'];
   const canApprove = user?.is_super_admin || can('expenses', 'approve') || (user as any)?.roles?.some((r: any) =>
@@ -166,13 +169,60 @@ const ExpensesPage: React.FC = () => {
     }, 0);
   };
 
+  const handleAiScanBill = async (file: File) => {
+    try {
+      setScanningAi(true);
+      setAiParsedResult(null);
+      message.loading({ content: '🤖 Vision AI analyzing vendor bill & extracting invoice details...', key: 'ai_ocr' });
+      const parsed = await scanVendorBillOCR(file);
+
+      setAiParsedResult(parsed);
+      if (parsed.bill_url) {
+        setUploadedBillUrl(parsed.bill_url);
+      }
+
+      const updates: any = {};
+      if (parsed.vendor_name) updates.vendor_name = parsed.vendor_name;
+      if (parsed.amount) updates.amount = parsed.amount;
+      if (parsed.expense_date) updates.expense_date = dayjs(parsed.expense_date);
+      if (parsed.invoice_number) updates.voucher_number = parsed.invoice_number;
+
+      if (parsed.line_items && parsed.line_items.length > 0) {
+        const itemSummary = parsed.line_items
+          .map((i: any) => `${i.item || 'Item'}${i.qty ? ` (${i.qty}x)` : ''}${i.amount ? ` ₹${i.amount}` : ''}`)
+          .join(', ');
+        updates.description = (parsed.description ? `${parsed.description} | ` : '') + `Items: ${itemSummary}`;
+      } else if (parsed.description) {
+        updates.description = parsed.description;
+      }
+
+      if (parsed.category) {
+        const catLower = parsed.category.toLowerCase();
+        if (catLower.includes('sound') || catLower.includes('light')) updates.category = 'Sound & Lighting';
+        else if (catLower.includes('decor') || catLower.includes('mandap')) updates.category = 'Decoration';
+        else if (catLower.includes('cater') || catLower.includes('prasad')) updates.category = 'Prasad & Catering';
+        else if (catLower.includes('pooja') || catLower.includes('ritual') || catLower.includes('floral')) updates.category = 'Pooja & Rituals';
+        else if (catLower.includes('sec') || catLower.includes('permit')) updates.category = 'Security & Permits';
+        else if (catLower.includes('logis') || catLower.includes('trans')) updates.category = 'Logistics & Transport';
+        else updates.category = 'Miscellaneous';
+      }
+
+      form.setFieldsValue(updates);
+      message.success({ content: `✨ Vision AI auto-filled details for ${parsed.vendor_name || 'invoice'}!`, key: 'ai_ocr' });
+    } catch (err: any) {
+      message.error({ content: err?.response?.data?.detail || 'AI OCR scan failed', key: 'ai_ocr' });
+    } finally {
+      setScanningAi(false);
+    }
+  };
+
   const handleFileUpload = async (file: File) => {
     try {
       setUploadingBill(true);
       const res = await uploadExpenseBill(file);
       setUploadedBillUrl(res.url);
       form.setFieldsValue({ bill_url: res.url });
-      message.success(`Bill uploaded successfully: ${res.filename}`);
+      message.success(`Bill document attached: ${res.filename}`);
     } catch (err: any) {
       message.error(err?.response?.data?.detail || 'File upload failed');
     } finally {
@@ -698,83 +748,211 @@ const ExpensesPage: React.FC = () => {
 
       {/* New Expense Modal */}
       <Modal
-        title="Submit Expense Request"
+        title={<span style={{ fontWeight: 800, color: '#0B2347' }}>{editingExpense ? 'Edit Expense Request' : 'Submit Expense Request'}</span>}
         open={isModalOpen}
-        onCancel={() => setIsModalOpen(false)}
+        onCancel={() => {
+          setIsModalOpen(false);
+          setAiParsedResult(null);
+        }}
         footer={null}
         destroyOnHidden
       >
-        <Form form={form} layout="vertical" onFinish={handleSubmit} initialValues={{ expense_date: dayjs() }}>
-          <Form.Item
-            name="financial_year_id"
-            label="Financial Year"
-            rules={[{ required: true, message: 'Select Financial Year' }]}
+        {/* ── AI Vision OCR Bill Auto-Scanner Card ── */}
+        <Card
+          variant="borderless"
+          style={{
+            background: 'linear-gradient(135deg, #FFF7ED 0%, #EFF6FF 100%)',
+            border: '1px solid #DBEAFE',
+            borderRadius: 14,
+            marginBottom: 20,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+            <div style={{ width: 34, height: 34, borderRadius: 8, background: '#F97316', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 18 }}>
+              🤖
+            </div>
+            <div>
+              <Text style={{ fontWeight: 800, color: '#0B2347', fontSize: 14, display: 'block' }}>
+                AI Vision Invoice Auto-Scanner
+              </Text>
+              <Text type="secondary" style={{ fontSize: 11 }}>
+                Drop vendor bill photo/PDF to auto-fill Vendor, Amount, Date & Category.
+              </Text>
+            </div>
+          </div>
+
+          <Upload.Dragger
+            beforeUpload={(file) => {
+              handleAiScanBill(file);
+              return false;
+            }}
+            showUploadList={false}
+            multiple={false}
+            accept=".jpg,.jpeg,.png,.webp,.pdf"
+            disabled={scanningAi}
+            style={{ background: '#FFFFFF', borderRadius: 10, padding: '12px 0' }}
           >
-            <Select placeholder="Select Financial Year">
-              {fiscalYears.map((fy: any) => (
-                <Option key={fy.id} value={fy.id}>{fy.name}</Option>
-              ))}
-            </Select>
-          </Form.Item>
+            {scanningAi ? (
+              <div style={{ padding: '8px 0' }}>
+                <Spin indicator={<ScanOutlined style={{ fontSize: 24, color: '#F97316' }} spin />} />
+                <Text style={{ display: 'block', marginTop: 8, fontWeight: 700, color: '#F97316', fontSize: 12 }}>
+                  AI Vision is analyzing invoice image...
+                </Text>
+              </div>
+            ) : (
+              <div>
+                <ScanOutlined style={{ fontSize: 28, color: '#2563EB', marginBottom: 4 }} />
+                <p style={{ margin: 0, fontWeight: 700, color: '#1E40AF', fontSize: 13 }}>
+                  📸 Drag & Drop Bill Image / PDF here to Auto-Fill
+                </p>
+                <p style={{ margin: '2px 0 0 0', fontSize: 11, color: '#64748B' }}>
+                  Supports Sound, Stage, Catering & Mandap vendor invoices
+                </p>
+              </div>
+            )}
+          </Upload.Dragger>
 
-          <Form.Item name="category" label="Category" rules={[{ required: true }]}>
-            <Select placeholder="Select category">
-              <Option value="Decoration">Decoration & Mandap</Option>
-              <Option value="Pooja & Rituals">Pooja & Rituals</Option>
-              <Option value="Prasad & Catering">Prasad & Catering</Option>
-              <Option value="Sound & Lighting">Sound & Lighting</Option>
-              <Option value="Security & Permits">Security & Permits</Option>
-              <Option value="Logistics & Transport">Logistics & Transport</Option>
-              <Option value="Miscellaneous">Miscellaneous</Option>
-            </Select>
-          </Form.Item>
+          {aiParsedResult && (
+            <Alert
+              type="success"
+              showIcon
+              style={{ marginTop: 12, borderRadius: 10, fontSize: 12, background: '#F0FDF4', borderColor: '#BBF7D0' }}
+              message={
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontWeight: 800, color: '#15803D' }}>✨ AI Extracted Invoice Data</span>
+                  <Space wrap size={[4, 4]}>
+                    <Tag color="purple" style={{ borderRadius: 6, fontSize: 10, margin: 0 }}>
+                      {aiParsedResult.is_llm_parsed ? '🤖 LLM Vision Active' : '⚡ OCR Engine'}
+                    </Tag>
+                    <Tag color="green" style={{ borderRadius: 6, fontSize: 10, margin: 0 }}>
+                      {Math.round((aiParsedResult.confidence_score || 0.95) * 100)}% Confidence
+                    </Tag>
+                  </Space>
+                </div>
+              }
+              description={
+                <div style={{ marginTop: 6, color: '#166534' }}>
+                  <Row gutter={[8, 4]}>
+                    <Col xs={24} sm={12}>Vendor: <b>{aiParsedResult.vendor_name || 'N/A'}</b></Col>
+                    <Col xs={24} sm={12}>Amount: <b>₹{aiParsedResult.amount?.toLocaleString('en-IN') || '0'}</b></Col>
+                    <Col xs={24} sm={12}>Category: <b>{aiParsedResult.category || 'General'}</b></Col>
+                    <Col xs={24} sm={12}>Date: <b>{aiParsedResult.expense_date || 'Today'}</b></Col>
+                    {aiParsedResult.invoice_number && <Col span={24}>Invoice #: <b>{aiParsedResult.invoice_number}</b></Col>}
+                  </Row>
+                  {aiParsedResult.line_items && aiParsedResult.line_items.length > 0 && (
+                    <div style={{ marginTop: 8, paddingTop: 6, borderTop: '1px dashed #BBF7D0' }}>
+                      <Text style={{ fontSize: 11, fontWeight: 700, color: '#15803D' }}>Itemized Breakdown:</Text>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+                        {aiParsedResult.line_items.map((item: any, idx: number) => (
+                          <Tag key={idx} color="blue" style={{ fontSize: 10, borderRadius: 4 }}>
+                            {item.item || 'Item'} {item.qty ? `x${item.qty}` : ''} {item.amount ? `(₹${item.amount})` : ''}
+                          </Tag>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              }
+            />
+          )}
+        </Card>
 
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item name="amount" label="Amount (₹)" rules={[{ required: true }]}>
-                <InputNumber style={{ width: '100%' }} min={1} placeholder="Amount" />
+        <Form form={form} layout="vertical" onFinish={handleSubmit} initialValues={{ expense_date: dayjs() }}>
+          <Row gutter={[12, 0]}>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                name="financial_year_id"
+                label="Financial Year *"
+                rules={[{ required: true, message: 'Select Financial Year' }]}
+              >
+                <Select placeholder="Select Financial Year">
+                  {fiscalYears.map((fy: any) => (
+                    <Option key={fy.id} value={fy.id}>{fy.name}</Option>
+                  ))}
+                </Select>
               </Form.Item>
             </Col>
-            <Col span={12}>
-              <Form.Item name="vendor_name" label="Vendor Name">
-                <Input placeholder="Vendor Name" />
+            <Col xs={24} sm={12}>
+              <Form.Item name="category" label="Expense Category *" rules={[{ required: true, message: 'Select category' }]}>
+                <Select placeholder="Select category">
+                  <Option value="Decoration">Decoration & Mandap</Option>
+                  <Option value="Pooja & Rituals">Pooja & Rituals</Option>
+                  <Option value="Prasad & Catering">Prasad & Catering</Option>
+                  <Option value="Sound & Lighting">Sound & Lighting</Option>
+                  <Option value="Security & Permits">Security & Permits</Option>
+                  <Option value="Logistics & Transport">Logistics & Transport</Option>
+                  <Option value="Miscellaneous">Miscellaneous</Option>
+                </Select>
               </Form.Item>
             </Col>
           </Row>
 
-          <Form.Item name="description" label="Description / Purpose">
+          <Row gutter={[12, 0]}>
+            <Col xs={24} sm={12}>
+              <Form.Item name="expense_date" label="Expense / Bill Date *" rules={[{ required: true, message: 'Select date' }]}>
+                <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" placeholder="Select expense date" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item name="voucher_number" label="Invoice / Voucher #">
+                <Input placeholder="e.g. INV-2026-889" />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={[12, 0]}>
+            <Col xs={24} sm={12}>
+              <Form.Item name="amount" label="Amount (₹) *" rules={[{ required: true, message: 'Enter amount' }]}>
+                <InputNumber style={{ width: '100%' }} min={1} placeholder="Amount in ₹" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item name="vendor_name" label="Vendor / Contractor Name">
+                <Input placeholder="Vendor Name (e.g. Raju Sound Co.)" />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Form.Item name="description" label="Description / Purpose Notes">
             <Input.TextArea rows={2} placeholder="Add voucher details or invoice notes" />
           </Form.Item>
 
-          {/* Bill Document Upload */}
-          <Form.Item label="Upload Bill / Invoice Document (Audit Proof)">
-            <Upload.Dragger
-              beforeUpload={(file) => {
-                handleFileUpload(file);
-                return false; // prevent default upload submit
-              }}
-              showUploadList={false}
-              multiple={false}
-              accept=".jpg,.jpeg,.png,.webp,.pdf"
-            >
-              <p className="ant-upload-drag-icon">
-                <UploadOutlined style={{ fontSize: 32, color: '#F97316' }} />
-              </p>
-
-              {uploadedBillUrl ? (
+          {/* Bill Document Attachment Option */}
+          <Form.Item label="Bill / Invoice Document (Audit Proof)">
+            {uploadedBillUrl ? (
+              <div style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', padding: '10px 14px', borderRadius: 10, display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <Tag color="green" style={{ fontSize: 13, padding: '4px 12px' }}>
-                    ✓ Bill File Attached ({uploadedBillUrl.split('/').pop()})
-                  </Tag>
-                  <p style={{ fontSize: 11, color: '#666', marginTop: 4 }}>Click or drag another file to replace</p>
+                  <Text style={{ fontWeight: 800, color: '#15803D', fontSize: 13, display: 'block' }}>
+                    ✓ Bill Audit Document Attached
+                  </Text>
+                  <Text type="secondary" style={{ fontSize: 11, color: '#166534', wordBreak: 'break-all' }}>
+                    File: {uploadedBillUrl.split('/').pop()}
+                  </Text>
                 </div>
-              ) : (
-                <div>
-                  <p className="ant-upload-text">Click or drag bill receipt photo/PDF here to upload</p>
-                  <p className="ant-upload-hint">Supports JPG, PNG, WEBP & PDF (Max 10MB)</p>
-                </div>
-              )}
-            </Upload.Dragger>
+                <Space wrap>
+                  <Button size="small" type="link" onClick={() => window.open(uploadedBillUrl.startsWith('http') ? uploadedBillUrl : import.meta.env.VITE_API_URL?.replace('/api/v1', '') + uploadedBillUrl, '_blank')}>
+                    Preview File
+                  </Button>
+                  <Button size="small" type="text" danger onClick={() => setUploadedBillUrl('')}>
+                    Remove
+                  </Button>
+                </Space>
+              </div>
+            ) : (
+              <Upload
+                beforeUpload={(file) => {
+                  handleFileUpload(file);
+                  return false;
+                }}
+                showUploadList={false}
+                multiple={false}
+                accept=".jpg,.jpeg,.png,.webp,.pdf"
+              >
+                <Button icon={<PaperClipOutlined />} style={{ borderRadius: 8, fontWeight: 600 }}>
+                  Attach Bill Photo / Receipt PDF (Without AI)
+                </Button>
+              </Upload>
+            )}
           </Form.Item>
 
           <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
@@ -783,10 +961,10 @@ const ExpensesPage: React.FC = () => {
               <Button
                 type="primary"
                 htmlType="submit"
-                loading={createMutation.isPending || updateMutation.isPending || uploadingBill}
-                style={{ background: '#F97316', borderColor: '#F97316' }}
+                loading={createMutation.isPending || updateMutation.isPending || scanningAi || uploadingBill}
+                style={{ background: '#F97316', borderColor: '#F97316', fontWeight: 800 }}
               >
-                {editingExpense ? 'Update Expense' : 'Submit Expense'}
+                {editingExpense ? 'Update Expense Request' : 'Submit Expense Request'}
               </Button>
             </Space>
           </Form.Item>

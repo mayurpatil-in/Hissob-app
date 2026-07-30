@@ -28,6 +28,7 @@ dependencies = [
     "fonttools>=4.63.0",
     "uharfbuzz>=0.55.0",
     "weasyprint>=69.0",
+    "pypdf>=6.14.2",
 ]
 
 

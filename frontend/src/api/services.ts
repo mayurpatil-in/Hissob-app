@@ -490,3 +490,26 @@ export const getAssetCheckouts = async (params?: { asset_id?: string; status?: s
 export const getInventorySummary = async () =>
   (await apiClient.get<InventorySummary>('/inventory/summary')).data;
 
+// ── AI Vision OCR Bill Scanner ──
+export interface ParsedBillOutput {
+  vendor_name?: string;
+  amount?: number;
+  category?: string;
+  expense_date?: string;
+  invoice_number?: string;
+  description?: string;
+  line_items?: Array<{ item?: string; qty?: number; amount?: number }>;
+  confidence_score: number;
+  bill_url?: string;
+  is_llm_parsed: boolean;
+}
+
+export const scanVendorBillOCR = async (file: File): Promise<ParsedBillOutput> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  return (await apiClient.post<ParsedBillOutput>('/ai/parse-bill-ocr', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })).data;
+};
+
+

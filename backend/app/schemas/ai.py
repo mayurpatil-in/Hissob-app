@@ -18,6 +18,19 @@ class ParsedReceiptOutput(BaseModel):
     parsed_fields: Dict[str, Any] = {}
 
 
+class ParsedBillOutput(BaseModel):
+    vendor_name: Optional[str] = None
+    amount: Optional[float] = None
+    category: Optional[str] = None
+    expense_date: Optional[str] = None
+    invoice_number: Optional[str] = None
+    description: Optional[str] = None
+    line_items: List[Dict[str, Any]] = []
+    confidence_score: float = 0.95
+    bill_url: Optional[str] = None
+    is_llm_parsed: bool = True
+
+
 class AIInsight(BaseModel):
     category: str  # collection, settlement, donor, budget
     title: str

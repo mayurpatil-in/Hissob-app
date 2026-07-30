@@ -3,6 +3,9 @@ AI Service — Smart Financial Insights Generator, LLM Chatbot, Audit Engine, an
 """
 import re
 import json
+import base64
+import io
+import pypdf
 import logging
 import httpx
 from typing import List, Optional, Dict, Any
@@ -20,7 +23,7 @@ from app.models.tenant import Tenant
 from app.models.festival import Festival
 from app.schemas.ai import (
     AIInsight, AIInsightsResponse, ParsedReceiptOutput, AIChatResponse,
-    AuditFinding, AIAuditResponse, AIReportResponse,
+    AuditFinding, AIAuditResponse, AIReportResponse, ParsedBillOutput,
 )
 
 logger = logging.getLogger(__name__)
@@ -897,6 +900,250 @@ class AIService:
             report_text=llm_response,
             ai_provider=provider_name,
             is_llm_powered=is_llm,
+        )
+
+    def _call_gemini_vision_api(self, image_bytes: bytes, mime_type: str, prompt: str) -> Optional[str]:
+        """
+        Calls Google Gemini Vision REST API (gemini-2.0-flash) with inline image base64 data.
+        """
+        api_key = settings.GEMINI_API_KEY
+        if not api_key:
+            logger.info("GEMINI_API_KEY is not set for vision OCR.")
+            return None
+
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{settings.GEMINI_MODEL_NAME}:generateContent?key={api_key}"
+        base64_str = base64.b64encode(image_bytes).decode("utf-8")
+
+        payload: Dict[str, Any] = {
+            "contents": [
+                {
+                    "parts": [
+                        {
+                            "inlineData": {
+                                "mimeType": mime_type,
+                                "data": base64_str
+                            }
+                        },
+                        {
+                            "text": prompt
+                        }
+                    ]
+                }
+            ]
+        }
+
+        try:
+            with httpx.Client(timeout=20.0) as client:
+                response = client.post(url, json=payload)
+                if response.status_code == 200:
+                    data = response.json()
+                    candidates = data.get("candidates", [])
+                    if candidates:
+                        parts = candidates[0].get("content", {}).get("parts", [])
+                        if parts:
+                            return parts[0].get("text", "")
+                else:
+                    logger.warning(f"Gemini Vision API status {response.status_code}: {response.text[:200]}")
+        except Exception as e:
+            logger.error(f"Error calling Gemini Vision API: {e}")
+
+        return None
+
+    def _call_openai_vision_api(self, image_bytes: bytes, mime_type: str, prompt: str) -> Optional[str]:
+        """
+        Calls OpenAI Vision REST API (gpt-4o-mini) with inline base64 image URL data.
+        """
+        api_key = settings.OPENAI_API_KEY
+        if not api_key:
+            logger.info("OPENAI_API_KEY is not set for vision OCR.")
+            return None
+
+        url = "https://api.openai.com/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+        base64_str = base64.b64encode(image_bytes).decode("utf-8")
+        data_url = f"data:{mime_type};base64,{base64_str}"
+
+        payload = {
+            "model": settings.OPENAI_MODEL_NAME,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {"type": "image_url", "image_url": {"url": data_url}},
+                    ],
+                }
+            ],
+            "temperature": 0.2,
+        }
+
+        try:
+            with httpx.Client(timeout=25.0) as client:
+                response = client.post(url, headers=headers, json=payload)
+                if response.status_code == 200:
+                    data = response.json()
+                    choices = data.get("choices", [])
+                    if choices:
+                        return choices[0].get("message", {}).get("content", "")
+                else:
+                    logger.warning(f"OpenAI Vision API returned status {response.status_code}: {response.text[:200]}")
+        except Exception as e:
+            logger.error(f"Error calling OpenAI Vision API: {e}")
+
+        return None
+
+    def _call_vision_llm(self, image_bytes: bytes, mime_type: str, prompt: str, tenant_id: Optional[UUID] = None) -> Optional[str]:
+        """
+        Dispatches vision OCR calls to OpenAI or Gemini depending on tenant's ai_provider setting.
+        """
+        provider = "gemini"
+        if tenant_id:
+            tenant = self.db.get(Tenant, tenant_id)
+            if tenant and getattr(tenant, "ai_provider", None):
+                provider = tenant.ai_provider.lower()
+
+        if provider == "openai":
+            res = self._call_openai_vision_api(image_bytes, mime_type, prompt)
+            if res:
+                return res
+            return self._call_gemini_vision_api(image_bytes, mime_type, prompt)
+        else:
+            res = self._call_gemini_vision_api(image_bytes, mime_type, prompt)
+            if res:
+                return res
+            return self._call_openai_vision_api(image_bytes, mime_type, prompt)
+
+    @staticmethod
+    def _safe_parse_json(raw_text: str) -> Optional[Dict[str, Any]]:
+        try:
+            json_str = raw_text
+            if "```json" in raw_text:
+                json_str = raw_text.split("```json")[1].split("```")[0].strip()
+            elif "```" in raw_text:
+                json_str = raw_text.split("```")[1].split("```")[0].strip()
+            return json.loads(json_str)
+        except Exception:
+            return None
+
+    def parse_vendor_bill_ocr(self, image_bytes: bytes, mime_type: str, bill_url: Optional[str] = None, tenant_id: Optional[UUID] = None) -> ParsedBillOutput:
+        """
+        Parses vendor invoice photo or PDF using Gemini / OpenAI Vision AI & pypdf text extraction.
+        Extracts vendor name, total amount, category, invoice date, reference number, and summary line items.
+        """
+        is_pdf = mime_type.lower() == "application/pdf" or (bill_url and bill_url.lower().endswith(".pdf"))
+        extracted_pdf_text = ""
+
+        # Step 1: If PDF, extract clean text using pypdf
+        if is_pdf:
+            try:
+                reader = pypdf.PdfReader(io.BytesIO(image_bytes))
+                text_pages = []
+                for page in reader.pages:
+                    txt = page.extract_text()
+                    if txt:
+                        text_pages.append(txt)
+                extracted_pdf_text = "\n".join(text_pages).strip()
+                logger.info(f"Extracted {len(extracted_pdf_text)} chars from PDF bill")
+            except Exception as e:
+                logger.warning(f"pypdf failed to extract text from PDF: {e}")
+
+        # Step 2: Try LLM parsing (OpenAI or Gemini depending on tenant settings)
+        json_output = None
+
+        if is_pdf and len(extracted_pdf_text) > 10:
+            prompt = (
+                "Analyze this vendor bill/invoice document text carefully. "
+                "Extract structured financial information into valid JSON format ONLY with these exact keys:\n"
+                "{\n"
+                '  "vendor_name": "Name of supplier / contractor / vendor",\n'
+                '  "amount": 15000.00,\n'
+                '  "category": "Sound & Stage",\n'
+                '  "expense_date": "YYYY-MM-DD",\n'
+                '  "invoice_number": "Bill or Invoice reference number if present",\n'
+                '  "description": "Short description of items or services",\n'
+                '  "line_items": [{"item": "Speaker Rental", "qty": 2, "amount": 5000}]\n'
+                "}\n"
+                "Categories should match one of: Sound & Stage, Lighting & Electrical, Mandap & Decoration, Catering & Mahaprasad, Floral & Pooja, Printing & Advertising, Miscellaneous. "
+                "Return raw JSON only, enclosed in ```json ``` markdown code block.\n\n"
+                f"INVOICE TEXT:\n{extracted_pdf_text[:4000]}"
+            )
+            raw_text = self._call_llm(prompt, tenant_id=tenant_id)
+            if raw_text:
+                json_output = self._safe_parse_json(raw_text)
+        else:
+            # For images or scanned PDFs, use Vision LLM (OpenAI / Gemini)
+            prompt = (
+                "Analyze this vendor bill/invoice document image carefully. "
+                "Extract structured financial information into valid JSON format ONLY with these exact keys:\n"
+                "{\n"
+                '  "vendor_name": "Name of supplier / contractor / vendor",\n'
+                '  "amount": 15000.00,\n'
+                '  "category": "Sound & Stage",\n'
+                '  "expense_date": "YYYY-MM-DD",\n'
+                '  "invoice_number": "Bill or Invoice reference number if present",\n'
+                '  "description": "Short description of items or services",\n'
+                '  "line_items": [{"item": "Speaker Rental", "qty": 2, "amount": 5000}]\n'
+                "}\n"
+                "Categories should match one of: Sound & Stage, Lighting & Electrical, Mandap & Decoration, Catering & Mahaprasad, Floral & Pooja, Printing & Advertising, Miscellaneous. "
+                "Return raw JSON only, enclosed in ```json ``` markdown code block."
+            )
+            raw_text = self._call_vision_llm(image_bytes, mime_type if not is_pdf else "image/jpeg", prompt, tenant_id=tenant_id)
+            if raw_text:
+                json_output = self._safe_parse_json(raw_text)
+
+        if json_output:
+            return ParsedBillOutput(
+                vendor_name=json_output.get("vendor_name"),
+                amount=float(json_output["amount"]) if json_output.get("amount") is not None else None,
+                category=json_output.get("category"),
+                expense_date=json_output.get("expense_date"),
+                invoice_number=json_output.get("invoice_number"),
+                description=json_output.get("description"),
+                line_items=json_output.get("line_items", []),
+                confidence_score=0.96,
+                bill_url=bill_url,
+                is_llm_parsed=True,
+            )
+
+        # Step 3: Heuristic Regex Fallback on clean text (NOT raw binary bytes)
+        clean_text = extracted_pdf_text
+        if not clean_text:
+            try:
+                # Strip unprintable ascii bytes to avoid false regex matches on binary pdf/image data
+                clean_text = "".join([c for c in image_bytes.decode("latin1", errors="ignore") if c.isprintable() or c in "\n\r\t"])
+            except Exception:
+                clean_text = ""
+
+        amount_match = re.search(r'(?:total|amount|rs\.?|₹|net\s*payable)\s*:?\s*([\d,]+(?:\.\d{2})?)', clean_text, re.IGNORECASE)
+        amount = float(amount_match.group(1).replace(",", "")) if amount_match else None
+
+        inv_match = re.search(r'(?:inv(?:oice)?|bill|voucher)\s*(?:no\.?|#)?\s*:?\s*([A-Z0-9\-\/]{3,})', clean_text, re.IGNORECASE)
+        inv_no = inv_match.group(1) if inv_match else None
+
+        date_match = re.search(r'(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}|\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2})', clean_text)
+        exp_date = date_match.group(1) if date_match else datetime.now().strftime("%Y-%m-%d")
+
+        # Extract first non-trivial line as vendor name if available
+        vendor_name = "Vendor / Supplier"
+        if clean_text:
+            lines = [l.strip() for l in clean_text.splitlines() if len(l.strip()) > 3 and not re.match(r'^\d+$', l.strip())]
+            if lines:
+                vendor_name = lines[0][:100]
+
+        return ParsedBillOutput(
+            vendor_name=vendor_name,
+            amount=amount or 0.0,
+            category="Miscellaneous",
+            expense_date=exp_date,
+            invoice_number=inv_no,
+            description="Uploaded Vendor Invoice",
+            line_items=[],
+            confidence_score=0.70,
+            bill_url=bill_url,
+            is_llm_parsed=False,
         )
 
 
