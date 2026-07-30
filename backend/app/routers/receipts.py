@@ -277,6 +277,7 @@ async def create_receipt(
             pan_number=donor.pan_number,
             receipt_id=str(created.id),
             transaction_ref=created.upi_reference or created.transaction_ref,
+            tenant_id=current_user.tenant_id,
         )
 
     # Log Audit Event

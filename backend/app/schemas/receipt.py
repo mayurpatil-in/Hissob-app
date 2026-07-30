@@ -119,4 +119,4 @@ class PublicReceiptVerificationResponse(BaseModel):
     transaction_ref: Optional[str] = None
     org_name: str
     org_logo_url: Optional[str] = None
-    verified_at: datetime
+    verified_at: Optional[datetime] = None

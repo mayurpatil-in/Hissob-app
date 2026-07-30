@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
 import {
-  Table, Button, Tabs, Card, Row, Col, Typography, Tag, Space, Select, Dropdown, Input, Segmented, Avatar, DatePicker, Alert, Progress, Modal
+  Table, Button, Tabs, Card, Row, Col, Typography, Tag, Space, Select, Dropdown, Input, Segmented, Avatar, DatePicker, Alert, Progress, Modal, Form, App
 } from 'antd';
 import {
   BarChartOutlined, BookOutlined, DollarOutlined, DownloadOutlined, FileExcelOutlined, FilePdfOutlined,
   SearchOutlined, UnorderedListOutlined, AppstoreOutlined, RiseOutlined, FallOutlined, WalletOutlined,
-  CalendarOutlined, PieChartOutlined, AuditOutlined, PrinterOutlined, WarningOutlined, CheckCircleOutlined, FileDoneOutlined
+  CalendarOutlined, PieChartOutlined, AuditOutlined, PrinterOutlined, WarningOutlined, CheckCircleOutlined, FileDoneOutlined, MailOutlined
 } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import {
-  getDailyCollectionReport, getCashBookReport, getIncomeExpenseReport, getFinancialYears, getReceipts, getExpenses
+  getDailyCollectionReport, getCashBookReport, getIncomeExpenseReport, getFinancialYears, getReceipts, getExpenses, emailFinancialReport
 } from '../../api/services';
 import { exportToCSV, exportToExcel, printTable } from '../../utils/exportTable';
 import dayjs from 'dayjs';
@@ -37,12 +37,107 @@ const CASHBOOK_COLS = [
   { key: 'running_balance', title: 'Balance (₹)', format: (v: number) => `₹ ${Number(v || 0).toLocaleString('en-IN')}` },
 ];
 
+const EmailReportModal: React.FC<{
+  open: boolean;
+  onCancel: () => void;
+  reportTitle: string;
+  reportType: string;
+  startDate?: string;
+  endDate?: string;
+  fyId?: string;
+  customReportRequest?: any;
+}> = ({ open, onCancel, reportTitle, reportType, startDate, endDate, fyId, customReportRequest }) => {
+  const { message } = App.useApp();
+  const [form] = Form.useForm();
+  const [sending, setSending] = useState(false);
+
+  const handleSend = async (values: any) => {
+    const rawEmails = values.recipients || '';
+    const recipientsList = rawEmails.split(/[,;\n]+/).map((e: string) => e.trim()).filter((e: string) => e.includes('@'));
+
+    if (recipientsList.length === 0) {
+      message.error('Please enter at least one valid recipient email address.');
+      return;
+    }
+
+    setSending(true);
+    try {
+      const res = await emailFinancialReport({
+        recipients: recipientsList,
+        report_title: reportTitle,
+        report_type: reportType,
+        custom_message: values.custom_message,
+        custom_report_request: customReportRequest,
+        start_date: startDate,
+        end_date: endDate,
+        fy_id: fyId,
+      });
+
+      if (res.sent_count > 0) {
+        message.success(`Successfully dispatched report to ${res.sent_count} recipient(s)!`);
+        onCancel();
+        form.resetFields();
+      } else {
+        message.error(`Failed to dispatch email. ${res.message}`);
+      }
+    } catch (err: any) {
+      message.error(err.response?.data?.detail || 'Failed to email report');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <Modal
+      title={
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <MailOutlined style={{ color: '#2563EB' }} />
+          <span>Email Statement: {reportTitle}</span>
+        </div>
+      }
+      open={open}
+      onCancel={onCancel}
+      footer={null}
+      destroyOnClose
+    >
+      <Form form={form} layout="vertical" onFinish={handleSend} style={{ marginTop: 16 }}>
+        <Form.Item
+          name="recipients"
+          label="Recipient Email Address(es)"
+          rules={[{ required: true, message: 'Please enter target email address' }]}
+          tooltip="Separate multiple emails with commas (e.g. auditor@gmail.com, treasurer@mandal.org)"
+        >
+          <Input placeholder="e.g. auditor@gmail.com, treasurer@mandal.org" />
+        </Form.Item>
+
+        <Form.Item name="custom_message" label="Custom Note / Message for Recipients (Optional)">
+          <Input.TextArea rows={3} placeholder="Add a short explanation or context for board members or auditor..." />
+        </Form.Item>
+
+        <div style={{ textAlign: 'right', marginTop: 20 }}>
+          <Space>
+            <Button onClick={onCancel}>Cancel</Button>
+            <Button type="primary" htmlType="submit" icon={<MailOutlined />} loading={sending} style={{ background: '#2563EB', fontWeight: 700 }}>
+              Send Email Report
+            </Button>
+          </Space>
+        </div>
+      </Form>
+    </Modal>
+  );
+};
+
 const ExportButtons: React.FC<{
   data: any[];
   columns: typeof DAILY_COLS;
   baseName: string;
   title: string;
-}> = ({ data, columns, baseName, title }) => {
+  reportType?: string;
+  startDate?: string;
+  endDate?: string;
+  fyId?: string;
+}> = ({ data, columns, baseName, title, reportType = 'custom', startDate, endDate, fyId }) => {
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
   const filename = `${baseName}_${dayjs().format('YYYYMMDD')}`;
 
   const menuItems = [
@@ -64,14 +159,34 @@ const ExportButtons: React.FC<{
       label: 'Print / Save as PDF',
       onClick: () => printTable(data, title, columns),
     },
+    {
+      type: 'divider',
+    },
+    {
+      key: 'email',
+      icon: <MailOutlined style={{ color: '#2563EB' }} />,
+      label: 'Email Report Statement',
+      onClick: () => setEmailModalOpen(true),
+    },
   ];
 
   return (
-    <Dropdown menu={{ items: menuItems }} placement="bottomRight">
-      <Button icon={<DownloadOutlined />} size="small" style={{ fontWeight: 600 }}>
-        Export ▾
-      </Button>
-    </Dropdown>
+    <>
+      <Dropdown menu={{ items: menuItems }} placement="bottomRight">
+        <Button icon={<DownloadOutlined />} size="small" style={{ fontWeight: 600 }}>
+          Export ▾
+        </Button>
+      </Dropdown>
+      <EmailReportModal
+        open={emailModalOpen}
+        onCancel={() => setEmailModalOpen(false)}
+        reportTitle={title}
+        reportType={reportType}
+        startDate={startDate}
+        endDate={endDate}
+        fyId={fyId}
+      />
+    </>
   );
 };
 

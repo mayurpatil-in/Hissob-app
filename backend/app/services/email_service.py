@@ -6,10 +6,52 @@ import smtplib
 import logging
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from typing import Optional, Dict, Any
+from email.mime.application import MIMEApplication
+from typing import Optional, Dict, Any, List, Tuple
+from uuid import UUID
+from sqlalchemy.orm import Session
 from app.core.config import settings
 
 logger = logging.getLogger("hisob.email")
+
+
+def _record_email_log(
+    db: Optional[Session],
+    tenant_id: Optional[UUID],
+    recipient: str,
+    subject: str,
+    email_type: str,
+    status: str,
+    error_message: Optional[str] = None,
+    metadata_json: Optional[dict] = None,
+):
+    """Helper to persist email dispatch status in database email_logs table."""
+    try:
+        from app.models.email_log import EmailLog
+        from datetime import datetime, timezone
+        from app.core.database import SessionLocal
+
+        close_session = False
+        if db is None:
+            db = SessionLocal()
+            close_session = True
+
+        log_entry = EmailLog(
+            tenant_id=tenant_id,
+            recipient=recipient,
+            subject=subject,
+            email_type=email_type,
+            status=status,
+            error_message=error_message,
+            metadata_json=metadata_json,
+            sent_at=datetime.now(timezone.utc),
+        )
+        db.add(log_entry)
+        db.commit()
+        if close_session:
+            db.close()
+    except Exception as ex:
+        logger.error("Failed to record EmailLog in DB: %s", str(ex))
 
 
 def send_raw_email(
@@ -17,17 +59,43 @@ def send_raw_email(
     subject: str,
     html_content: str,
     text_content: Optional[str] = None,
+    attachments: Optional[List[Tuple[str, bytes, str]]] = None,  # (filename, bytes, mime_type)
+    db: Optional[Session] = None,
+    tenant_id: Optional[UUID] = None,
+    email_type: str = "TRANSACTIONAL",
+    metadata_json: Optional[dict] = None,
 ) -> bool:
     """
     Sends an HTML email via SMTP using server configuration.
+    Supports file attachments (MIMEApplication) and optional DB email log tracking.
     Fails safely without raising exceptions to keep background jobs running smooth.
     """
     if not settings.EMAIL_ENABLED:
         logger.info("Email delivery is disabled in settings. Skipping email to %s", to_email)
+        _record_email_log(
+            db=db,
+            tenant_id=tenant_id,
+            recipient=to_email,
+            subject=subject,
+            email_type=email_type,
+            status="FAILED",
+            error_message="Email delivery is disabled in settings (EMAIL_ENABLED=False).",
+            metadata_json=metadata_json,
+        )
         return False
 
     if not to_email or "@" not in to_email:
         logger.warning("Invalid recipient email address: %s", to_email)
+        _record_email_log(
+            db=db,
+            tenant_id=tenant_id,
+            recipient=to_email or "invalid",
+            subject=subject,
+            email_type=email_type,
+            status="FAILED",
+            error_message=f"Invalid recipient email address: {to_email}",
+            metadata_json=metadata_json,
+        )
         return False
 
     if not settings.SMTP_PASSWORD:
@@ -35,26 +103,49 @@ def send_raw_email(
             "SMTP_PASSWORD is not set in .env. Skipping automated email to %s. Add SMTP_PASSWORD to enable email delivery.",
             to_email,
         )
+        _record_email_log(
+            db=db,
+            tenant_id=tenant_id,
+            recipient=to_email,
+            subject=subject,
+            email_type=email_type,
+            status="FAILED",
+            error_message="SMTP_PASSWORD is not set in backend configuration.",
+            metadata_json=metadata_json,
+        )
         return False
 
     try:
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = subject
-        msg["From"] = f"{settings.SMTP_FROM_NAME} <{settings.SMTP_FROM_EMAIL}>"
-        msg["To"] = to_email
+        if attachments:
+            msg = MIMEMultipart("mixed")
+            msg["Subject"] = subject
+            msg["From"] = f"{settings.SMTP_FROM_NAME} <{settings.SMTP_FROM_EMAIL}>"
+            msg["To"] = to_email
 
-        # Attach text fallback if available
-        if text_content:
-            msg.attach(MIMEText(text_content, "plain", "utf-8"))
+            body_part = MIMEMultipart("alternative")
+            if text_content:
+                body_part.attach(MIMEText(text_content, "plain", "utf-8"))
+            body_part.attach(MIMEText(html_content, "html", "utf-8"))
+            msg.attach(body_part)
 
-        # Attach HTML body
-        msg.attach(MIMEText(html_content, "html", "utf-8"))
-
-        # Connect via SSL or TLS based on port
-        if settings.SMTP_PORT == 465:
-            server = smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10)
+            for filename, file_bytes, _m_type in attachments:
+                att_part = MIMEApplication(file_bytes)
+                att_part.add_header("Content-Disposition", "attachment", filename=filename)
+                msg.attach(att_part)
         else:
-            server = smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10)
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = subject
+            msg["From"] = f"{settings.SMTP_FROM_NAME} <{settings.SMTP_FROM_EMAIL}>"
+            msg["To"] = to_email
+
+            if text_content:
+                msg.attach(MIMEText(text_content, "plain", "utf-8"))
+            msg.attach(MIMEText(html_content, "html", "utf-8"))
+
+        if settings.SMTP_PORT == 465:
+            server = smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT, timeout=12)
+        else:
+            server = smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=12)
             if settings.SMTP_USE_TLS:
                 server.starttls()
 
@@ -64,11 +155,67 @@ def send_raw_email(
         server.sendmail(settings.SMTP_FROM_EMAIL, [to_email], msg.as_string())
         server.quit()
         logger.info("Successfully sent email '%s' to %s", subject, to_email)
+        _record_email_log(
+            db=db,
+            tenant_id=tenant_id,
+            recipient=to_email,
+            subject=subject,
+            email_type=email_type,
+            status="SENT",
+            metadata_json=metadata_json,
+        )
         return True
 
     except Exception as e:
-        logger.error("Failed to send email to %s: %s", to_email, str(e))
+        err_str = str(e)
+        logger.error("Failed to send email to %s: %s", to_email, err_str)
+        _record_email_log(
+            db=db,
+            tenant_id=tenant_id,
+            recipient=to_email,
+            subject=subject,
+            email_type=email_type,
+            status="FAILED",
+            error_message=err_str,
+            metadata_json=metadata_json,
+        )
         return False
+
+
+def number_to_words_indian(number: float) -> str:
+    """Converts a numeric amount to Indian currency words."""
+    try:
+        num = int(round(number))
+        if num == 0:
+            return "Rupees Zero Only"
+        units = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten",
+                 "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"]
+        tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"]
+        def _convert_below_thousand(n):
+            if n < 20:
+                return units[n]
+            elif n < 100:
+                return tens[n // 10] + (" " + units[n % 10] if n % 10 != 0 else "")
+            else:
+                return units[n // 100] + " Hundred" + (" " + _convert_below_thousand(n % 100) if n % 100 != 0 else "")
+        crore = num // 10000000
+        num %= 10000000
+        lakh = num // 100000
+        num %= 100000
+        thousand = num // 1000
+        num %= 1000
+        parts = []
+        if crore > 0:
+            parts.append(_convert_below_thousand(crore) + " Crore")
+        if lakh > 0:
+            parts.append(_convert_below_thousand(lakh) + " Lakh")
+        if thousand > 0:
+            parts.append(_convert_below_thousand(thousand) + " Thousand")
+        if num > 0:
+            parts.append(_convert_below_thousand(num))
+        return "Rupees " + " ".join(parts) + " Only"
+    except Exception:
+        return f"Rupees {number:,.2f}"
 
 
 def build_receipt_html(
@@ -86,36 +233,32 @@ def build_receipt_html(
     receipt_id: Optional[str] = None,
     transaction_ref: Optional[str] = None,
 ) -> str:
-    """Generates a premium, responsive HTML Receipt Card for Email Delivery."""
-    amount_formatted = f"₹{amount:,.2f}"
+    """Generates an executive, luxury responsive HTML Receipt Card for Email Delivery."""
+    amount_formatted = f"₹ {amount:,.2f}"
+    amount_in_words = number_to_words_indian(amount)
     verify_link = f"https://hisob.in/verify/{receipt_id}" if receipt_id else "https://hisob.in"
-    qr_img_url = f"https://api.qrserver.com/v1/create-qr-code/?size=110x110&data={verify_link}"
+    qr_img_url = f"https://api.qrserver.com/v1/create-qr-code/?size=120x120&data={verify_link}"
 
     logo_img_tag = ""
     if org_logo_url:
         full_logo_url = org_logo_url if org_logo_url.startswith("http") else f"https://api.hisob.in{org_logo_url}"
         logo_img_tag = f"""
-        <div style="margin-bottom: 12px;">
-            <img src="{full_logo_url}" alt="Logo" style="height: 60px; max-width: 160px; object-fit: contain; background: #FFFFFF; padding: 6px 12px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" />
-        </div>
+        <img src="{full_logo_url}" alt="Logo" style="height: 64px; max-width: 140px; object-fit: contain; background: #FFFFFF; padding: 6px 12px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" />
         """
 
     city_state = org_city or "Kolhapur, Maharashtra"
-    pan_tag = f" | PAN: <strong>{org_pan}</strong>" if org_pan else ""
-    
-    ref_row = f"""
-    <tr style="background-color: #F8FAFC;">
-        <td style="padding: 10px 16px; color: #64748B; font-size: 13px; font-weight: 500;">Ref / UTR No:</td>
-        <td style="padding: 10px 16px; color: #0F172A; font-weight: 700; font-size: 13px; text-align: right; font-family: monospace;">{transaction_ref}</td>
-    </tr>
-    """ if transaction_ref else ""
 
-    donor_pan_row = f"""
-    <tr style="background-color: #FFFFFF;">
-        <td style="padding: 10px 16px; color: #64748B; font-size: 13px; font-weight: 500;">Donor PAN (80G Tax Exemption):</td>
-        <td style="padding: 10px 16px; color: #16A34A; font-weight: 800; font-size: 13px; text-align: right;">{pan_number} (Eligible)</td>
-    </tr>
-    """ if pan_number else ""
+    legal_rows = []
+    if org_pan and org_pan.strip() and "1234A" not in org_pan:
+        legal_rows.append(f'<div>PAN: <strong style="color: #FFFFFF;">{org_pan.strip()}</strong></div>')
+    if pan_number and pan_number.strip():
+        legal_rows.append('<div>80G Reg: <strong style="color: #4ADE80;">Eligible</strong></div>')
+
+    legal_credentials_html = f"""
+    <div style="font-size: 11px; color: #CBD5E1; line-height: 1.6; text-align: right; margin-top: 4px;">
+        {''.join(legal_rows)}
+    </div>
+    """ if legal_rows else ""
 
     pm_upper = payment_mode.upper()
     pm_badge_color = "#2563EB" if pm_upper in ["UPI", "ONLINE", "DIGITAL"] else "#D97706"
@@ -127,105 +270,142 @@ def build_receipt_html(
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Donation Receipt {receipt_number}</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #0F172A; font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;">
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #0F172A; padding: 32px 12px;">
+<body style="margin: 0; padding: 0; background-color: #F1F5F9; font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #F1F5F9; padding: 36px 12px;">
         <tr>
             <td align="center">
                 <!-- Main Container Card -->
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 580px; background-color: #FFFFFF; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.3); border: 1px solid #1E293B;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #FFFFFF; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08); border: 1px solid #E2E8F0;">
                     
-                    <!-- Top Brand Header Banner -->
+                    <!-- Top Brand Gradient Accent Stripe -->
                     <tr>
-                        <td style="background: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #0F172A 100%); padding: 36px 24px 28px 24px; text-align: center; color: #FFFFFF; border-bottom: 4px solid #F97316;">
-                            {logo_img_tag}
-                            <h1 style="margin: 0 0 6px 0; font-size: 24px; font-weight: 900; color: #FFFFFF; letter-spacing: -0.5px;">{org_name}</h1>
-                            <p style="margin: 0 0 14px 0; font-size: 13px; color: #94A3B8;">{city_state}{pan_tag}</p>
-                            
-                            <!-- Badges -->
-                            <div style="display: inline-block;">
-                                <span style="background-color: rgba(34, 197, 94, 0.15); border: 1px solid #22C55E; color: #4ADE80; font-size: 11px; font-weight: 700; padding: 5px 14px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px;">
-                                    ✓ Official Verified e-Receipt
+                        <td style="height: 5px; background: linear-gradient(90deg, #F59E0B 0%, #2563EB 50%, #10B981 100%);"></td>
+                    </tr>
+
+                    <!-- ── 1. Top Luxury Brand Header (Navy #0F172A) ── -->
+                    <tr>
+                        <td style="background-color: #0F172A; padding: 28px 24px; color: #FFFFFF; border-bottom: 3px solid #F59E0B;">
+                            <table width="100%" cellspacing="0" cellpadding="0">
+                                <tr>
+                                    <!-- Left: Logo & Org Details -->
+                                    <td valign="top" style="padding-right: 12px;">
+                                        {logo_img_tag}
+                                        <h1 style="margin: 8px 0 2px 0; font-size: 22px; font-weight: 900; color: #FFFFFF; letter-spacing: -0.3px;">{org_name}</h1>
+                                        <p style="margin: 0 0 4px 0; font-size: 12px; color: #F59E0B; font-weight: 600;">{city_state}, India</p>
+                                        <p style="margin: 0; font-size: 11px; color: #94A3B8;">Registered Public Trust</p>
+                                    </td>
+                                    
+                                    <!-- Right: Verified Badge & Legal Credentials -->
+                                    <td valign="top" align="right" style="width: 200px;">
+                                        <div style="background-color: rgba(34, 197, 94, 0.15); border: 1px solid #22C55E; color: #4ADE80; font-size: 10px; font-weight: 800; padding: 4px 12px; border-radius: 16px; text-transform: uppercase; display: inline-block; margin-bottom: 6px;">
+                                            ✔ VERIFIED E-RECEIPT
+                                        </div>
+                                        {legal_credentials_html}
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- ── 2. Gold Luxury Amount Box ── -->
+                    <tr>
+                        <td style="padding: 24px; background: linear-gradient(180deg, #FFFBEB 0%, #FEF3C7 100%); border-bottom: 1px solid #FDE68A; text-align: center;">
+                            <div style="font-size: 11px; color: #B45309; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">
+                                📿 DONATION RECEIVED 📿
+                            </div>
+                            <h2 style="margin: 4px 0; font-size: 38px; font-weight: 900; color: #B45309; letter-spacing: -1px;">
+                                {amount_formatted}
+                            </h2>
+                            <p style="margin: 4px 0 10px 0; font-size: 13px; font-weight: 700; color: #78350F;">
+                                {amount_in_words}
+                            </p>
+                            <div>
+                                <span style="background-color: #F59E0B; color: #FFFFFF; font-size: 11px; font-weight: 800; padding: 5px 16px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px;">
+                                    PURPOSE: {purpose}
                                 </span>
                             </div>
                         </td>
                     </tr>
 
-                    <!-- Highlighted Amount Hero Box -->
-                    <tr>
-                        <td style="padding: 28px 24px; text-align: center; background: linear-gradient(180deg, #FFF7ED 0%, #FFFFFF 100%); border-bottom: 1px solid #FED7AA;">
-                            <p style="margin: 0 0 6px 0; font-size: 12px; color: #C2410C; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Total Amount Donated</p>
-                            <h2 style="margin: 0; font-size: 42px; font-weight: 900; color: #EA580C; letter-spacing: -1px;">{amount_formatted}</h2>
-                            <div style="margin-top: 10px;">
-                                <span style="background-color: #FFEDD5; color: #9A3412; font-size: 13px; font-weight: 700; padding: 6px 16px; border-radius: 8px;">
-                                    Seva / Purpose: {purpose}
-                                </span>
-                            </div>
-                        </td>
-                    </tr>
-
-                    <!-- Receipt Detail Table -->
+                    <!-- ── 3. Structured 2-Column Receipt Specifications ── -->
                     <tr>
                         <td style="padding: 24px;">
-                            <table width="100%" cellspacing="0" cellpadding="0" style="border-collapse: separate; border-spacing: 0; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden;">
+                            <div style="background-color: #0F172A; color: #FFFFFF; font-size: 11px; font-weight: 800; padding: 10px 16px; border-radius: 10px 10px 0 0; text-transform: uppercase; letter-spacing: 0.5px;">
+                                📋 RECEIPT SPECIFICATIONS & AUDIT DETAILS
+                            </div>
+                            <table width="100%" cellspacing="0" cellpadding="0" style="border-collapse: separate; border-spacing: 0; border: 1px solid #E2E8F0; border-top: none; border-radius: 0 0 10px 10px; overflow: hidden;">
                                 <tr style="background-color: #F8FAFC;">
-                                    <td style="padding: 12px 16px; color: #64748B; font-size: 13px; font-weight: 500; border-bottom: 1px solid #E2E8F0;">Receipt Number:</td>
+                                    <td style="padding: 12px 16px; color: #64748B; font-size: 12px; font-weight: 600; width: 35%; border-bottom: 1px solid #E2E8F0;">Receipt Number:</td>
                                     <td style="padding: 12px 16px; color: #0F172A; font-weight: 800; font-size: 14px; text-align: right; border-bottom: 1px solid #E2E8F0; font-family: monospace;">{receipt_number}</td>
                                 </tr>
                                 <tr style="background-color: #FFFFFF;">
-                                    <td style="padding: 12px 16px; color: #64748B; font-size: 13px; font-weight: 500; border-bottom: 1px solid #E2E8F0;">Receipt Date:</td>
+                                    <td style="padding: 12px 16px; color: #64748B; font-size: 12px; font-weight: 600; border-bottom: 1px solid #E2E8F0;">Receipt Date:</td>
                                     <td style="padding: 12px 16px; color: #0F172A; font-weight: 700; font-size: 13px; text-align: right; border-bottom: 1px solid #E2E8F0;">{receipt_date}</td>
                                 </tr>
                                 <tr style="background-color: #F8FAFC;">
-                                    <td style="padding: 12px 16px; color: #64748B; font-size: 13px; font-weight: 500; border-bottom: 1px solid #E2E8F0;">Donor Name:</td>
+                                    <td style="padding: 12px 16px; color: #64748B; font-size: 12px; font-weight: 600; border-bottom: 1px solid #E2E8F0;">Donor Full Name:</td>
                                     <td style="padding: 12px 16px; color: #0F172A; font-weight: 800; font-size: 15px; text-align: right; border-bottom: 1px solid #E2E8F0;">{donor_name}</td>
                                 </tr>
-                                {donor_pan_row}
                                 <tr style="background-color: #FFFFFF;">
-                                    <td style="padding: 12px 16px; color: #64748B; font-size: 13px; font-weight: 500; border-bottom: 1px solid #E2E8F0;">Payment Mode:</td>
+                                    <td style="padding: 12px 16px; color: #64748B; font-size: 12px; font-weight: 600; border-bottom: 1px solid #E2E8F0;">Payment Mode:</td>
                                     <td style="padding: 12px 16px; text-align: right; border-bottom: 1px solid #E2E8F0;">
-                                        <span style="background-color: {pm_badge_color}; color: #FFFFFF; font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 6px; text-transform: uppercase;">{pm_upper}</span>
+                                        <span style="background-color: {pm_badge_color}; color: #FFFFFF; font-size: 11px; font-weight: 800; padding: 3px 12px; border-radius: 6px; text-transform: uppercase;">{pm_upper}</span>
                                     </td>
                                 </tr>
-                                {ref_row}
+                                {f'<tr style="background-color: #F8FAFC;"><td style="padding: 12px 16px; color: #64748B; font-size: 12px; font-weight: 600; border-bottom: 1px solid #E2E8F0;">Ref / UTR No:</td><td style="padding: 12px 16px; color: #0F172A; font-weight: 800; font-size: 13px; text-align: right; border-bottom: 1px solid #E2E8F0; font-family: monospace;">{transaction_ref}</td></tr>' if transaction_ref else ''}
+                                {f'<tr style="background-color: #FFFFFF;"><td style="padding: 12px 16px; color: #64748B; font-size: 12px; font-weight: 600;">Donor PAN (80G Tax Exemption):</td><td style="padding: 12px 16px; color: #16A34A; font-weight: 800; font-size: 13px; text-align: right;">{pan_number} (Eligible)</td></tr>' if pan_number else ''}
                             </table>
 
-                            <!-- Verification QR Code & CTA Box -->
-                            <div style="margin-top: 24px; background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 14px; padding: 20px; text-align: center;">
+                            <!-- Amount in Words Card -->
+                            <div style="margin-top: 16px; background-color: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 10px; padding: 12px 16px;">
+                                <div style="font-size: 10px; color: #1D4ED8; font-weight: 700; text-transform: uppercase; margin-bottom: 2px;">Amount in Words:</div>
+                                <div style="font-size: 13px; color: #1E40AF; font-weight: 800;">{amount_in_words}</div>
+                            </div>
+
+                            <!-- ── 4. Verification QR & Digital Signature Footer ── -->
+                            <div style="margin-top: 20px; background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 14px; padding: 20px;">
                                 <table width="100%" cellspacing="0" cellpadding="0">
                                     <tr>
-                                        <td align="center" style="padding-bottom: 12px;">
-                                            <img src="{qr_img_url}" alt="Verification QR" style="width: 110px; height: 110px; border-radius: 10px; border: 4px solid #FFFFFF; box-shadow: 0 4px 12px rgba(0,0,0,0.08);" />
-                                            <p style="margin: 6px 0 0 0; font-size: 11px; color: #64748B; font-weight: 600;">Scan QR with Mobile Camera to Verify Authenticity</p>
+                                        <!-- Left: QR Code -->
+                                        <td style="width: 120px; text-align: center;" valign="middle">
+                                            <img src="{qr_img_url}" alt="Verification QR" style="width: 105px; height: 105px; border-radius: 10px; border: 3px solid #FFFFFF; box-shadow: 0 4px 12px rgba(0,0,0,0.08);" />
+                                            <div style="font-size: 9px; color: #64748B; font-weight: 700; margin-top: 4px;">SCAN TO VERIFY</div>
+                                        </td>
+
+                                        <!-- Right: Digital Signature & Verification Action -->
+                                        <td valign="middle" style="padding-left: 16px;">
+                                            <div style="font-size: 12px; font-weight: 800; color: #1E3A8A; margin-bottom: 4px;">For {org_name}</div>
+                                            <div style="font-size: 11px; color: #16A34A; font-weight: 700; margin-bottom: 8px;">Digitally Signed ✔</div>
+                                            <div style="border-bottom: 1px solid #CBD5E1; width: 140px; margin-bottom: 4px;"></div>
+                                            <div style="font-size: 10px; color: #64748B; font-style: italic;">Authorized Trustee / Treasurer</div>
+                                            
+                                            <div style="margin-top: 14px;">
+                                                <a href="{verify_link}" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%); color: #FFFFFF; font-size: 11px; font-weight: 800; padding: 10px 20px; border-radius: 10px; text-decoration: none; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3); text-transform: uppercase;">
+                                                    📄 View & Download PDF Receipt
+                                                </a>
+                                            </div>
                                         </td>
                                     </tr>
                                 </table>
-                                
-                                <div style="margin-top: 8px;">
-                                    <a href="{verify_link}" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%); color: #FFFFFF; font-size: 14px; font-weight: 800; padding: 14px 32px; border-radius: 12px; text-decoration: none; box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35); text-transform: uppercase; letter-spacing: 0.5px;">
-                                        📄 View & Download PDF Receipt
-                                    </a>
-                                </div>
                             </div>
                         </td>
                     </tr>
 
-                    <!-- Footer Section -->
+                    <!-- ── 5. Bottom Security Footer Bar ── -->
                     <tr>
-                        <td style="background-color: #F1F5F9; padding: 20px 24px; text-align: center; border-top: 1px solid #E2E8F0;">
-                            <p style="margin: 0 0 6px 0; font-size: 12px; color: #475569; font-weight: 600;">
-                                🙏 Thank you for your valuable contribution and blessings!
+                        <td style="background-color: #0F172A; padding: 16px 24px; text-align: center; border-top: 2px solid #F59E0B; color: #94A3B8;">
+                            <p style="margin: 0 0 6px 0; font-size: 12px; color: #FFFFFF; font-weight: 600;">
+                                🙏 Thank you for your generous contribution and blessings!
                             </p>
-                            <p style="margin: 0 0 4px 0; font-size: 11px; color: #64748B;">
-                                This is an official computer-generated electronic receipt issued via <strong>Hisob ERP</strong>.
+                            <p style="margin: 0 0 8px 0; font-size: 10px; color: #CBD5E1;">
+                                This is an official computer-generated electronic receipt issued through <strong>Hisob ERP Platform</strong>.
                             </p>
-                            <p style="margin: 0 0 6px 0; font-size: 10px; color: #94A3B8;">
-                                Secured & Verified by <a href="https://hisob.in" style="color: #2563EB; text-decoration: none; font-weight: 700;">Hisob ERP Platform</a>
-                            </p>
-                            <p style="margin: 0; font-size: 10px; color: #64748B;">
-                                Developed by <a href="https://www.mayurpatil.in" target="_blank" style="color: #EA580C; text-decoration: none; font-weight: 700;">www.mayurpatil.in</a>
-                            </p>
+                            <div style="font-size: 10px; color: #F59E0B; font-weight: 700; letter-spacing: 0.5px;">
+                                🔒 SECURE &nbsp;|&nbsp; ✔ VERIFIED &nbsp;|&nbsp; 🔲 QR VERIFIED &nbsp;|&nbsp; 🏆 HISOB DIGITAL RECEIPT
+                            </div>
                         </td>
                     </tr>
+
                 </table>
             </td>
         </tr>
@@ -250,8 +430,11 @@ def send_receipt_email_notification(
     pan_number: Optional[str] = None,
     receipt_id: Optional[str] = None,
     transaction_ref: Optional[str] = None,
+    db: Optional[Session] = None,
+    tenant_id: Optional[UUID] = None,
+    attach_pdf: bool = True,
 ) -> bool:
-    """Wrapper function to build HTML and send automated receipt email."""
+    """Wrapper function to build HTML and send automated receipt email with PDF/HTML attachment."""
     # Format receipt date as DD-MM-YYYY (e.g. 29-07-2026)
     formatted_date = str(receipt_date)
     try:
@@ -283,11 +466,40 @@ def send_receipt_email_notification(
     )
     text_content = f"Thank you for your donation of ₹{amount:,.2f} to {org_name}. Your Receipt Number is {receipt_number}."
 
+    attachments = None
+    if attach_pdf:
+        try:
+            from app.services.pdf_service import generate_receipt_pdf_bytes
+            pdf_bytes = generate_receipt_pdf_bytes(
+                receipt_number=receipt_number,
+                receipt_date=formatted_date,
+                donor_name=donor_name,
+                amount=amount,
+                purpose=purpose,
+                payment_mode=payment_mode,
+                org_name=org_name,
+                org_city=org_city,
+                org_pan=org_pan,
+                org_logo_url=org_logo_url,
+                pan_number=pan_number,
+                transaction_ref=transaction_ref,
+                receipt_id=receipt_id,
+            )
+            att_name = f"Receipt_#{receipt_number}.pdf"
+            attachments = [(att_name, pdf_bytes, "application/pdf")]
+        except Exception as pdf_ex:
+            logger.error("Failed to generate PDF receipt attachment: %s", str(pdf_ex))
+
     return send_raw_email(
         to_email=to_email,
         subject=subject,
         html_content=html_content,
         text_content=text_content,
+        attachments=attachments,
+        db=db,
+        tenant_id=tenant_id,
+        email_type="RECEIPT",
+        metadata_json={"receipt_number": receipt_number, "amount": amount, "donor_name": donor_name},
     )
 
 
@@ -744,6 +956,8 @@ def send_donor_welcome_email(
     org_name: str,
     org_city: Optional[str] = None,
     org_logo_url: Optional[str] = None,
+    db: Optional[Session] = None,
+    tenant_id: Optional[UUID] = None,
 ) -> bool:
     """
     Sends the welcome email notification to a newly registered donor.
@@ -767,5 +981,230 @@ def send_donor_welcome_email(
         subject=subject,
         html_content=html,
         text_content=text,
+        db=db,
+        tenant_id=tenant_id,
+        email_type="WELCOME",
+        metadata_json={"donor_number": donor_number, "donor_name": donor_name},
     )
+
+
+def build_report_email_html(
+    report_title: str,
+    org_name: str,
+    custom_message: Optional[str] = None,
+    org_logo_url: Optional[str] = None,
+) -> str:
+    """Renders a responsive HTML card for financial report email distribution."""
+    logo_tag = ""
+    if org_logo_url:
+        full_logo = org_logo_url if org_logo_url.startswith("http") else f"https://api.hisob.in{org_logo_url}"
+        logo_tag = f'<img src="{full_logo}" alt="Logo" style="height: 50px; max-width: 140px; object-fit: contain; background: #FFFFFF; padding: 4px 10px; border-radius: 8px; margin-bottom: 8px;" />'
+
+    msg_section = ""
+    if custom_message:
+        msg_section = f"""
+        <div style="background-color: #FFF7ED; border-left: 4px solid #EA580C; padding: 14px 16px; border-radius: 8px; margin-bottom: 20px;">
+            <p style="margin: 0 0 4px 0; font-size: 11px; font-weight: 800; color: #C2410C; text-transform: uppercase;">Note from Sender:</p>
+            <p style="margin: 0; font-size: 13px; color: #431407; line-height: 1.5;">{custom_message}</p>
+        </div>
+        """
+
+    return f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>{report_title}</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #0F172A; font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #0F172A; padding: 32px 12px;">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 580px; background-color: #FFFFFF; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.3); border: 1px solid #1E293B;">
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); padding: 32px 24px; text-align: center; color: #FFFFFF; border-bottom: 4px solid #2563EB;">
+                            {logo_tag}
+                            <h1 style="margin: 0 0 4px 0; font-size: 22px; font-weight: 900; color: #FFFFFF;">{org_name}</h1>
+                            <p style="margin: 0 0 12px 0; font-size: 13px; color: #94A3B8;">Official Executive Financial Statement</p>
+                            <span style="background-color: rgba(37, 99, 235, 0.2); border: 1px solid #2563EB; color: #60A5FA; font-size: 11px; font-weight: 700; padding: 4px 14px; border-radius: 20px; text-transform: uppercase;">
+                                📊 {report_title}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 28px 24px;">
+                            {msg_section}
+                            <p style="margin: 0 0 12px 0; font-size: 14px; color: #334155; line-height: 1.6;">
+                                Please find attached the official <strong>{report_title}</strong> issued by <strong>{org_name}</strong> via Hisob ERP.
+                            </p>
+                            <div style="background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 16px; text-align: center; margin-top: 16px;">
+                                <p style="margin: 0 0 4px 0; font-size: 12px; color: #64748B; font-weight: 600;">📎 Attached File Document</p>
+                                <p style="margin: 0; font-size: 13px; color: #0F172A; font-weight: 800;">Open your email attachments to view or download the statement.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="background-color: #F1F5F9; padding: 16px 24px; text-align: center; border-top: 1px solid #E2E8F0;">
+                            <p style="margin: 0 0 4px 0; font-size: 11px; color: #64748B;">Delivered via <strong>Hisob ERP Platform</strong></p>
+                            <p style="margin: 0; font-size: 10px; color: #94A3B8;">Developed by <a href="https://www.mayurpatil.in" target="_blank" style="color: #EA580C; text-decoration: none; font-weight: 700;">www.mayurpatil.in</a></p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+"""
+
+
+def send_report_email(
+    to_emails: List[str],
+    report_title: str,
+    report_type: str,
+    file_bytes: bytes,
+    file_name: str,
+    mime_type: str = "text/csv",
+    org_name: str = "Hisob ERP",
+    custom_message: Optional[str] = None,
+    org_logo_url: Optional[str] = None,
+    db: Optional[Session] = None,
+    tenant_id: Optional[UUID] = None,
+) -> Dict[str, Any]:
+    """Sends financial report with attached document to a list of recipient emails."""
+    html_content = build_report_email_html(
+        report_title=report_title,
+        org_name=org_name,
+        custom_message=custom_message,
+        org_logo_url=org_logo_url,
+    )
+    subject = f"📊 Financial Statement: {report_title} — {org_name}"
+    text_content = f"Attached is {report_title} for {org_name}."
+
+    attachments = [(file_name, file_bytes, mime_type)]
+    sent_count = 0
+    failed_count = 0
+
+    for email_addr in to_emails:
+        addr = email_addr.strip()
+        if not addr or "@" not in addr:
+            failed_count += 1
+            continue
+
+        success = send_raw_email(
+            to_email=addr,
+            subject=subject,
+            html_content=html_content,
+            text_content=text_content,
+            attachments=attachments,
+            db=db,
+            tenant_id=tenant_id,
+            email_type="REPORT",
+            metadata_json={"report_type": report_type, "report_title": report_title, "filename": file_name},
+        )
+        if success:
+            sent_count += 1
+        else:
+            failed_count += 1
+
+    return {
+        "status": "completed",
+        "total_recipients": len(to_emails),
+        "sent_count": sent_count,
+        "failed_count": failed_count,
+    }
+
+
+def send_test_smtp_email(
+    to_email: str,
+    db: Optional[Session] = None,
+    tenant_id: Optional[UUID] = None,
+) -> Dict[str, Any]:
+    """Tests SMTP server connection and dispatches a diagnostic test email with Tenant Branding & Logo."""
+    if not settings.EMAIL_ENABLED:
+        return {
+            "success": False,
+            "message": "Email delivery is disabled in settings (EMAIL_ENABLED=False).",
+            "smtp_host": settings.SMTP_HOST,
+            "smtp_port": settings.SMTP_PORT,
+            "error": "EMAIL_ENABLED is set to False in backend configuration.",
+        }
+
+    if not settings.SMTP_PASSWORD:
+        return {
+            "success": False,
+            "message": "SMTP_PASSWORD is missing in backend configuration.",
+            "smtp_host": settings.SMTP_HOST,
+            "smtp_port": settings.SMTP_PORT,
+            "error": "SMTP_PASSWORD is empty in .env settings.",
+        }
+
+    org_name = "Hisob ERP"
+    logo_tag = ""
+
+    if db and tenant_id:
+        from app.models.tenant import Tenant
+        tenant = db.get(Tenant, tenant_id)
+        if tenant:
+            org_name = tenant.name
+            if tenant.logo_url:
+                full_logo_url = tenant.logo_url if tenant.logo_url.startswith("http") else f"https://api.hisob.in{tenant.logo_url}"
+                logo_tag = f'<img src="{full_logo_url}" alt="Logo" style="height: 55px; max-width: 160px; object-fit: contain; background: #FFFFFF; padding: 4px 10px; border-radius: 10px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" /><br/>'
+
+    subject = f"🔌 SMTP Diagnostic Test — {org_name}"
+    html_content = f"""<!DOCTYPE html>
+<html>
+<body style="background-color: #0F172A; padding: 28px 12px; font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;">
+    <div style="max-width: 540px; margin: 0 auto; background: #FFFFFF; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.3); border: 1px solid #1E293B;">
+        <div style="background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); padding: 28px 24px; text-align: center; color: #FFFFFF; border-bottom: 4px solid #16A34A;">
+            {logo_tag}
+            <h2 style="margin: 0 0 4px 0; font-size: 22px; font-weight: 900; color: #FFFFFF;">{org_name}</h2>
+            <span style="background-color: rgba(22, 163, 74, 0.2); border: 1px solid #16A34A; color: #4ADE80; font-size: 11px; font-weight: 700; padding: 4px 14px; border-radius: 20px; text-transform: uppercase;">
+                ✓ SMTP Connection Test Successful
+            </span>
+        </div>
+        <div style="padding: 24px; text-align: center;">
+            <p style="color: #334155; font-size: 14px; line-height: 1.6; margin-top: 0;">
+                This diagnostic test email confirms that your organization's SMTP server connection is active and fully configured to dispatch e-receipts and financial reports.
+            </p>
+            <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 16px; text-align: left; font-family: monospace; font-size: 12px; margin-top: 16px;">
+                <div style="margin-bottom: 6px; color: #475569;">SMTP Host: <strong style="color: #0F172A;">{settings.SMTP_HOST}</strong></div>
+                <div style="margin-bottom: 6px; color: #475569;">SMTP Port: <strong style="color: #0F172A;">{settings.SMTP_PORT}</strong></div>
+                <div style="margin-bottom: 6px; color: #475569;">Sender User: <strong style="color: #0F172A;">{settings.SMTP_USER}</strong></div>
+                <div style="color: #475569;">TLS Encryption: <strong style="color: #0F172A;">{settings.SMTP_USE_TLS}</strong></div>
+            </div>
+        </div>
+        <div style="background-color: #F1F5F9; padding: 14px 24px; text-align: center; border-top: 1px solid #E2E8F0;">
+            <p style="margin: 0; font-size: 10px; color: #64748B;">Powered by <a href="https://hisob.in" style="color: #2563EB; text-decoration: none; font-weight: 700;">Hisob ERP Platform</a></p>
+        </div>
+    </div>
+</body>
+</html>
+"""
+    success = send_raw_email(
+        to_email=to_email,
+        subject=subject,
+        html_content=html_content,
+        text_content=f"SMTP Connection Test Successful for {org_name}!",
+        db=db,
+        tenant_id=tenant_id,
+        email_type="TEST",
+        metadata_json={"test": True, "smtp_host": settings.SMTP_HOST, "smtp_port": settings.SMTP_PORT},
+    )
+
+    if success:
+        return {
+            "success": True,
+            "message": f"Successfully connected to SMTP server and delivered test email to {to_email}!",
+            "smtp_host": settings.SMTP_HOST,
+            "smtp_port": settings.SMTP_PORT,
+            "error": None,
+        }
+    else:
+        return {
+            "success": False,
+            "message": f"Failed to deliver test email to {to_email}. Check SMTP password, host, or server port configuration.",
+            "smtp_host": settings.SMTP_HOST,
+            "smtp_port": settings.SMTP_PORT,
+            "error": "SMTP socket/authentication error. Check backend server logs for full trace details.",
+        }
 

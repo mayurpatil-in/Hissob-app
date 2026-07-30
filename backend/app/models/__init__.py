@@ -12,6 +12,7 @@ from app.models.receipt import Receipt, ReceiptStatus, PaymentMode
 from app.models.finance import CashSettlement, SettlementStatus, Expense
 from app.models.audit import AuditLog
 from app.models.notification import Notification
+from app.models.email_log import EmailLog
 
 __all__ = [
     "UUIDMixin", "TimestampMixin", "TenantMixin",
@@ -25,5 +26,6 @@ __all__ = [
     "CashSettlement", "SettlementStatus", "Expense",
     "AuditLog",
     "Notification",
+    "EmailLog",
 ]
 

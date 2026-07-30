@@ -68,3 +68,22 @@ class CustomReportResponse(BaseModel):
     total_records: int
     grand_total_amount: float
     data: List[Dict[str, Any]]
+
+
+class EmailReportRequest(BaseModel):
+    recipients: List[str]
+    report_title: str
+    report_type: str = "custom"  # daily_collection, cash_book, income_expense, custom
+    custom_message: Optional[str] = None
+    custom_report_request: Optional[CustomReportRequest] = None
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
+    fy_id: Optional[UUID] = None
+
+
+class EmailReportResponse(BaseModel):
+    status: str
+    total_recipients: int
+    sent_count: int
+    failed_count: int
+    message: str

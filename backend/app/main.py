@@ -2,6 +2,9 @@
 Hissob ERP — FastAPI Application Entry Point
 """
 import os
+
+# Enable UTF-8 mode globally for font parsing & file I/O
+os.environ["PYTHONUTF8"] = "1"
 import logging
 import traceback
 from fastapi import FastAPI, Request
@@ -31,6 +34,14 @@ class CORSStaticFiles(StaticFiles):
 
 # ─── App Factory ───────────────────────────────────────────────
 def create_app() -> FastAPI:
+    # Ensure all models are imported and tables created if missing
+    try:
+        import app.models
+        from app.core.database import engine, Base
+        Base.metadata.create_all(bind=engine)
+    except Exception as e:
+        logging.getLogger("hisob.db").warning("Auto table creation check: %s", str(e))
+
     app = FastAPI(
         title=settings.APP_NAME,
         version=settings.APP_VERSION,

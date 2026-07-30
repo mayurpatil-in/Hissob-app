@@ -367,3 +367,39 @@ export const runAIAudit = async (): Promise<AIAuditResponse> =>
 
 export const getAIExecutiveReport = async (): Promise<AIReportResponse> =>
   (await apiClient.get<AIReportResponse>('/ai/executive-report')).data;
+
+// ── Email & Diagnostics Services ──
+export interface EmailReportPayload {
+  recipients: string[];
+  report_title: string;
+  report_type: string;
+  custom_message?: string;
+  custom_report_request?: any;
+  start_date?: string;
+  end_date?: string;
+  fy_id?: string;
+}
+
+export interface EmailLogItem {
+  id: string;
+  tenant_id?: string;
+  recipient: string;
+  subject: string;
+  email_type: string;
+  status: string;
+  error_message?: string;
+  metadata_json?: any;
+  sent_at: string;
+}
+
+export const emailFinancialReport = async (payload: EmailReportPayload) =>
+  (await apiClient.post<{ status: string; total_recipients: number; sent_count: number; failed_count: number; message: string }>('/reports/email', payload)).data;
+
+export const testSmtpConnection = async (target_email?: string) =>
+  (await apiClient.post<{ success: boolean; message: string; smtp_host: string; smtp_port: number; error?: string }>('/email-logs/test-smtp', { target_email })).data;
+
+export const getEmailLogs = async (params?: { email_type?: string; status?: string; limit?: number }) =>
+  (await apiClient.get<EmailLogItem[]>('/email-logs', { params })).data;
+
+export const resendEmailLog = async (logId: string) =>
+  (await apiClient.post<{ status: string; message: string }>(`/email-logs/${logId}/resend`)).data;

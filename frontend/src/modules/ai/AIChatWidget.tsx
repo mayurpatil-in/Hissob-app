@@ -367,7 +367,7 @@ const AIChatWidget: React.FC<Props> = ({ embedded = false }) => {
             disabled={loading}
             onChange={(e) => setInputText(e.target.value)}
             onPressEnter={() => handleSend()}
-            bordered={false}
+            variant="borderless"
             style={{
               fontSize: 14,
               color: '#0F172A',

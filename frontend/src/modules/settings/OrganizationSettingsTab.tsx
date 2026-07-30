@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Form, Input, Button, Typography, App, Row, Col, Upload, Spin, Divider, Select, Switch } from 'antd';
-import { SaveOutlined, UploadOutlined, BankOutlined, QrcodeOutlined, MailOutlined, RobotOutlined } from '@ant-design/icons';
+import { Card, Form, Input, Button, Typography, App, Row, Col, Upload, Spin, Divider, Select, Switch, Modal, Table, Tag, Alert, Tooltip } from 'antd';
+import { SaveOutlined, UploadOutlined, BankOutlined, QrcodeOutlined, MailOutlined, RobotOutlined, ApiOutlined, HistoryOutlined, RedoOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getMyOrganization, updateMyOrganization, uploadFile } from '../../api/services';
+import { getMyOrganization, updateMyOrganization, uploadFile, testSmtpConnection, getEmailLogs, resendEmailLog, type EmailLogItem } from '../../api/services';
 
 const { Title, Text } = Typography;
 
@@ -13,6 +13,77 @@ const OrganizationSettingsTab: React.FC = () => {
   
   const [logoUploading, setLogoUploading] = useState(false);
   const [qrUploading, setQrUploading] = useState(false);
+  
+  const [testingSmtp, setTestingSmtp] = useState(false);
+  const [smtpDiagnostic, setSmtpDiagnostic] = useState<{ success: boolean; message: string; smtp_host: string; smtp_port: number; error?: string } | null>(null);
+  const [logsModalOpen, setLogsModalOpen] = useState(false);
+  const [emailLogs, setEmailLogs] = useState<EmailLogItem[]>([]);
+  const [logsLoading, setLogsLoading] = useState(false);
+  const [resendingId, setResendingId] = useState<string | null>(null);
+
+  const [testTargetEmail, setTestTargetEmail] = useState('');
+  const [testSmtpModalOpen, setTestSmtpModalOpen] = useState(false);
+
+  const openTestSmtpModal = () => {
+    const digest = form.getFieldValue('digest_recipients') || '';
+    const list = digest.split(/[,;\n]+/).map((e: string) => e.trim()).filter((e: string) => e.includes('@'));
+    setTestTargetEmail(list.length > 0 ? list[0] : (org?.email || ''));
+    setTestSmtpModalOpen(true);
+  };
+
+  const handleTestSmtp = async (overrideTarget?: string) => {
+    const target = overrideTarget || testTargetEmail;
+    if (!target || !target.includes('@')) {
+      message.error('Please enter a valid target recipient email address for SMTP test.');
+      return;
+    }
+    setTestingSmtp(true);
+    setSmtpDiagnostic(null);
+    try {
+      const res = await testSmtpConnection(target);
+      setSmtpDiagnostic(res);
+      if (res.success) {
+        message.success(res.message);
+        setTestSmtpModalOpen(false);
+      } else {
+        message.error(res.message);
+      }
+    } catch (err: any) {
+      message.error(err.response?.data?.detail || 'SMTP test connection failed');
+    } finally {
+      setTestingSmtp(false);
+    }
+  };
+
+  const handleFetchLogs = async () => {
+    setLogsLoading(true);
+    try {
+      const data = await getEmailLogs({ limit: 50 });
+      setEmailLogs(data);
+    } catch (err: any) {
+      message.error('Failed to load email delivery logs');
+    } finally {
+      setLogsLoading(false);
+    }
+  };
+
+  const handleOpenLogs = () => {
+    setLogsModalOpen(true);
+    handleFetchLogs();
+  };
+
+  const handleResendLog = async (id: string) => {
+    setResendingId(id);
+    try {
+      const res = await resendEmailLog(id);
+      message.success(res.message);
+      handleFetchLogs();
+    } catch (err: any) {
+      message.error(err.response?.data?.detail || 'Failed to resend email');
+    } finally {
+      setResendingId(null);
+    }
+  };
 
   const { data: org, isLoading } = useQuery({
     queryKey: ['my-organization'],
@@ -249,6 +320,48 @@ const OrganizationSettingsTab: React.FC = () => {
           <Form.Item label="Custom Daily Digest Recipient Emails (Optional)" name="digest_recipients" tooltip="Separate multiple emails with commas. If left empty, all active Org Admins & Committee members will receive the digest automatically.">
             <Input.TextArea rows={2} placeholder="e.g. president@mandal.org, treasurer@gmail.com, secretary@mandal.org" />
           </Form.Item>
+
+          <Divider style={{ margin: '14px 0' }} />
+
+          <Row gutter={12} align="middle">
+            <Col xs={24} sm={12}>
+              <Button
+                type="dashed"
+                icon={<ApiOutlined />}
+                loading={testingSmtp}
+                onClick={openTestSmtpModal}
+                style={{ width: '100%', borderColor: '#2563EB', color: '#2563EB', fontWeight: 600 }}
+              >
+                Test SMTP Connection
+              </Button>
+            </Col>
+            <Col xs={24} sm={12} style={{ marginTop: 8 }}>
+              <Button
+                icon={<HistoryOutlined />}
+                onClick={handleOpenLogs}
+                style={{ width: '100%', fontWeight: 600 }}
+              >
+                View Email Delivery Logs
+              </Button>
+            </Col>
+          </Row>
+
+          {smtpDiagnostic && (
+            <div style={{ marginTop: 14 }}>
+              <Alert
+                type={smtpDiagnostic.success ? 'success' : 'error'}
+                showIcon
+                icon={smtpDiagnostic.success ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
+                message={<Text strong>{smtpDiagnostic.message}</Text>}
+                description={
+                  <div style={{ fontSize: 12, marginTop: 4 }}>
+                    <div>SMTP Host: <code>{smtpDiagnostic.smtp_host}:{smtpDiagnostic.smtp_port}</code></div>
+                    {smtpDiagnostic.error && <div style={{ color: '#DC2626', marginTop: 2 }}>Error Detail: {smtpDiagnostic.error}</div>}
+                  </div>
+                }
+              />
+            </div>
+          )}
         </div>
 
         <Divider style={{ margin: '24px 0 16px 0' }} />
@@ -271,8 +384,124 @@ const OrganizationSettingsTab: React.FC = () => {
             Save Preferences
           </Button>
         </Form.Item>
-
       </Form>
+
+      {/* ── Test SMTP Connection Target Email Modal ── */}
+      <Modal
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <ApiOutlined style={{ color: '#2563EB' }} />
+            <span>Test SMTP Connection & Dispatch</span>
+          </div>
+        }
+        open={testSmtpModalOpen}
+        onCancel={() => setTestSmtpModalOpen(false)}
+        onOk={() => handleTestSmtp()}
+        confirmLoading={testingSmtp}
+        okText="Send Test Email"
+        okButtonProps={{ style: { background: '#2563EB', fontWeight: 700 } }}
+        destroyOnClose
+      >
+        <div style={{ marginTop: 12 }}>
+          <Text type="secondary" style={{ fontSize: 13, display: 'block', marginBottom: 12 }}>
+            Enter a valid email address to deliver the diagnostic test email card and verify your SMTP server configuration:
+          </Text>
+          <Form layout="vertical">
+            <Form.Item label="Target Test Email Address" required>
+              <Input
+                placeholder="e.g. ai.bestmayur@gmail.com"
+                value={testTargetEmail}
+                onChange={(e) => setTestTargetEmail(e.target.value)}
+                onPressEnter={() => handleTestSmtp()}
+              />
+            </Form.Item>
+          </Form>
+        </div>
+      </Modal>
+
+      {/* ── Email Delivery Audit Logs Modal ── */}
+      <Modal
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <HistoryOutlined style={{ color: '#2563EB' }} />
+            <span>Email Delivery & Dispatch Audit History</span>
+          </div>
+        }
+        open={logsModalOpen}
+        onCancel={() => setLogsModalOpen(false)}
+        footer={[
+          <Button key="refresh" icon={<HistoryOutlined />} onClick={handleFetchLogs} loading={logsLoading}>
+            Refresh Logs
+          </Button>,
+          <Button key="close" type="primary" onClick={() => setLogsModalOpen(false)}>
+            Close
+          </Button>,
+        ]}
+        width={850}
+        destroyOnClose
+      >
+        <Table
+          dataSource={emailLogs}
+          rowKey="id"
+          loading={logsLoading}
+          pagination={{ pageSize: 8 }}
+          columns={[
+            {
+              title: 'Date & Time',
+              dataIndex: 'sent_at',
+              key: 'sent_at',
+              render: (val: string) => new Date(val).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }),
+            },
+            {
+              title: 'Type',
+              dataIndex: 'email_type',
+              key: 'email_type',
+              render: (val: string) => {
+                const colorMap: Record<string, string> = { RECEIPT: 'blue', WELCOME: 'purple', DAILY_DIGEST: 'orange', REPORT: 'cyan', TEST: 'geekblue' };
+                return <Tag color={colorMap[val] || 'default'}>{val}</Tag>;
+              },
+            },
+            {
+              title: 'Recipient Email',
+              dataIndex: 'recipient',
+              key: 'recipient',
+              render: (val: string) => <strong>{val}</strong>,
+            },
+            {
+              title: 'Subject',
+              dataIndex: 'subject',
+              key: 'subject',
+              ellipsis: true,
+            },
+            {
+              title: 'Status',
+              dataIndex: 'status',
+              key: 'status',
+              render: (statusVal: string, record: EmailLogItem) => (
+                <Tooltip title={record.error_message || 'Delivered successfully'}>
+                  <Tag color={statusVal === 'SENT' ? 'success' : 'error'}>
+                    {statusVal === 'SENT' ? '✓ SENT' : '✕ FAILED'}
+                  </Tag>
+                </Tooltip>
+              ),
+            },
+            {
+              title: 'Action',
+              key: 'action',
+              render: (_: any, record: EmailLogItem) => (
+                <Button
+                  size="small"
+                  icon={<RedoOutlined />}
+                  loading={resendingId === record.id}
+                  onClick={() => handleResendLog(record.id)}
+                >
+                  Resend
+                </Button>
+              ),
+            },
+          ]}
+        />
+      </Modal>
     </Card>
   );
 };

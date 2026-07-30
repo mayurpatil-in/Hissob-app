@@ -1,21 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import {
   Card, Row, Col, Typography, Select, Checkbox, DatePicker,
-  InputNumber, Button, Table, Tag, Space, Segmented
+  InputNumber, Button, Table, Tag, Space, Segmented, Modal, Form, Input, App
 } from 'antd';
 import {
   FilterOutlined, PlayCircleOutlined, DownloadOutlined,
   TrophyOutlined, DollarOutlined, UserOutlined, FileTextOutlined,
-  ThunderboltOutlined
+  ThunderboltOutlined, MailOutlined
 } from '@ant-design/icons';
 import { useMutation } from '@tanstack/react-query';
-import { runCustomReport, exportCustomReport } from '../../api/services';
+import { runCustomReport, exportCustomReport, emailFinancialReport } from '../../api/services';
 import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 
 export const CustomReportBuilder: React.FC = () => {
+  const { message } = App.useApp();
+  const [form] = Form.useForm();
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
+
   const [entity, setEntity] = useState<string>('receipts');
   const [dimensions, setDimensions] = useState<string[]>(['date', 'collector', 'payment_mode']);
   const [metrics, setMetrics] = useState<string[]>(['total_amount', 'count']);
@@ -29,18 +34,19 @@ export const CustomReportBuilder: React.FC = () => {
     mutationFn: (payload: any) => runCustomReport(payload),
   });
 
+  const getQueryPayload = () => ({
+    entity,
+    dimensions,
+    metrics,
+    date_from: dateRange && dateRange[0] ? dateRange[0].format('YYYY-MM-DD') : undefined,
+    date_to: dateRange && dateRange[1] ? dateRange[1].format('YYYY-MM-DD') : undefined,
+    min_amount: minAmount || undefined,
+    max_amount: maxAmount || undefined,
+    payment_mode: paymentModeFilter || undefined,
+  });
+
   const handleRunQuery = () => {
-    const payload = {
-      entity,
-      dimensions,
-      metrics,
-      date_from: dateRange && dateRange[0] ? dateRange[0].format('YYYY-MM-DD') : undefined,
-      date_to: dateRange && dateRange[1] ? dateRange[1].format('YYYY-MM-DD') : undefined,
-      min_amount: minAmount || undefined,
-      max_amount: maxAmount || undefined,
-      payment_mode: paymentModeFilter || undefined,
-    };
-    reportQueryMutation.mutate(payload);
+    reportQueryMutation.mutate(getQueryPayload());
   };
 
   // Run initial query on load
@@ -70,17 +76,40 @@ export const CustomReportBuilder: React.FC = () => {
   };
 
   const handleExportCSV = () => {
-    const payload = {
-      entity,
-      dimensions,
-      metrics,
-      date_from: dateRange && dateRange[0] ? dateRange[0].format('YYYY-MM-DD') : undefined,
-      date_to: dateRange && dateRange[1] ? dateRange[1].format('YYYY-MM-DD') : undefined,
-      min_amount: minAmount || undefined,
-      max_amount: maxAmount || undefined,
-      payment_mode: paymentModeFilter || undefined,
-    };
-    exportCustomReport(payload);
+    exportCustomReport(getQueryPayload());
+  };
+
+  const handleSendEmailReport = async (values: any) => {
+    const rawEmails = values.recipients || '';
+    const recipientsList = rawEmails.split(/[,;\n]+/).map((e: string) => e.trim()).filter((e: string) => e.includes('@'));
+
+    if (recipientsList.length === 0) {
+      message.error('Please enter at least one valid recipient email address.');
+      return;
+    }
+
+    setSendingEmail(true);
+    try {
+      const res = await emailFinancialReport({
+        recipients: recipientsList,
+        report_title: `Custom ${entity.toUpperCase()} Aggregation Statement`,
+        report_type: 'custom',
+        custom_message: values.custom_message,
+        custom_report_request: getQueryPayload(),
+      });
+
+      if (res.sent_count > 0) {
+        message.success(`Successfully dispatched custom report to ${res.sent_count} recipient(s)!`);
+        setEmailModalOpen(false);
+        form.resetFields();
+      } else {
+        message.error(`Failed to dispatch email. ${res.message}`);
+      }
+    } catch (err: any) {
+      message.error(err.response?.data?.detail || 'Failed to email report');
+    } finally {
+      setSendingEmail(false);
+    }
   };
 
   const reportResult = reportQueryMutation.data;
@@ -235,6 +264,14 @@ export const CustomReportBuilder: React.FC = () => {
                 style={{ fontWeight: 700, borderRadius: 10 }}
               >
                 Export CSV
+              </Button>
+              <Button
+                type="dashed"
+                icon={<MailOutlined />}
+                onClick={() => setEmailModalOpen(true)}
+                style={{ borderColor: '#2563EB', color: '#2563EB', fontWeight: 700, borderRadius: 10 }}
+              >
+                Email Report
               </Button>
             </Space>
           </div>
@@ -393,6 +430,44 @@ export const CustomReportBuilder: React.FC = () => {
           </Card>
         </div>
       )}
+
+      {/* ── EMAIL CUSTOM REPORT MODAL ── */}
+      <Modal
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <MailOutlined style={{ color: '#2563EB' }} />
+            <span>Email Custom {entity.toUpperCase()} Aggregation Statement</span>
+          </div>
+        }
+        open={emailModalOpen}
+        onCancel={() => setEmailModalOpen(false)}
+        footer={null}
+        destroyOnClose
+      >
+        <Form form={form} layout="vertical" onFinish={handleSendEmailReport} style={{ marginTop: 16 }}>
+          <Form.Item
+            name="recipients"
+            label="Recipient Email Address(es)"
+            rules={[{ required: true, message: 'Please enter target email address' }]}
+            tooltip="Separate multiple emails with commas (e.g. auditor@gmail.com, treasurer@mandal.org)"
+          >
+            <Input placeholder="e.g. auditor@gmail.com, treasurer@mandal.org" />
+          </Form.Item>
+
+          <Form.Item name="custom_message" label="Custom Note / Message for Recipients (Optional)">
+            <Input.TextArea rows={3} placeholder="Add a short explanation or context for board members or auditor..." />
+          </Form.Item>
+
+          <div style={{ textAlign: 'right', marginTop: 20 }}>
+            <Space>
+              <Button onClick={() => setEmailModalOpen(false)}>Cancel</Button>
+              <Button type="primary" htmlType="submit" icon={<MailOutlined />} loading={sendingEmail} style={{ background: '#2563EB', fontWeight: 700 }}>
+                Send Email Report
+              </Button>
+            </Space>
+          </div>
+        </Form>
+      </Modal>
     </div>
   );
 };
