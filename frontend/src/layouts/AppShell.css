@@ -218,6 +218,8 @@
   font-weight: 700 !important;
   color: #0F172A !important;
   max-width: 130px !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
@@ -246,6 +248,9 @@
 /* Header Popups Container */
 .header-popup-wrapper {
   position: relative !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  height: 36px !important;
 }
 
 .header-popup-card {

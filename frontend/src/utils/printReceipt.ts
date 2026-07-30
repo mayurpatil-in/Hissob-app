@@ -5,6 +5,7 @@
  */
 import { getMyOrganization } from '../api/services';
 import { getMarathiReceiptHtml } from './marathiReceiptHtml';
+import { formatDateDDMMYYYY } from './formatDate';
 import html2canvas from 'html2canvas';
 
 export interface PrintReceiptData {
@@ -67,18 +68,23 @@ export function getPaymentRef(receipt: PrintReceiptData): string {
   return '';
 }
 
-function formatDateDDMMYYYY(dateStr?: string): string {
-  if (!dateStr) return '';
-  if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
-    const parts = dateStr.split('T')[0].split('-');
-    return `${parts[2]}-${parts[1]}-${parts[0]}`;
+// formatDateDDMMYYYY imported from ./formatDate
+
+// Logo & QR base64 cache to avoid re-fetching the same image for every receipt
+let _cachedLogoBase64: string | null = null;
+let _cachedLogoUrl: string | null = null;
+const _qrBase64Cache = new Map<string, string>();
+
+async function getCachedImageBase64(url: string): Promise<string> {
+  if (_qrBase64Cache.has(url)) return _qrBase64Cache.get(url)!;
+  try {
+    const b64 = await imageToBase64(url);
+    _qrBase64Cache.set(url, b64);
+    return b64;
+  } catch (err) {
+    console.error('Failed to convert image to base64', url, err);
+    return url;
   }
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return dateStr;
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const year = date.getFullYear();
-  return `${day}-${month}-${year}`;
 }
 
 function formatDonorAddress(donor?: any): string {
@@ -131,13 +137,17 @@ async function imageToBase64(url: string): Promise<string> {
   }
 }
 
-/** Generate the full HTML content for the receipt */
-export async function getReceiptHtmlContent(receipt: PrintReceiptData, fallbackOrgName = 'Hissob ERP', forShare = false): Promise<string> {
-  let orgData: any = null;
-  try {
-    orgData = await getMyOrganization();
-  } catch (err) {
-    console.error('Failed to fetch org settings for receipt', err);
+/** Generate the full HTML content for the receipt.
+ *  @param orgDataOverride — pass pre-fetched org data to avoid redundant API calls.
+ */
+export async function getReceiptHtmlContent(receipt: PrintReceiptData, fallbackOrgName = 'Hissob ERP', forShare = false, orgDataOverride?: any): Promise<string> {
+  let orgData: any = orgDataOverride || null;
+  if (!orgData) {
+    try {
+      orgData = await getMyOrganization();
+    } catch (err) {
+      console.error('Failed to fetch org settings for receipt', err);
+    }
   }
   const orgName = orgData?.name || fallbackOrgName;
   let logoUrl = orgData?.logo_url ? import.meta.env.VITE_API_URL?.replace('/api/v1', '') + orgData.logo_url : 'https://cdn-icons-png.flaticon.com/512/103/103328.png';
@@ -147,10 +157,18 @@ export async function getReceiptHtmlContent(receipt: PrintReceiptData, fallbackO
   let defaultUpiQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(orgName)}&am=${receipt.amount}`;
 
   if (forShare) {
-    logoUrl = await imageToBase64(logoUrl);
-    if (qrCodeUrl) qrCodeUrl = await imageToBase64(qrCodeUrl);
-    if (verifyQrUrl) verifyQrUrl = await imageToBase64(verifyQrUrl);
-    defaultUpiQrUrl = await imageToBase64(defaultUpiQrUrl);
+    // Use cached logo base64 if the URL hasn't changed (avoids re-fetching per receipt)
+    if (_cachedLogoUrl === logoUrl && _cachedLogoBase64) {
+      logoUrl = _cachedLogoBase64;
+    } else {
+      const originalUrl = logoUrl;
+      logoUrl = await imageToBase64(logoUrl);
+      _cachedLogoUrl = originalUrl;
+      _cachedLogoBase64 = logoUrl;
+    }
+    if (qrCodeUrl) qrCodeUrl = await getCachedImageBase64(qrCodeUrl);
+    if (verifyQrUrl) verifyQrUrl = await getCachedImageBase64(verifyQrUrl);
+    defaultUpiQrUrl = await getCachedImageBase64(defaultUpiQrUrl);
   }
   
   const amountWords = numberToWords(Number(receipt.amount));
@@ -666,8 +684,8 @@ export async function getReceiptHtmlContent(receipt: PrintReceiptData, fallbackO
 }
 
 /** Open a professional print popup for a donation receipt */
-export async function printReceiptWindow(receipt: PrintReceiptData, fallbackOrgName = 'Hissob ERP'): Promise<void> {
-  const html = await getReceiptHtmlContent(receipt, fallbackOrgName, false);
+export async function printReceiptWindow(receipt: PrintReceiptData, fallbackOrgName = 'Hissob ERP', orgData?: any): Promise<void> {
+  const html = await getReceiptHtmlContent(receipt, fallbackOrgName, false, orgData);
   const printWin = window.open('', '_blank', 'width=1100,height=800,toolbar=0,menubar=0,scrollbars=1');
   if (printWin) {
     printWin.document.write(html);
@@ -677,12 +695,12 @@ export async function printReceiptWindow(receipt: PrintReceiptData, fallbackOrgN
 }
 
 /** Direct download receipt image as PNG file */
-export async function downloadReceiptImage(receipt: PrintReceiptData, fallbackOrgName = 'Hisob ERP'): Promise<void> {
+export async function downloadReceiptImage(receipt: PrintReceiptData, fallbackOrgName = 'Hisob ERP', orgData?: any): Promise<void> {
   const STYLE_ID = 'hissob-receipt-dl-style';
   const ROOT_ID  = 'hissob-receipt-dl-root';
 
   try {
-    const html = await getReceiptHtmlContent(receipt, fallbackOrgName, true);
+    const html = await getReceiptHtmlContent(receipt, fallbackOrgName, true, orgData);
     const styleMatch = html.match(/<style>([\s\S]*?)<\/style>/i);
     const bodyMatch  = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
     if (!styleMatch || !bodyMatch) throw new Error('Failed to parse receipt HTML');
@@ -750,14 +768,49 @@ export async function downloadReceiptImage(receipt: PrintReceiptData, fallbackOr
   }
 }
 
-// ─── PRE-GENERATION BLOB CACHE ─────────────────────────────────────────────
-// Mobile browsers expire user-gesture tokens within ~1 second of a tap.
-// All async work (API calls, image fetching, html2canvas) takes 2–5 seconds.
-// Solution: pre-generate blobs in the background and cache them so that
-// navigator.share() can be called IMMEDIATELY when the user taps the button.
-
+// ─── FONT & BLOB CACHE ──────────────────────────────────────────────────────
+let _fontsLoaded = false;
 const _receiptBlobCache = new Map<string, { blob: Blob; dataUrl: string; textMessage: string }>();
 const _receiptBlobGenerating = new Set<string>();
+
+/** Check if a receipt image blob is already pre-generated in cache */
+export function isReceiptBlobCached(receiptId: string): boolean {
+  return _receiptBlobCache.has(receiptId);
+}
+
+/** Ensure Devanagari fonts (Mukta + Yatra One) are loaded before html2canvas capture.
+ *  Without this, Marathi/Hindi text renders as garbled characters.
+ */
+async function ensureDevanagariFonts(): Promise<void> {
+  if (_fontsLoaded) return;
+
+  const fontLinkId = 'hissob-receipt-fonts';
+  if (!document.getElementById(fontLinkId)) {
+    const link = document.createElement('link');
+    link.id   = fontLinkId;
+    link.rel  = 'stylesheet';
+    link.href = 'https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800;900&family=Yatra+One&display=swap';
+    document.head.appendChild(link);
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  if (document.fonts) {
+    try {
+      await Promise.all([
+        document.fonts.load('400 20px Mukta'),
+        document.fonts.load('700 20px Mukta'),
+        document.fonts.load('800 20px Mukta'),
+        document.fonts.load('400 20px "Yatra One"'),
+        document.fonts.load('700 20px Inter'),
+      ]);
+      await new Promise(resolve => setTimeout(resolve, 50));
+    } catch (_) {
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
+  } else {
+    await new Promise(resolve => setTimeout(resolve, 300));
+  }
+  _fontsLoaded = true;
+}
 
 /** Build the WhatsApp text message for a receipt */
 function buildReceiptTextMessage(receipt: PrintReceiptData, fallbackOrgName: string): string {
@@ -787,44 +840,7 @@ ${verifyUrl ? `\n🔗 *डिजिटल पावती ऑनलाइन प
 _Generated by Hisob ERP System | Developed by www.mayurpatil.in_`;
 }
 
-/** Ensure Devanagari fonts (Mukta + Yatra One) are loaded before html2canvas capture.
- *  Without this, Marathi/Hindi text renders as garbled â¤¶â¤Ÿ characters.
- */
-async function ensureDevanagariFonts(): Promise<void> {
-  const fontLinkId = 'hissob-receipt-fonts';
-  if (!document.getElementById(fontLinkId)) {
-    const link = document.createElement('link');
-    link.id   = fontLinkId;
-    link.rel  = 'stylesheet';
-    link.href = 'https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800;900&family=Yatra+One&display=swap';
-    document.head.appendChild(link);
-    // Wait for stylesheet to parse
-    await new Promise(resolve => setTimeout(resolve, 200));
-  }
-  // Explicitly load specific Devanagari glyphs used in receipts
-  if (document.fonts) {
-    try {
-      await Promise.all([
-        document.fonts.load('400 20px Mukta'),
-        document.fonts.load('700 20px Mukta'),
-        document.fonts.load('800 20px Mukta'),
-        document.fonts.load('400 20px "Yatra One"'),
-        document.fonts.load('700 20px Inter'),
-      ]);
-      // Extra settle time for font metrics to apply to DOM
-      await new Promise(resolve => setTimeout(resolve, 150));
-    } catch (_) {
-      await new Promise(resolve => setTimeout(resolve, 500));
-    }
-  } else {
-    await new Promise(resolve => setTimeout(resolve, 800));
-  }
-}
-
-/** Pre-generate receipt image blob in the background and cache it.
- *  Call this when the receipts list loads (before the user taps the button).
- */
-export async function preGenerateReceiptBlob(receipt: PrintReceiptData, fallbackOrgName = 'Hisob ERP'): Promise<void> {
+export async function preGenerateReceiptBlob(receipt: PrintReceiptData, fallbackOrgName = 'Hisob ERP', orgData?: any): Promise<void> {
   const cacheKey = receipt.id || receipt.receipt_number;
   if (_receiptBlobCache.has(cacheKey) || _receiptBlobGenerating.has(cacheKey)) return;
   _receiptBlobGenerating.add(cacheKey);
@@ -833,7 +849,7 @@ export async function preGenerateReceiptBlob(receipt: PrintReceiptData, fallback
   const ROOT_ID  = `hissob-pregen-root-${cacheKey}`;
 
   try {
-    const html = await getReceiptHtmlContent(receipt, fallbackOrgName, true);
+    const html = await getReceiptHtmlContent(receipt, fallbackOrgName, true, orgData);
     const styleMatch = html.match(/<style>([\s\S]*?)<\/style>/i);
     const bodyMatch  = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
     if (!styleMatch || !bodyMatch) return;
@@ -901,7 +917,7 @@ export function invalidateReceiptBlobCache(receiptId: string): void {
 /** Generate an image and share via WhatsApp.
  * Uses pre-generated blob cache if available for instant mobile share.
  */
-export async function shareReceiptViaWhatsApp(receipt: PrintReceiptData, fallbackOrgName = 'Hissob ERP'): Promise<void> {
+export async function shareReceiptViaWhatsApp(receipt: PrintReceiptData, fallbackOrgName = 'Hissob ERP', orgData?: any): Promise<void> {
   const cacheKey = receipt.id || receipt.receipt_number;
   const fileName  = `Receipt_${receipt.receipt_number}.png`;
 
@@ -935,7 +951,7 @@ export async function shareReceiptViaWhatsApp(receipt: PrintReceiptData, fallbac
 
   try {
     // 1. Generate the receipt HTML (with all images pre-converted to base64)
-    const html = await getReceiptHtmlContent(receipt, fallbackOrgName, true);
+    const html = await getReceiptHtmlContent(receipt, fallbackOrgName, true, orgData);
 
 
     // 2. Extract <style> and <body> content
@@ -998,41 +1014,16 @@ export async function shareReceiptViaWhatsApp(receipt: PrintReceiptData, fallbac
     root.remove();
     document.getElementById(STYLE_ID)?.remove();
 
-    const fileName = `Receipt_${receipt.receipt_number}.png`;
     const dataUrl  = canvas.toDataURL('image/png');
 
     // 10. CRITICAL FIX: Convert canvas to Blob using awaitable Promise.
     //     Using canvas.toBlob() as a raw callback causes navigator.share() to
-    //     be called OUTSIDE the user-gesture window â€” browser blocks it.
+    //     be called OUTSIDE the user-gesture window — browser blocks it.
     //     Wrapping in Promise keeps the async chain unbroken.
     const blob: Blob | null = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
 
-    // 11. Build WhatsApp text message
-    const verifyUrl     = receipt.id ? `${window.location.origin}/verify/${receipt.id}` : '';
-    const formattedDate = formatDateDDMMYYYY(receipt.receipt_date);
-    const formattedAmt  = `â‚¹ ${Number(receipt.amount || 0).toLocaleString('en-IN')}`;
-    const donorName     = receipt.donor?.full_name || 'Donor';
-    const modeText      = (receipt.payment_mode || 'CASH').toUpperCase();
-
-    const textMessage =
-`ðŸš© *à¥¥ à¤¶à¥à¤°à¥€ à¤—à¤£à¥‡à¤¶à¤¾à¤¯ à¤¨à¤®à¤ƒ à¥¥*
-ðŸ›ï¸ *${fallbackOrgName}*
-
-ðŸ™ *à¤†à¤ªà¤²à¥à¤¯à¤¾ à¤…à¤®à¥‚à¤²à¥à¤¯ à¤¯à¥‹à¤—à¤¦à¤¾à¤¨à¤¾à¤¬à¤¦à¥à¤¦à¤² à¤®à¤¨à¤ƒà¤ªà¥‚à¤°à¥à¤µà¤• à¤§à¤¨à¥à¤¯à¤µà¤¾à¤¦!*
-*Thank you for your generous contribution.*
-
-ðŸ“œ *OFFICIAL DONATION RECEIPT | à¤¦à¥‡à¤£à¤—à¥€ à¤ªà¤¾à¤µà¤¤à¥€*
-â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”
-ðŸ§¾ *à¤ªà¤¾à¤µà¤¤à¥€ à¤•à¥à¤°. (Receipt No):* ${receipt.receipt_number}
-ðŸ“… *à¤¦à¤¿à¤¨à¤¾à¤‚à¤• (Date):* ${formattedDate}
-ðŸ‘¤ *à¤¦à¥‡à¤£à¤—à¥€à¤¦à¤¾à¤° (Donor):* ${donorName}
-ðŸ’° *à¤°à¤•à¥à¤•à¤® (Amount):* *${formattedAmt}*
-ðŸ’³ *à¤­à¤°à¤£à¤¾ à¤ªà¥à¤°à¤•à¤¾à¤° (Mode):* ${modeText}
-${receipt.purpose ? `ðŸ“Œ *à¤‰à¤¦à¥à¤¦à¥‡à¤¶ (Purpose):* ${receipt.purpose}\n` : ''}â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”
-âœ… *Status:* Confirmed & Authentic Receipt
-${verifyUrl ? `\nðŸ”— *à¤¡à¤¿à¤œà¤¿à¤Ÿà¤² à¤ªà¤¾à¤µà¤¤à¥€ à¤‘à¤¨à¤²à¤¾à¤‡à¤¨ à¤ªà¤¾à¤¹à¤¾ à¤µ à¤¤à¤ªà¤¾à¤¸à¤¾:*\n${verifyUrl}\n` : ''}
-ðŸŒº *à¤—à¤£à¤ªà¤¤à¥€ à¤¬à¤¾à¤ªà¥à¤ªà¤¾ à¤®à¥‹à¤°à¤¯à¤¾! à¤®à¤‚à¤—à¤²à¤®à¥‚à¤°à¥à¤¤à¥€ à¤®à¥‹à¤°à¤¯à¤¾!*
-_Generated by Hisob ERP System | Developed by www.mayurpatil.in_`;
+    // 11. Build WhatsApp text message (reuse shared helper — no mojibake)
+    const textMessage = buildReceiptTextMessage(receipt, fallbackOrgName);
 
     // 12. Attempt native Web Share API with image file
     if (blob && typeof navigator !== 'undefined' && navigator.canShare) {
@@ -1044,25 +1035,16 @@ _Generated by Hisob ERP System | Developed by www.mayurpatil.in_`;
             text: textMessage,
             files: [file],
           });
-          return; // âœ… Share panel opened â€” done
+          return; // ✅ Share panel opened — done
         } catch (err: any) {
-          if (err?.name === 'AbortError') return; // User cancelled â€” done
-          // Other error (e.g. share not supported for files) â€” fall through
+          if (err?.name === 'AbortError') return; // User cancelled — done
+          // Other error (e.g. share not supported for files) — fall through
         }
       }
     }
 
     // 13. Fallback: download image + text-only share (desktop / unsupported browsers)
     downloadFallback(dataUrl, fileName);
-    if (typeof navigator !== 'undefined' && navigator.share) {
-      try {
-        await navigator.share({
-          title: `Donation Receipt ${receipt.receipt_number}`,
-          text: textMessage,
-        });
-      } catch (_) {}
-    }
-
   } catch (err) {
     document.getElementById(ROOT_ID)?.remove();
     document.getElementById(STYLE_ID)?.remove();
@@ -1079,4 +1061,3 @@ function downloadFallback(dataUrl: string, filename: string) {
   a.click();
   document.body.removeChild(a);
 }
-

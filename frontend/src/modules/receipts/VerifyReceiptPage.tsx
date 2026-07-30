@@ -118,7 +118,7 @@ const VerifyReceiptPage: React.FC = () => {
           overflow: 'hidden',
           marginBottom: 20
         }}
-        bodyStyle={{ padding: 0 }}
+        styles={{ body: { padding: 0 } }}
       >
         <div className="header-padding" style={{ 
           background: isCancelled ? 'linear-gradient(135deg, #fee2e2, #fca5a5)' : 'linear-gradient(135deg, #15803d 0%, #16a34a 100%)', 

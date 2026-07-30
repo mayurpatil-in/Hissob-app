@@ -500,8 +500,10 @@ const AppShell: React.FC<Props> = ({ children }) => {
                 id="header-user-btn"
                 className="header-user"
                 onClick={() => {
-                  setUserOpen(!userOpen);
-                  setNotifOpen(false);
+                  if (user) {
+                    setUserOpen(!userOpen);
+                    setNotifOpen(false);
+                  }
                 }}
               >
                 <Avatar
@@ -509,11 +511,11 @@ const AppShell: React.FC<Props> = ({ children }) => {
                   style={{ backgroundColor: '#F97316', cursor: 'pointer', flexShrink: 0, fontWeight: 700 }}
                   size="small"
                 >
-                  {user?.full_name?.charAt(0)}
+                  {user?.full_name?.charAt(0) || 'U'}
                 </Avatar>
-                <span className="header-user-name hide-mobile">{user?.full_name}</span>
+                <span className="header-user-name hide-mobile">{user?.full_name || ''}</span>
               </div>
-              {userOpen && (
+              {userOpen && user && (
                 <div id="user-popup-card" className="header-popup-card">
                   {userProfilePopup}
                 </div>

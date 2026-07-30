@@ -83,6 +83,7 @@ export const ReceiptFormModal: React.FC<ReceiptFormModalProps> = ({
                   format="DD MMM YYYY"
                   style={{ width: '100%', borderRadius: 8 }}
                   allowClear={false}
+                  disabledDate={(current) => current && current > dayjs().endOf('day')}
                 />
               </Form.Item>
             </Col>
@@ -131,12 +132,17 @@ export const ReceiptFormModal: React.FC<ReceiptFormModalProps> = ({
               <Form.Item
                 name="amount"
                 label={<span style={{ fontWeight: 700, color: '#0F172A' }}>Amount (₹)</span>}
-                rules={[{ required: true, message: 'Enter donation amount' }]}
+                rules={[
+                  { required: true, message: 'Enter donation amount' },
+                  { type: 'number', min: 1, message: 'Amount must be at least ₹1' },
+                  { type: 'number', max: 100000000, message: 'Amount cannot exceed ₹10 Crore' },
+                ]}
               >
                 <InputNumber
                   size="large"
                   style={{ width: '100%', borderRadius: 8 }}
                   min={1}
+                  max={100000000}
                   placeholder="e.g. 5100"
                   prefix={<span style={{ color: '#059669', fontWeight: 800 }}>₹</span>}
                 />
@@ -183,8 +189,9 @@ export const ReceiptFormModal: React.FC<ReceiptFormModalProps> = ({
                   <Form.Item
                     name="upi_reference"
                     label={<span style={{ fontWeight: 700, color: '#0F172A' }}>UPI Reference / UTR Number</span>}
+                    rules={[{ max: 50, message: 'UPI reference cannot exceed 50 characters' }]}
                   >
-                    <Input size="large" placeholder="e.g. 420519847120 or UPI/998877665544" prefix={<Tag color="cyan">UPI UTR</Tag>} style={{ borderRadius: 8 }} />
+                    <Input size="large" placeholder="e.g. 420519847120 or UPI/998877665544" prefix={<Tag color="cyan">UPI UTR</Tag>} style={{ borderRadius: 8 }} maxLength={50} />
                   </Form.Item>
                 );
               }
@@ -195,13 +202,18 @@ export const ReceiptFormModal: React.FC<ReceiptFormModalProps> = ({
                       <Form.Item
                         name="transaction_ref"
                         label={<span style={{ fontWeight: 700, color: '#0F172A' }}>NEFT / UTR Reference</span>}
+                        rules={[{ max: 50, message: 'Reference cannot exceed 50 characters' }]}
                       >
-                        <Input size="large" placeholder="e.g. NEFT/HDFC20260725" style={{ borderRadius: 8 }} />
+                        <Input size="large" placeholder="e.g. NEFT/HDFC20260725" style={{ borderRadius: 8 }} maxLength={50} />
                       </Form.Item>
                     </Col>
                     <Col span={12}>
-                      <Form.Item name="bank_name" label={<span style={{ fontWeight: 700, color: '#0F172A' }}>Remitting Bank</span>}>
-                        <Input size="large" placeholder="e.g. HDFC Bank, SBI, ICICI" style={{ borderRadius: 8 }} />
+                      <Form.Item
+                        name="bank_name"
+                        label={<span style={{ fontWeight: 700, color: '#0F172A' }}>Remitting Bank</span>}
+                        rules={[{ max: 100, message: 'Bank name cannot exceed 100 characters' }]}
+                      >
+                        <Input size="large" placeholder="e.g. HDFC Bank, SBI, ICICI" style={{ borderRadius: 8 }} maxLength={100} />
                       </Form.Item>
                     </Col>
                   </Row>
@@ -214,13 +226,18 @@ export const ReceiptFormModal: React.FC<ReceiptFormModalProps> = ({
                       <Form.Item
                         name="cheque_number"
                         label={<span style={{ fontWeight: 700, color: '#0F172A' }}>Cheque Number</span>}
+                        rules={[{ max: 30, message: 'Cheque number cannot exceed 30 characters' }]}
                       >
-                        <Input size="large" placeholder="e.g. CHQ-445566" style={{ borderRadius: 8 }} />
+                        <Input size="large" placeholder="e.g. CHQ-445566" style={{ borderRadius: 8 }} maxLength={30} />
                       </Form.Item>
                     </Col>
                     <Col span={12}>
-                      <Form.Item name="bank_name" label={<span style={{ fontWeight: 700, color: '#0F172A' }}>Drawn Bank</span>}>
-                        <Input size="large" placeholder="e.g. State Bank of India" style={{ borderRadius: 8 }} />
+                      <Form.Item
+                        name="bank_name"
+                        label={<span style={{ fontWeight: 700, color: '#0F172A' }}>Drawn Bank</span>}
+                        rules={[{ max: 100, message: 'Bank name cannot exceed 100 characters' }]}
+                      >
+                        <Input size="large" placeholder="e.g. State Bank of India" style={{ borderRadius: 8 }} maxLength={100} />
                       </Form.Item>
                     </Col>
                   </Row>
@@ -230,8 +247,12 @@ export const ReceiptFormModal: React.FC<ReceiptFormModalProps> = ({
             }}
           </Form.Item>
 
-          <Form.Item name="purpose" label={<span style={{ fontWeight: 700, color: '#0F172A' }}>Purpose / Cause</span>}>
-            <Input size="large" placeholder="e.g. Festival Collection, Pooja, General Donation" style={{ borderRadius: 8 }} />
+          <Form.Item
+            name="purpose"
+            label={<span style={{ fontWeight: 700, color: '#0F172A' }}>Purpose / Cause</span>}
+            rules={[{ max: 150, message: 'Purpose cannot exceed 150 characters' }]}
+          >
+            <Input size="large" placeholder="e.g. Festival Collection, Pooja, General Donation" style={{ borderRadius: 8 }} maxLength={150} />
           </Form.Item>
 
           {/* Quick Cause Presets */}
