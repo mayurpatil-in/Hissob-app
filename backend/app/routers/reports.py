@@ -10,10 +10,15 @@ from app.core.database import get_db
 from app.permissions.rbac import require
 from app.models.user import User
 from app.services.reports import ReportsService
+import io
+import csv
+from fastapi.responses import StreamingResponse
 from app.schemas.reports import (
     DailyCollectionSummary,
     CashBookEntry,
     FinancialReportSummary,
+    CustomReportRequest,
+    CustomReportResponse,
 )
 
 router = APIRouter(prefix="/reports", tags=["Reports"])
@@ -54,3 +59,53 @@ async def income_expense_report(
         raise HTTPException(status_code=400, detail="Tenant context required")
     service = ReportsService(db)
     return service.get_income_expense_statement(current_user.tenant_id, fy_id=fy_id)
+
+
+@router.post("/custom", response_model=CustomReportResponse, summary="Execute Custom Report Query")
+async def custom_report(
+    payload: CustomReportRequest,
+    current_user: User = Depends(require("reports", "view")),
+    db: Session = Depends(get_db),
+):
+    if not current_user.tenant_id and not current_user.is_super_admin:
+        raise HTTPException(status_code=400, detail="Tenant context required")
+    service = ReportsService(db)
+    return service.run_custom_report(current_user.tenant_id, req=payload)
+
+
+@router.post("/custom/export", summary="Export Custom Report Query to CSV")
+async def export_custom_report(
+    payload: CustomReportRequest,
+    current_user: User = Depends(require("reports", "view")),
+    db: Session = Depends(get_db),
+):
+    if not current_user.tenant_id and not current_user.is_super_admin:
+        raise HTTPException(status_code=400, detail="Tenant context required")
+    service = ReportsService(db)
+    res = service.run_custom_report(current_user.tenant_id, req=payload)
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    headers = ["Date", "Collector / Person", "Category / City", "Festival", "Payment Mode", "Total Amount (INR)", "Transaction Count", "Avg Amount (INR)", "Max Amount (INR)"]
+    writer.writerow(headers)
+
+    for item in res.data:
+        writer.writerow([
+            item.get("date"),
+            item.get("collector"),
+            item.get("category"),
+            item.get("festival"),
+            item.get("payment_mode"),
+            item.get("total_amount"),
+            item.get("count"),
+            item.get("avg_amount"),
+            item.get("max_amount"),
+        ])
+
+    output.seek(0)
+    return StreamingResponse(
+        io.BytesIO(output.getvalue().encode('utf-8')),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=custom_report_{res.entity}.csv"}
+    )

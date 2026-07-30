@@ -215,6 +215,18 @@ export const attachExpenseBill = async (expenseId: string, billUrl: string) =>
 export const getDailyCollectionReport = async () => (await apiClient.get<DailyCollection[]>('/reports/daily-collection')).data;
 export const getCashBookReport = async (fy_id?: string) => (await apiClient.get<CashBookEntry[]>('/reports/cash-book', { params: { fy_id } })).data;
 export const getIncomeExpenseReport = async (fy_id?: string) => (await apiClient.get<any>('/reports/income-expense', { params: { fy_id } })).data;
+export const runCustomReport = async (payload: any) => (await apiClient.post<any>('/reports/custom', payload)).data;
+export const exportCustomReport = async (payload: any) => {
+  const response = await apiClient.post('/reports/custom/export', payload, { responseType: 'blob' });
+  const blob = new Blob([response.data], { type: 'text/csv' });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', `custom_report_${payload.entity || 'data'}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+};
 
 // ── Audit Log API ──
 export interface ActivityFeedItem {

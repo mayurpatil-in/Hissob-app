@@ -13,6 +13,7 @@ import {
 } from '../../api/services';
 import { exportToCSV, exportToExcel, printTable } from '../../utils/exportTable';
 import dayjs from 'dayjs';
+import CustomReportBuilder from './CustomReportBuilder';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -586,6 +587,11 @@ const ReportsPage: React.FC = () => {
           </Row>
         </Card>
       ),
+    },
+    {
+      key: 'custom',
+      label: <span><BarChartOutlined style={{ color: '#F97316' }} /> Custom Report Builder</span>,
+      children: <CustomReportBuilder />,
     },
   ];
 

@@ -173,3 +173,178 @@ class ReportsService:
                 {"category": "Event & Operational Expenses", "amount": total_expenses, "type": "Expense"},
             ],
         )
+
+    def run_custom_report(self, tenant_id: Optional[UUID], req: Any) -> Any:
+        from app.models.donor import Donor
+        from app.models.festival import Festival
+        from app.models.user import User
+        from app.schemas.reports import CustomReportResponse
+
+        entity = (req.entity or "receipts").lower()
+
+        if entity == "receipts":
+            query = select(
+                Receipt.receipt_date.label("date"),
+                Receipt.payment_mode.label("payment_mode"),
+                Receipt.purpose.label("category"),
+                User.full_name.label("collector"),
+                Festival.name.label("festival"),
+                func.sum(Receipt.amount).label("total_amount"),
+                func.count(Receipt.id).label("count"),
+                func.avg(Receipt.amount).label("avg_amount"),
+                func.max(Receipt.amount).label("max_amount"),
+            ).outerjoin(User, Receipt.collector_id == User.id)\
+             .outerjoin(Festival, Receipt.festival_id == Festival.id)
+
+            filters = []
+            if tenant_id:
+                filters.append(Receipt.tenant_id == tenant_id)
+            filters.append(Receipt.status != ReceiptStatus.CANCELLED)
+
+            if req.date_from:
+                filters.append(Receipt.receipt_date >= req.date_from)
+            if req.date_to:
+                filters.append(Receipt.receipt_date <= req.date_to)
+            if req.festival_id:
+                filters.append(Receipt.festival_id == req.festival_id)
+            if req.payment_mode:
+                filters.append(Receipt.payment_mode == req.payment_mode)
+            if req.min_amount is not None:
+                filters.append(Receipt.amount >= req.min_amount)
+            if req.max_amount is not None:
+                filters.append(Receipt.amount <= req.max_amount)
+
+            query = query.where(and_(*filters)).group_by(
+                Receipt.receipt_date,
+                Receipt.payment_mode,
+                Receipt.purpose,
+                User.full_name,
+                Festival.name,
+            )
+
+            rows = self.db.execute(query).all()
+
+            data = []
+            grand_total = 0.0
+            for r in rows:
+                amt = float(r.total_amount or 0.0)
+                grand_total += amt
+                data.append({
+                    "date": str(r.date) if r.date else "N/A",
+                    "payment_mode": str(r.payment_mode.value if hasattr(r.payment_mode, 'value') else (r.payment_mode or 'CASH')).upper(),
+                    "category": r.category or "General Donation",
+                    "collector": r.collector or "System Admin",
+                    "festival": r.festival or "General",
+                    "total_amount": round(amt, 2),
+                    "count": int(r.count or 0),
+                    "avg_amount": round(float(r.avg_amount or 0.0), 2),
+                    "max_amount": round(float(r.max_amount or 0.0), 2),
+                })
+
+            return CustomReportResponse(
+                entity="receipts",
+                dimensions=req.dimensions or ["date", "collector", "payment_mode"],
+                metrics=req.metrics or ["total_amount", "count"],
+                total_records=len(data),
+                grand_total_amount=round(grand_total, 2),
+                data=data,
+            )
+
+        elif entity == "expenses":
+            query = select(
+                Expense.expense_date.label("date"),
+                Expense.category.label("category"),
+                User.full_name.label("collector"),
+                Festival.name.label("festival"),
+                func.sum(Expense.amount).label("total_amount"),
+                func.count(Expense.id).label("count"),
+                func.avg(Expense.amount).label("avg_amount"),
+                func.max(Expense.amount).label("max_amount"),
+            ).outerjoin(User, Expense.requested_by == User.id)\
+             .outerjoin(Festival, Expense.festival_id == Festival.id)
+
+            filters = []
+            if tenant_id:
+                filters.append(Expense.tenant_id == tenant_id)
+            filters.append(Expense.status.in_(["approved", "paid"]))
+
+            if req.date_from:
+                filters.append(Expense.expense_date >= req.date_from)
+            if req.date_to:
+                filters.append(Expense.expense_date <= req.date_to)
+            if req.festival_id:
+                filters.append(Expense.festival_id == req.festival_id)
+            if req.min_amount is not None:
+                filters.append(Expense.amount >= req.min_amount)
+            if req.max_amount is not None:
+                filters.append(Expense.amount <= req.max_amount)
+
+            query = query.where(and_(*filters)).group_by(Expense.expense_date, Expense.category, User.full_name, Festival.name)
+            rows = self.db.execute(query).all()
+
+            data = []
+            grand_total = 0.0
+            for r in rows:
+                amt = float(r.total_amount or 0.0)
+                grand_total += amt
+                data.append({
+                    "date": str(r.date) if r.date else "N/A",
+                    "category": r.category or "General Expense",
+                    "collector": r.collector or "System Admin",
+                    "festival": r.festival or "General",
+                    "total_amount": round(amt, 2),
+                    "count": int(r.count or 0),
+                    "avg_amount": round(float(r.avg_amount or 0.0), 2),
+                    "max_amount": round(float(r.max_amount or 0.0), 2),
+                })
+
+            return CustomReportResponse(
+                entity="expenses",
+                dimensions=req.dimensions or ["date", "category", "festival"],
+                metrics=req.metrics or ["total_amount", "count"],
+                total_records=len(data),
+                grand_total_amount=round(grand_total, 2),
+                data=data,
+            )
+
+        else: # Donors
+            query = select(
+                Donor.full_name.label("collector"),
+                Donor.city.label("category"),
+                func.sum(Receipt.amount).label("total_amount"),
+                func.count(Receipt.id).label("count"),
+                func.avg(Receipt.amount).label("avg_amount"),
+                func.max(Receipt.amount).label("max_amount"),
+            ).outerjoin(Receipt, Receipt.donor_id == Donor.id)
+
+            filters = []
+            if tenant_id:
+                filters.append(Donor.tenant_id == tenant_id)
+
+            query = query.where(and_(*filters)).group_by(Donor.id, Donor.full_name, Donor.city)
+            rows = self.db.execute(query).all()
+
+            data = []
+            grand_total = 0.0
+            for r in rows:
+                amt = float(r.total_amount or 0.0)
+                grand_total += amt
+                data.append({
+                    "date": "Lifetime",
+                    "category": r.category or "Local",
+                    "collector": r.collector or "Anonymous",
+                    "festival": "All",
+                    "total_amount": round(amt, 2),
+                    "count": int(r.count or 0),
+                    "avg_amount": round(float(r.avg_amount or 0.0), 2),
+                    "max_amount": round(float(r.max_amount or 0.0), 2),
+                })
+
+            return CustomReportResponse(
+                entity="donors",
+                dimensions=req.dimensions or ["collector", "category"],
+                metrics=req.metrics or ["total_amount", "count"],
+                total_records=len(data),
+                grand_total_amount=round(grand_total, 2),
+                data=data,
+            )

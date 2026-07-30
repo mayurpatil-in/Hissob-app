@@ -45,3 +45,26 @@ class FinancialReportSummary(BaseModel):
     total_expenses: float
     net_surplus_deficit: float
     entries: List[Dict[str, Any]]
+
+
+class CustomReportRequest(BaseModel):
+    entity: str = Field("receipts", pattern="^(receipts|expenses|donors)$")
+    dimensions: List[str] = []  # date, month, festival, collector, payment_mode, category
+    metrics: List[str] = ["total_amount", "count"]  # total_amount, count, avg_amount, max_amount
+    date_from: Optional[date] = None
+    date_to: Optional[date] = None
+    festival_id: Optional[UUID] = None
+    payment_mode: Optional[str] = None
+    min_amount: Optional[float] = None
+    max_amount: Optional[float] = None
+    sort_by: Optional[str] = None
+    sort_order: str = "desc"
+
+
+class CustomReportResponse(BaseModel):
+    entity: str
+    dimensions: List[str]
+    metrics: List[str]
+    total_records: int
+    grand_total_amount: float
+    data: List[Dict[str, Any]]
