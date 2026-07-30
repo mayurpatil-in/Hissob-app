@@ -403,3 +403,90 @@ export const getEmailLogs = async (params?: { email_type?: string; status?: stri
 
 export const resendEmailLog = async (logId: string) =>
   (await apiClient.post<{ status: string; message: string }>(`/email-logs/${logId}/resend`)).data;
+
+// ── Inventory & Physical Asset Services ──
+export interface AssetCategory {
+  id: string;
+  name: string;
+  code?: string;
+  description?: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface Asset {
+  id: string;
+  category_id: string;
+  festival_id?: string;
+  name: string;
+  asset_code: string;
+  quantity_total: number;
+  quantity_available: number;
+  unit: string;
+  condition: 'new' | 'good' | 'fair' | 'damaged' | 'under_repair';
+  storage_location?: string;
+  estimated_value: number;
+  purchase_date?: string;
+  notes?: string;
+  is_active: boolean;
+  category?: AssetCategory;
+  created_at: string;
+}
+
+export interface AssetCheckout {
+  id: string;
+  asset_id: string;
+  action_type: 'checkout' | 'return' | 'maintenance' | 'damage_report';
+  quantity: number;
+  issued_to_person: string;
+  issued_by_user_id: string;
+  issued_by_name?: string;
+  issued_at: string;
+  expected_return_at?: string;
+  returned_at?: string;
+  returned_condition?: string;
+  damage_notes?: string;
+  damage_charge: number;
+  status: 'issued' | 'returned' | 'overdue' | 'damaged' | 'lost';
+  asset?: Asset;
+  created_at: string;
+}
+
+export interface InventorySummary {
+  total_assets_count: number;
+  total_items_quantity: number;
+  total_estimated_value: number;
+  active_checkouts_count: number;
+  damaged_repair_count: number;
+}
+
+export const getAssetCategories = async () =>
+  (await apiClient.get<AssetCategory[]>('/inventory/categories')).data;
+
+export const createAssetCategory = async (payload: { name: string; code?: string; description?: string }) =>
+  (await apiClient.post<AssetCategory>('/inventory/categories', payload)).data;
+
+export const getAssets = async (params?: { category_id?: string; festival_id?: string; condition?: string; search?: string }) =>
+  (await apiClient.get<Asset[]>('/inventory/assets', { params })).data;
+
+export const createAsset = async (payload: Partial<Asset>) =>
+  (await apiClient.post<Asset>('/inventory/assets', payload)).data;
+
+export const updateAsset = async (id: string, payload: Partial<Asset>) =>
+  (await apiClient.put<Asset>(`/inventory/assets/${id}`, payload)).data;
+
+export const deleteAsset = async (id: string) =>
+  (await apiClient.delete<{ message: string }>(`/inventory/assets/${id}`)).data;
+
+export const checkoutAsset = async (payload: { asset_id: string; quantity: number; issued_to_person: string; expected_return_at?: string; notes?: string }) =>
+  (await apiClient.post<AssetCheckout>('/inventory/checkout', payload)).data;
+
+export const returnAsset = async (payload: { checkout_id: string; returned_condition: string; damage_notes?: string; damage_charge?: number }) =>
+  (await apiClient.post<AssetCheckout>('/inventory/return', payload)).data;
+
+export const getAssetCheckouts = async (params?: { asset_id?: string; status?: string }) =>
+  (await apiClient.get<AssetCheckout[]>('/inventory/checkouts', { params })).data;
+
+export const getInventorySummary = async () =>
+  (await apiClient.get<InventorySummary>('/inventory/summary')).data;
+

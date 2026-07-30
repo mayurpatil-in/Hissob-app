@@ -6,7 +6,7 @@ import {
   BankOutlined, CalendarOutlined, TeamOutlined, BarChartOutlined,
   SettingOutlined, BellOutlined, LogoutOutlined, MenuFoldOutlined,
   MenuUnfoldOutlined, AuditOutlined, GlobalOutlined, SafetyOutlined, CrownOutlined, RobotOutlined,
-  MenuOutlined, CheckOutlined, CloseOutlined, RocketOutlined
+  MenuOutlined, CheckOutlined, CloseOutlined, RocketOutlined, ToolOutlined
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getNotifications, markNotificationRead, markAllNotificationsRead, getOrganizations } from '../api/services';
@@ -42,6 +42,7 @@ const ORG_NAV: NavItem[] = [
   { key: '/receipts',       label: 'Receipts',        icon: <FileTextOutlined />, module: 'receipts' },
   { key: '/settlements',    label: 'Cash Settlement', icon: <BankOutlined />,     module: 'cash_settlement' },
   { key: '/expenses',       label: 'Expenses',        icon: <DollarOutlined />,   module: 'expenses' },
+  { key: '/inventory',      label: 'Inventory & Assets', icon: <ToolOutlined />,  module: 'inventory' },
   { key: '/reports',        label: 'Reports',         icon: <BarChartOutlined />, module: 'reports' },
   { key: '/users',          label: 'Users',           icon: <UserOutlined />,     module: 'users' },
   { key: '/rbac',           label: 'Roles & Access',  icon: <SafetyOutlined />,   module: 'rbac' },

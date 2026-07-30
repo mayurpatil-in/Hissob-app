@@ -22,6 +22,7 @@ const SettingsPage       = lazy(() => import('../modules/settings/SettingsPage')
 const AuditPage         = lazy(() => import('../modules/audit/AuditPage'));
 const SuperAdminPage    = lazy(() => import('../modules/super-admin/SuperAdminPage'));
 const AIInsightsPage    = lazy(() => import('../modules/ai/AIInsightsPage'));
+const InventoryPage     = lazy(() => import('../modules/inventory/InventoryPage'));
 
 const PageLoader = () => (
   <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}>
@@ -51,6 +52,7 @@ const AppRouter: React.FC = () => (
                 <Route path="/receipts"       element={<ReceiptsPage />} />
                 <Route path="/settlements"    element={<SettlementsPage />} />
                 <Route path="/expenses"       element={<ExpensesPage />} />
+                <Route path="/inventory"      element={<InventoryPage />} />
                 <Route path="/donors"         element={<DonorsPage />} />
                 <Route path="/reports"        element={<ReportsPage />} />
                 <Route path="/users"          element={<UsersPage />} />

@@ -13,6 +13,10 @@ from app.models.finance import CashSettlement, SettlementStatus, Expense
 from app.models.audit import AuditLog
 from app.models.notification import Notification
 from app.models.email_log import EmailLog
+from app.models.inventory import (
+    AssetCategory, Asset, AssetCheckout,
+    AssetCondition, CheckoutAction, CheckoutStatus
+)
 
 __all__ = [
     "UUIDMixin", "TimestampMixin", "TenantMixin",
@@ -27,5 +31,7 @@ __all__ = [
     "AuditLog",
     "Notification",
     "EmailLog",
+    "AssetCategory", "Asset", "AssetCheckout",
+    "AssetCondition", "CheckoutAction", "CheckoutStatus",
 ]
 
