@@ -11,6 +11,7 @@ import {
 } from '@ant-design/icons';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { getPublicOrgInfo, submitPublicDonation, lookupPublicDonor } from '../../api/services';
+import QRCode from 'qrcode';
 
 const { Title, Text } = Typography;
 
@@ -89,7 +90,13 @@ const UpiPaymentPage: React.FC = () => {
 
   // Construct standard UPI Payment URI
   const upiUri = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(orgName)}&am=${effectiveAmount}&tn=${encodeURIComponent(purpose)}&cu=INR`;
-  const qrCodeImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(upiUri)}`;
+  const [qrCodeImgUrl, setQrCodeImgUrl] = useState<string>('');
+
+  React.useEffect(() => {
+    QRCode.toDataURL(upiUri, { margin: 1, width: 250 })
+      .then((url: string) => setQrCodeImgUrl(url))
+      .catch(() => setQrCodeImgUrl(''));
+  }, [upiUri]);
 
   const handleCopyUpi = () => {
     navigator.clipboard.writeText(upiId);

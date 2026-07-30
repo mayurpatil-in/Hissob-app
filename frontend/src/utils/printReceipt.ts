@@ -7,6 +7,7 @@ import { getMyOrganization } from '../api/services';
 import { getMarathiReceiptHtml } from './marathiReceiptHtml';
 import { formatDateDDMMYYYY } from './formatDate';
 import html2canvas from 'html2canvas';
+import QRCode from 'qrcode';
 
 export interface PrintReceiptData {
   id?: string;
@@ -152,9 +153,9 @@ export async function getReceiptHtmlContent(receipt: PrintReceiptData, fallbackO
   const orgName = orgData?.name || fallbackOrgName;
   let logoUrl = orgData?.logo_url ? import.meta.env.VITE_API_URL?.replace('/api/v1', '') + orgData.logo_url : 'https://cdn-icons-png.flaticon.com/512/103/103328.png';
   let qrCodeUrl = orgData?.qr_code_url ? import.meta.env.VITE_API_URL?.replace('/api/v1', '') + orgData.qr_code_url : null;
-  let verifyQrUrl = receipt.id ? `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.origin + '/verify/' + receipt.id)}` : null;
-  const upiId = orgData?.upi_id || 'hissob@upi';
-  let defaultUpiQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(orgName)}&am=${receipt.amount}`;
+  let verifyQrUrl = receipt.id ? await QRCode.toDataURL(window.location.origin + '/verify/' + receipt.id, { margin: 1, width: 150 }).catch(() => null) : null;
+  const upiId = orgData?.upi_id || '8275831212@upi';
+  let defaultUpiQrUrl = await QRCode.toDataURL(`upi://pay?pa=${upiId}&pn=${orgName}&am=${receipt.amount}`, { margin: 1, width: 150 }).catch(() => '');
 
   if (forShare) {
     // Use cached logo base64 if the URL hasn't changed (avoids re-fetching per receipt)
@@ -167,8 +168,6 @@ export async function getReceiptHtmlContent(receipt: PrintReceiptData, fallbackO
       _cachedLogoBase64 = logoUrl;
     }
     if (qrCodeUrl) qrCodeUrl = await getCachedImageBase64(qrCodeUrl);
-    if (verifyQrUrl) verifyQrUrl = await getCachedImageBase64(verifyQrUrl);
-    defaultUpiQrUrl = await getCachedImageBase64(defaultUpiQrUrl);
   }
   
   const amountWords = numberToWords(Number(receipt.amount));

@@ -1,4 +1,4 @@
-﻿import type { PrintReceiptData } from './printReceipt';
+import type { PrintReceiptData } from './printReceipt';
 import { formatDateDDMMYYYY } from './formatDate';
 
 
@@ -28,11 +28,8 @@ export function getMarathiReceiptHtml(
   const isBank = mode === 'NEFT' || mode === 'RTGS' || mode === 'BANK TRANSFER';
   const isCheque = mode === 'CHEQUE';
 
-  const verifyQrUrl = verifyQrUrlOverride !== undefined 
-    ? verifyQrUrlOverride 
-    : (receipt.id ? `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.origin + '/verify/' + receipt.id)}` : null);
-  
-  const defaultUpiQrUrl = defaultUpiQrUrlOverride || `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(orgName)}&am=${receipt.amount}`;
+  const verifyQrUrl = verifyQrUrlOverride !== undefined ? verifyQrUrlOverride : null;
+  const defaultUpiQrUrl = defaultUpiQrUrlOverride || '';
 
   return `<!DOCTYPE html>
 <html lang="en">
