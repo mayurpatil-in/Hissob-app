@@ -17,6 +17,12 @@ from app.models.inventory import (
     AssetCategory, Asset, AssetCheckout,
     AssetCondition, CheckoutAction, CheckoutStatus
 )
+from app.models.planning import (
+    FestivalTask, TaskPriority, TaskStatus,
+    FestivalBudgetAllocation,
+    VolunteerShift, ShiftStatus,
+    FestivalEventSchedule, EventType
+)
 
 __all__ = [
     "UUIDMixin", "TimestampMixin", "TenantMixin",
@@ -33,5 +39,10 @@ __all__ = [
     "EmailLog",
     "AssetCategory", "Asset", "AssetCheckout",
     "AssetCondition", "CheckoutAction", "CheckoutStatus",
+    "FestivalTask", "TaskPriority", "TaskStatus",
+    "FestivalBudgetAllocation",
+    "VolunteerShift", "ShiftStatus",
+    "FestivalEventSchedule", "EventType",
 ]
+
 

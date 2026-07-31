@@ -77,6 +77,11 @@ async def update_festival(
     current_user: User = Depends(require("festivals", "update")),
     db: Session = Depends(get_db),
 ):
+    repo = FestivalRepository(db)
+    festival = repo.get(festival_id)
+    if not festival or (festival.tenant_id != current_user.tenant_id and not current_user.is_super_admin):
+        raise HTTPException(status_code=404, detail="Festival not found")
+
     return repo.update(festival, payload.model_dump(exclude_unset=True))
 
 

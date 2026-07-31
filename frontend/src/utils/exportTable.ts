@@ -90,7 +90,7 @@ export function printTable(data: any[], title: string, columns: ExportColumn[]):
 </head>
 <body>
   <h2>${title}</h2>
-  <p style="color:#888; font-size:11px; margin-bottom:12px;">Generated: ${new Date().toLocaleString('en-IN')} | Hissob ERP</p>
+  <p style="color:#888; font-size:11px; margin-bottom:12px;">Generated: ${new Date().toLocaleString('en-IN')} | Hisob ERP</p>
   <table>
     <thead><tr>${header}</tr></thead>
     <tbody>${rows}</tbody>

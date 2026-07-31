@@ -6,7 +6,7 @@ import {
   BankOutlined, CalendarOutlined, TeamOutlined, BarChartOutlined,
   SettingOutlined, BellOutlined, LogoutOutlined, MenuFoldOutlined,
   MenuUnfoldOutlined, AuditOutlined, GlobalOutlined, SafetyOutlined, CrownOutlined, RobotOutlined,
-  MenuOutlined, CheckOutlined, CloseOutlined, RocketOutlined, ToolOutlined
+  MenuOutlined, CheckOutlined, CloseOutlined, RocketOutlined, ToolOutlined, ProjectOutlined
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getNotifications, markNotificationRead, markAllNotificationsRead, getOrganizations } from '../api/services';
@@ -15,7 +15,7 @@ import { useAuthStore } from '../store/authStore';
 import { authService } from '../auth/authService';
 import './AppShell.css';
 
-const { Sider, Header, Content } = Layout;
+const { Sider, Header, Content, Footer } = Layout;
 
 interface NavItem {
   key: string;
@@ -38,6 +38,7 @@ const ORG_NAV: NavItem[] = [
   { key: '/ai-insights',    label: 'AI Insights',     icon: <RobotOutlined style={{ color: '#F97316' }} /> },
   { key: '/financial-year', label: 'Financial Year',  icon: <CalendarOutlined />, module: 'financial_year' },
   { key: '/festivals',      label: 'Festivals',       icon: <GlobalOutlined />,   module: 'festivals' },
+  { key: '/planning',       label: 'Festival Planning', icon: <ProjectOutlined style={{ color: '#F97316' }} />, module: 'festivals' },
   { key: '/donors',         label: 'Donors',          icon: <TeamOutlined />,     module: 'donors' },
   { key: '/receipts',       label: 'Receipts',        icon: <FileTextOutlined />, module: 'receipts' },
   { key: '/settlements',    label: 'Cash Settlement', icon: <BankOutlined />,     module: 'cash_settlement' },
@@ -529,6 +530,14 @@ const AppShell: React.FC<Props> = ({ children }) => {
         <Content className="app-content">
           {children}
         </Content>
+
+        {/* Global App Footer */}
+        <Footer style={{ textAlign: 'center', background: '#FFFFFF', borderTop: '1px solid #E2E8F0', padding: '12px 16px', color: '#64748B', fontSize: 12 }}>
+          Powered by <strong style={{ color: '#0B2347' }}>Hisob ERP</strong> • Designed & Developed by{' '}
+          <a href="https://www.mayurpatil.in" target="_blank" rel="noopener noreferrer" style={{ color: '#F97316', fontWeight: 600, textDecoration: 'none' }}>
+            www.mayurpatil.in
+          </a>
+        </Footer>
       </Layout>
 
       {/* EOD Collector Daily Summary & Handover Modal */}

@@ -85,12 +85,20 @@ def get_dashboard_summary(
     recent_receipts = []
     for r in recent_receipts_raw:
         donor_name = r.donor.full_name if r.donor else getattr(r, 'donor_name', 'Anonymous')
+        collector_name = r.collector.full_name if getattr(r, 'collector', None) else "Self Service"
         recent_receipts.append({
             "key": str(r.id),
+            "id": str(r.id),
             "receipt": r.receipt_number,
+            "receipt_number": r.receipt_number,
             "donor": donor_name,
-            "amount": f"₹ {float(r.amount or 0.0):,.2f}",
+            "donor_name": donor_name,
+            "is_vip": getattr(r.donor, 'is_vip', False) if r.donor else False,
+            "amount": float(r.amount or 0.0),
+            "amount_formatted": f"₹ {float(r.amount or 0.0):,.2f}",
             "mode": str(r.payment_mode).upper() if r.payment_mode else "CASH",
+            "payment_mode": str(r.payment_mode).upper() if r.payment_mode else "CASH",
+            "collector_name": collector_name,
             "date": r.receipt_date.strftime("%d %b %Y") if r.receipt_date else (r.created_at.strftime("%d %b %Y") if r.created_at else "Today"),
             "status": str(r.status)
         })

@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from app.core.database import get_db
+from app.auth.deps import get_current_active_user
 from app.permissions.rbac import require
 from app.models.user import User
 from app.models.audit import AuditLog
@@ -106,7 +107,7 @@ async def list_audit_logs(
 async def get_activity_feed(
     module: Optional[str] = Query(None),
     limit: int = Query(20, ge=1, le=100),
-    current_user: User = Depends(require("audit", "view")),
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ):
     # Query audit logs with user info

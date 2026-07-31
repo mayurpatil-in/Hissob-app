@@ -512,4 +512,129 @@ export const scanVendorBillOCR = async (file: File): Promise<ParsedBillOutput> =
   })).data;
 };
 
+// ── Festival Planning Suite APIs ──
+export interface FestivalTask {
+  id: string;
+  festival_id: string;
+  title: string;
+  category: string;
+  description?: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  status: 'todo' | 'in_progress' | 'completed' | 'cancelled';
+  due_date?: string;
+  assigned_to_user_id?: string;
+  assigned_to_name?: string;
+  created_at: string;
+}
+
+export interface FestivalBudgetAllocation {
+  id: string;
+  festival_id: string;
+  category_name: string;
+  allocated_amount: number;
+  actual_spent: number;
+  notes?: string;
+  created_at: string;
+}
+
+export interface VolunteerShift {
+  id: string;
+  festival_id: string;
+  shift_name: string;
+  duty_zone: string;
+  start_time: string;
+  end_time: string;
+  assigned_user_id?: string;
+  assigned_user_name?: string;
+  status: 'scheduled' | 'completed' | 'cancelled';
+  notes?: string;
+  created_at: string;
+}
+
+export interface FestivalEventSchedule {
+  id: string;
+  festival_id: string;
+  title: string;
+  event_type: 'aarti' | 'pooja' | 'cultural' | 'blood_donation' | 'annoutsav' | 'other';
+  event_date: string;
+  start_time?: string;
+  end_time?: string;
+  yajman_name?: string;
+  description?: string;
+  location?: string;
+  created_at: string;
+}
+
+export interface PlanningSummary {
+  festival_id: string;
+  festival_name: string;
+  total_tasks: number;
+  completed_tasks: number;
+  task_completion_percentage: number;
+  total_allocated_budget: number;
+  total_spent_budget: number;
+  budget_utilization_percentage: number;
+  total_shifts: number;
+  filled_shifts: number;
+  total_events: number;
+}
+
+export const getPlanningSummary = async (festivalId: string) =>
+  (await apiClient.get<PlanningSummary>(`/planning/summary/${festivalId}`)).data;
+
+export const getFestivalTasks = async (params: { festival_id: string; status?: string; priority?: string; category?: string }) =>
+  (await apiClient.get<FestivalTask[]>('/planning/tasks', { params })).data;
+
+export const createFestivalTask = async (payload: Partial<FestivalTask>) =>
+  (await apiClient.post<FestivalTask>('/planning/tasks', payload)).data;
+
+export const updateFestivalTask = async (id: string, payload: Partial<FestivalTask>) =>
+  (await apiClient.put<FestivalTask>(`/planning/tasks/${id}`, payload)).data;
+
+export const deleteFestivalTask = async (id: string) =>
+  (await apiClient.delete<{ message: string }>(`/planning/tasks/${id}`)).data;
+
+export const getFestivalBudgets = async (festivalId: string) =>
+  (await apiClient.get<FestivalBudgetAllocation[]>('/planning/budgets', { params: { festival_id: festivalId } })).data;
+
+export const createFestivalBudget = async (payload: Partial<FestivalBudgetAllocation>) =>
+  (await apiClient.post<FestivalBudgetAllocation>('/planning/budgets', payload)).data;
+
+export const updateFestivalBudget = async (id: string, payload: Partial<FestivalBudgetAllocation>) =>
+  (await apiClient.put<FestivalBudgetAllocation>(`/planning/budgets/${id}`, payload)).data;
+
+export const deleteFestivalBudget = async (id: string) =>
+  (await apiClient.delete<{ message: string }>(`/planning/budgets/${id}`)).data;
+
+export const getVolunteerShifts = async (params: { festival_id: string; duty_zone?: string; status?: string }) =>
+  (await apiClient.get<VolunteerShift[]>('/planning/shifts', { params })).data;
+
+export const createVolunteerShift = async (payload: Partial<VolunteerShift>) =>
+  (await apiClient.post<VolunteerShift>('/planning/shifts', payload)).data;
+
+export const updateVolunteerShift = async (id: string, payload: Partial<VolunteerShift>) =>
+  (await apiClient.put<VolunteerShift>(`/planning/shifts/${id}`, payload)).data;
+
+export const deleteVolunteerShift = async (id: string) =>
+  (await apiClient.delete<{ message: string }>(`/planning/shifts/${id}`)).data;
+
+export const getEventSchedules = async (params: { festival_id: string; event_type?: string }) =>
+  (await apiClient.get<FestivalEventSchedule[]>('/planning/schedules', { params })).data;
+
+export const createEventSchedule = async (payload: Partial<FestivalEventSchedule>) =>
+  (await apiClient.post<FestivalEventSchedule>('/planning/schedules', payload)).data;
+
+export const updateEventSchedule = async (id: string, payload: Partial<FestivalEventSchedule>) =>
+  (await apiClient.put<FestivalEventSchedule>(`/planning/schedules/${id}`, payload)).data;
+
+export const deleteEventSchedule = async (id: string) =>
+  (await apiClient.delete<{ message: string }>(`/planning/schedules/${id}`)).data;
+
+export const getPublicFestivalSchedule = async (festivalId: string) =>
+  (await apiClient.get<any>(`/planning/public/schedule/${festivalId}`)).data;
+
+export const submitPublicYajmanRequest = async (payload: any) =>
+  (await apiClient.post<any>('/planning/public/yajman-request', payload)).data;
+
+
 
