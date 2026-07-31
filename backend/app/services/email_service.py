@@ -1211,3 +1211,418 @@ def send_test_smtp_email(
             "error": "SMTP socket/authentication error. Check backend server logs for full trace details.",
         }
 
+
+def send_user_invitation_email(
+    to_email: str,
+    org_name: str,
+    role_name: str,
+    invite_url: str,
+    expires_at_str: str,
+    custom_note: Optional[str] = None,
+    inviter_name: Optional[str] = None,
+    logo_url: Optional[str] = None,
+    db: Optional[Session] = None,
+    tenant_id: Optional[UUID] = None,
+) -> bool:
+    """Delivers executive team invitation email with join token link."""
+    subject = f"✉️ Invitation to join {org_name} on Hisob ERP"
+
+    logo_html = ""
+    if logo_url:
+        full_logo = logo_url if logo_url.startswith("http") else f"https://api.hisob.in{logo_url}"
+        logo_html = f'<img src="{full_logo}" alt="Logo" style="height: 52px; max-width: 170px; object-fit: contain; margin-bottom: 14px;" /><br/>'
+
+    note_html = ""
+    if custom_note:
+        note_html = f"""
+        <div style="background: linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%); border-left: 4px solid #2563EB; border-radius: 12px; padding: 16px 20px; margin: 22px 0;">
+            <div style="font-size: 11px; text-transform: uppercase; color: #64748B; font-weight: 800; letter-spacing: 0.8px; margin-bottom: 6px;">Personal Note from {inviter_name or 'Admin'}:</div>
+            <p style="margin: 0; color: #1E293B; font-style: italic; font-size: 14px; line-height: 1.5;">"{custom_note}"</p>
+        </div>
+        """
+
+    html_content = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invitation to join {org_name}</title>
+</head>
+<body style="margin: 0; padding: 40px 16px; background-color: #0B0F17; font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; -webkit-font-smoothing: antialiased;">
+    <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: 0 auto;">
+        <tr>
+            <td align="center">
+                <div style="background-color: #FFFFFF; border-radius: 24px; overflow: hidden; box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.4), 0 0 1px rgba(255, 255, 255, 0.1); border: 1px solid #1E293B;">
+                    
+                    <!-- Top Accent Glow Banner -->
+                    <div style="height: 5px; background: linear-gradient(90deg, #6366F1 0%, #3B82F6 50%, #10B981 100%);"></div>
+
+                    <!-- Executive Header -->
+                    <div style="background: linear-gradient(135deg, #0F172A 0%, #1E1B4B 50%, #0F172A 100%); padding: 40px 32px 36px 32px; text-align: center; color: #FFFFFF;">
+                        {logo_html}
+                        <h1 style="margin: 0 0 12px 0; font-size: 28px; font-weight: 800; letter-spacing: -0.5px; color: #FFFFFF; text-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+                            {org_name}
+                        </h1>
+                        <div style="display: inline-block; background: rgba(59, 130, 246, 0.18); border: 1px solid rgba(96, 165, 250, 0.4); color: #93C5FD; font-size: 11px; font-weight: 700; letter-spacing: 1px; padding: 6px 18px; border-radius: 50px; text-transform: uppercase;">
+                            👥 TEAM ONBOARDING INVITATION
+                        </div>
+                    </div>
+
+                    <!-- Main Body Content -->
+                    <div style="padding: 36px 32px; background-color: #FFFFFF;">
+                        <p style="margin: 0 0 16px 0; color: #0F172A; font-size: 17px; font-weight: 600;">
+                            Hello,
+                        </p>
+                        
+                        <p style="margin: 0 0 20px 0; color: #475569; font-size: 15px; line-height: 1.65;">
+                            <strong>{inviter_name or 'An Administrator'}</strong> has invited you to join <strong>{org_name}</strong> as a <span style="background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; font-size: 13px; font-weight: 700; padding: 3px 10px; border-radius: 6px; display: inline-block;">{role_name.title()}</span> on Hisob ERP.
+                        </p>
+
+                        {note_html}
+
+                        <!-- Action CTA Button -->
+                        <div style="text-align: center; margin: 32px 0 28px 0;">
+                            <a href="{invite_url}" style="background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%); color: #FFFFFF; text-decoration: none; font-size: 16px; font-weight: 700; padding: 16px 42px; border-radius: 14px; display: inline-block; box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.4), 0 4px 6px -2px rgba(37, 99, 235, 0.2); letter-spacing: 0.2px;">
+                                Accept Invitation & Complete Profile &rarr;
+                            </a>
+                        </div>
+
+                        <div style="background-color: #F8FAFC; border-radius: 14px; padding: 16px 20px; border: 1px solid #F1F5F9; text-align: center; font-size: 13px; color: #64748B;">
+                            ⏳ <strong>Invitation Expiration:</strong> This secure invitation link expires on <strong>{expires_at_str}</strong>.
+                        </div>
+                    </div>
+
+                    <!-- Executive Footer -->
+                    <div style="background-color: #F8FAFC; padding: 24px 32px; text-align: center; border-top: 1px solid #E2E8F0;">
+                        <p style="margin: 0 0 6px 0; font-size: 12px; color: #64748B; font-weight: 600;">
+                            Organized by <strong>{org_name}</strong> via Hisob ERP.
+                        </p>
+                        <p style="margin: 0 0 4px 0; font-size: 11px; color: #94A3B8;">
+                            Protected by Hisob ERP Enterprise Multi-Tenant Security &bull; <a href="https://hisob.in" style="color: #64748B; text-decoration: underline;">hisob.in</a>
+                        </p>
+                        <p style="margin: 6px 0 0 0; font-size: 11px; color: #64748B; font-weight: 600;">
+                            Designed & Developed by <a href="https://www.mayurpatil.in" target="_blank" style="color: #2563EB; text-decoration: none; font-weight: 700;">www.mayurpatil.in</a>
+                        </p>
+                    </div>
+
+                </div>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+"""
+    return send_raw_email(
+        to_email=to_email,
+        subject=subject,
+        html_content=html_content,
+        text_content=f"You have been invited to join {org_name} as {role_name}. Accept here: {invite_url}",
+        db=db,
+        tenant_id=tenant_id,
+        email_type="USER_INVITATION",
+        metadata_json={"role_name": role_name, "expires_at": expires_at_str},
+    )
+
+
+
+def send_digital_patrika_email(
+    to_email: str,
+    guest_name: str,
+    event_title: str,
+    org_name: str,
+    rsvp_url: str,
+    vip_tier: str = "General Patron",
+    qr_code_url: Optional[str] = None,
+    db: Optional[Session] = None,
+    tenant_id: Optional[UUID] = None,
+) -> bool:
+    """Delivers digital event patrika card invitation email with RSVP link."""
+    subject = f"🌺 Cordial Invitation: {event_title} — {org_name}"
+
+    qr_html = ""
+    if qr_code_url:
+        full_qr = qr_code_url if qr_code_url.startswith("http") else f"https://api.hisob.in{qr_code_url}"
+        qr_html = f"""
+        <div style="text-align: center; margin: 20px 0; padding: 16px; background: #F8FAFC; border-radius: 12px; border: 1px dashed #CBD5E1;">
+            <img src="{full_qr}" alt="Entry QR Pass" style="width: 140px; height: 140px; border-radius: 8px; border: 1px solid #E2E8F0;" /><br/>
+            <span style="font-size: 11px; color: #64748B; font-weight: 600; margin-top: 6px; display: block;">Your VIP Entrance QR Pass</span>
+        </div>
+        """
+
+    html_content = f"""<!DOCTYPE html>
+<html>
+<body style="background-color: #0F172A; padding: 28px 12px; font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;">
+    <div style="max-width: 580px; margin: 0 auto; background: #FFFFFF; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.3);">
+        <div style="background: linear-gradient(135deg, #7C3AED 0%, #4C1D95 100%); padding: 36px 24px; text-align: center; color: #FFFFFF;">
+            <span style="background-color: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255,255,255,0.4); color: #F3E8FF; font-size: 11px; font-weight: 700; padding: 4px 16px; border-radius: 20px; text-transform: uppercase;">
+                ✨ {vip_tier} Invitation
+            </span>
+            <h1 style="margin: 14px 0 6px 0; font-size: 26px; font-weight: 900; color: #FFFFFF;">{event_title}</h1>
+            <p style="margin: 0; font-size: 15px; color: #DDD6FE; font-weight: 600;">{org_name}</p>
+        </div>
+        <div style="padding: 28px 24px;">
+            <p style="color: #334155; font-size: 16px; line-height: 1.6; margin-top: 0;">
+                Respected <strong>{guest_name}</strong>,
+            </p>
+            <p style="color: #334155; font-size: 15px; line-height: 1.6;">
+                We cordially invite you and your family to grace the auspicious celebration of <strong>{event_title}</strong> organized by <strong>{org_name}</strong>.
+            </p>
+            {qr_html}
+            <div style="text-align: center; margin: 28px 0;">
+                <a href="{rsvp_url}" style="background: linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%); color: #FFFFFF; text-decoration: none; font-size: 15px; font-weight: 700; padding: 14px 32px; border-radius: 12px; display: inline-block; box-shadow: 0 8px 20px rgba(124,58,237,0.35);">
+                    View Digital Patrika & Confirm RSVP
+                </a>
+            </div>
+        </div>
+        <div style="background-color: #F8FAFC; padding: 20px 24px; text-align: center; border-top: 1px solid #E2E8F0;">
+            <p style="margin: 0 0 6px 0; font-size: 12px; color: #64748B;">
+                With Warm Regards — <strong>{org_name} Committee</strong>
+            </p>
+            <p style="margin: 4px 0 0 0; font-size: 11px; color: #64748B; font-weight: 600;">
+                Designed & Developed by <a href="https://www.mayurpatil.in" target="_blank" style="color: #7C3AED; text-decoration: none; font-weight: 700;">www.mayurpatil.in</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+"""
+    return send_raw_email(
+        to_email=to_email,
+        subject=subject,
+        html_content=html_content,
+        text_content=f"Invitation to {event_title} for {guest_name}. Confirm RSVP: {rsvp_url}",
+        db=db,
+        tenant_id=tenant_id,
+        email_type="EVENT_PATRIKA",
+        metadata_json={"event_title": event_title, "guest_name": guest_name, "vip_tier": vip_tier},
+    )
+
+
+def send_user_welcome_email(
+    to_email: str,
+    user_name: str,
+    org_name: str,
+    role_name: str,
+    initial_password: Optional[str] = None,
+    login_url: str = "https://hisob.in/login",
+    db: Optional[Session] = None,
+    tenant_id: Optional[UUID] = None,
+) -> bool:
+    """Delivers executive account welcome and login credentials email to a newly created user."""
+    subject = f"🎉 Welcome to {org_name} — Your Account Credentials"
+
+    password_html = ""
+    if initial_password:
+        password_html = f"""
+        <div style="background: linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%); border: 1px solid #CBD5E1; border-radius: 16px; padding: 22px 24px; margin: 24px 0; box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);">
+            <div style="font-size: 11px; text-transform: uppercase; color: #475569; font-weight: 800; letter-spacing: 1px; margin-bottom: 14px;">
+                🔑 OFFICIAL ACCOUNT CREDENTIALS
+            </div>
+            
+            <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+                <tr>
+                    <td style="padding: 6px 0; font-size: 14px; color: #475569; width: 140px; font-weight: 600;">Email Address:</td>
+                    <td style="padding: 6px 0; font-size: 14px; color: #0F172A; font-weight: 700; font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;">{to_email}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 6px 0; font-size: 14px; color: #475569; font-weight: 600;">Temporary Password:</td>
+                    <td style="padding: 6px 0;">
+                        <span style="background: #FFFFFF; border: 1px solid #CBD5E1; color: #0F172A; font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-size: 15px; font-weight: 800; padding: 6px 14px; border-radius: 8px; display: inline-block; letter-spacing: 1px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);">
+                            {initial_password}
+                        </span>
+                    </td>
+                </tr>
+            </table>
+            
+            <div style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed #CBD5E1; font-size: 12px; color: #64748B; line-height: 1.4;">
+                🔒 <strong>Security Notice:</strong> Please change your temporary password immediately after logging in.
+            </div>
+        </div>
+        """
+
+    html_content = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to {org_name}</title>
+</head>
+<body style="margin: 0; padding: 40px 16px; background-color: #0B0F17; font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+    <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: 0 auto;">
+        <tr>
+            <td align="center">
+                <div style="background-color: #FFFFFF; border-radius: 24px; overflow: hidden; box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.4), 0 0 1px rgba(255, 255, 255, 0.1); border: 1px solid #1E293B;">
+                    
+                    <!-- Top Accent Glow Banner -->
+                    <div style="height: 5px; background: linear-gradient(90deg, #6366F1 0%, #3B82F6 50%, #10B981 100%);"></div>
+
+                    <!-- Executive Header -->
+                    <div style="background: linear-gradient(135deg, #0F172A 0%, #1E1B4B 50%, #0F172A 100%); padding: 40px 32px 36px 32px; text-align: center; color: #FFFFFF;">
+                        <h1 style="margin: 0 0 12px 0; font-size: 28px; font-weight: 800; letter-spacing: -0.5px; color: #FFFFFF; text-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+                            {org_name}
+                        </h1>
+                        <div style="display: inline-block; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(52, 211, 153, 0.4); color: #34D399; font-size: 11px; font-weight: 700; letter-spacing: 1px; padding: 6px 18px; border-radius: 50px; text-transform: uppercase;">
+                            ✨ ACCOUNT ACTIVE & READY
+                        </div>
+                    </div>
+
+                    <!-- Main Body Content -->
+                    <div style="padding: 36px 32px; background-color: #FFFFFF;">
+                        <p style="margin: 0 0 16px 0; color: #0F172A; font-size: 17px; font-weight: 600; line-height: 1.5;">
+                            Hello <span style="color: #2563EB;">{user_name}</span>,
+                        </p>
+                        
+                        <p style="margin: 0 0 20px 0; color: #475569; font-size: 15px; line-height: 1.65;">
+                            Welcome to <strong>{org_name}</strong>! Your official account has been created on Hisob ERP with access as <span style="background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; font-size: 13px; font-weight: 700; padding: 3px 10px; border-radius: 6px; display: inline-block;">{role_name.title()}</span>.
+                        </p>
+
+                        {password_html}
+
+                        <!-- Action CTA Button -->
+                        <div style="text-align: center; margin: 32px 0 28px 0;">
+                            <a href="{login_url}" style="background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%); color: #FFFFFF; text-decoration: none; font-size: 16px; font-weight: 700; padding: 16px 42px; border-radius: 14px; display: inline-block; box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.4), 0 4px 6px -2px rgba(37, 99, 235, 0.2); letter-spacing: 0.2px;">
+                                Log In to Hisob ERP &rarr;
+                            </a>
+                        </div>
+
+                        <!-- 3-Step Quick Start Guide -->
+                        <div style="background-color: #F8FAFC; border-radius: 14px; padding: 20px 24px; border: 1px solid #F1F5F9; margin-top: 28px;">
+                            <div style="font-size: 12px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px;">⚡ Quick Onboarding Steps:</div>
+                            <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+                                <tr>
+                                    <td style="padding: 5px 0; font-size: 13px; color: #334155;">
+                                        <strong style="color: #2563EB;">1.</strong> Click the button above to launch the login portal.
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 5px 0; font-size: 13px; color: #334155;">
+                                        <strong style="color: #2563EB;">2.</strong> Enter your email address & temporary password.
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 5px 0; font-size: 13px; color: #334155;">
+                                        <strong style="color: #2563EB;">3.</strong> Update your password under <em>Settings &rarr; Security</em>.
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Executive Footer -->
+                    <div style="background-color: #F8FAFC; padding: 24px 32px; text-align: center; border-top: 1px solid #E2E8F0;">
+                        <p style="margin: 0 0 6px 0; font-size: 12px; color: #64748B; font-weight: 600;">
+                            Welcome to <strong>{org_name}</strong> on Hisob ERP.
+                        </p>
+                        <p style="margin: 0 0 4px 0; font-size: 11px; color: #94A3B8;">
+                            Protected by Hisob ERP Enterprise Multi-Tenant Security &bull; <a href="https://hisob.in" style="color: #64748B; text-decoration: underline;">hisob.in</a>
+                        </p>
+                        <p style="margin: 6px 0 0 0; font-size: 11px; color: #64748B; font-weight: 600;">
+                            Designed & Developed by <a href="https://www.mayurpatil.in" target="_blank" style="color: #2563EB; text-decoration: none; font-weight: 700;">www.mayurpatil.in</a>
+                        </p>
+                    </div>
+
+                </div>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+"""
+    return send_raw_email(
+        to_email=to_email,
+        subject=subject,
+        html_content=html_content,
+        text_content=f"Welcome {user_name} to {org_name}! Log in at: {login_url}",
+        db=db,
+        tenant_id=tenant_id,
+        email_type="USER_WELCOME",
+        metadata_json={"role_name": role_name},
+    )
+
+
+def send_password_reset_email(
+    to_email: str,
+    reset_url: str,
+    db: Optional[Session] = None,
+    tenant_id: Optional[UUID] = None,
+) -> bool:
+    """Delivers executive password reset link to user."""
+    subject = "🔑 Password Reset Request — Hisob ERP"
+    html_content = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Password Reset</title>
+</head>
+<body style="margin: 0; padding: 40px 16px; background-color: #0B0F17; font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; -webkit-font-smoothing: antialiased;">
+    <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; margin: 0 auto;">
+        <tr>
+            <td align="center">
+                <div style="background-color: #FFFFFF; border-radius: 24px; overflow: hidden; box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.4), 0 0 1px rgba(255, 255, 255, 0.1); border: 1px solid #1E293B;">
+                    
+                    <!-- Top Danger Glow Banner -->
+                    <div style="height: 5px; background: linear-gradient(90deg, #EF4444 0%, #F59E0B 100%);"></div>
+
+                    <!-- Executive Header -->
+                    <div style="background: linear-gradient(135deg, #0F172A 0%, #1E1B4B 50%, #0F172A 100%); padding: 40px 32px 36px 32px; text-align: center; color: #FFFFFF;">
+                        <h1 style="margin: 0 0 12px 0; font-size: 28px; font-weight: 800; letter-spacing: -0.5px; color: #FFFFFF;">
+                            Hisob ERP
+                        </h1>
+                        <div style="display: inline-block; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(248, 113, 113, 0.4); color: #F87171; font-size: 11px; font-weight: 700; letter-spacing: 1px; padding: 6px 18px; border-radius: 50px; text-transform: uppercase;">
+                            🔑 PASSWORD RESET VERIFICATION
+                        </div>
+                    </div>
+
+                    <!-- Main Body Content -->
+                    <div style="padding: 36px 32px; background-color: #FFFFFF;">
+                        <p style="margin: 0 0 16px 0; color: #0F172A; font-size: 17px; font-weight: 600;">
+                            Hello,
+                        </p>
+                        
+                        <p style="margin: 0 0 24px 0; color: #475569; font-size: 15px; line-height: 1.65;">
+                            We received a security request to reset the password for your Hisob ERP account. Click the button below to choose a new password:
+                        </p>
+
+                        <!-- Action CTA Button -->
+                        <div style="text-align: center; margin: 32px 0;">
+                            <a href="{reset_url}" style="background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%); color: #FFFFFF; text-decoration: none; font-size: 16px; font-weight: 700; padding: 16px 42px; border-radius: 14px; display: inline-block; box-shadow: 0 10px 25px -5px rgba(220, 38, 38, 0.4); letter-spacing: 0.2px;">
+                                Reset My Password &rarr;
+                            </a>
+                        </div>
+
+                        <div style="background-color: #FEF2F2; border-radius: 14px; padding: 16px 20px; border: 1px solid #FEE2E2; margin-top: 24px; font-size: 13px; color: #991B1B; line-height: 1.5;">
+                            ⏳ <strong>Link Expiration:</strong> This reset link will expire in 24 hours. If you did not request a password reset, you can safely ignore this email; your password will remain unchanged.
+                        </div>
+                    </div>
+
+                    <!-- Executive Footer -->
+                    <div style="background-color: #F8FAFC; padding: 24px 32px; text-align: center; border-top: 1px solid #E2E8F0;">
+                        <p style="margin: 0 0 4px 0; font-size: 11px; color: #94A3B8;">
+                            Hisob ERP Security Notification &bull; <a href="https://hisob.in" style="color: #64748B; text-decoration: underline;">hisob.in</a>
+                        </p>
+                        <p style="margin: 6px 0 0 0; font-size: 11px; color: #64748B; font-weight: 600;">
+                            Designed & Developed by <a href="https://www.mayurpatil.in" target="_blank" style="color: #2563EB; text-decoration: none; font-weight: 700;">www.mayurpatil.in</a>
+                        </p>
+                    </div>
+
+                </div>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+"""
+    return send_raw_email(
+        to_email=to_email,
+        subject=subject,
+        html_content=html_content,
+        text_content=f"Reset your Hisob password here: {reset_url}",
+        db=db,
+        tenant_id=tenant_id,
+        email_type="PASSWORD_RESET",
+    )
+
+
+
+

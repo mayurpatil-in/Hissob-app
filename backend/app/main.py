@@ -38,7 +38,13 @@ def create_app() -> FastAPI:
     try:
         import app.models
         from app.core.database import engine, Base
+        from sqlalchemy import text
         Base.metadata.create_all(bind=engine)
+        with engine.connect() as conn:
+            conn.execute(text("ALTER TABLE event_invitations ADD COLUMN IF NOT EXISTS mahaprasad_menu VARCHAR(500);"))
+            conn.execute(text("ALTER TABLE event_invitations ADD COLUMN IF NOT EXISTS timing_slots VARCHAR(300);"))
+            conn.execute(text("ALTER TABLE event_invitations ADD COLUMN IF NOT EXISTS chief_guests VARCHAR(300);"))
+            conn.commit()
     except Exception as e:
         logging.getLogger("hisob.db").warning("Auto table creation check: %s", str(e))
 

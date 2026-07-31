@@ -3,7 +3,7 @@ Users Router — Manage tenant users, trustees, treasurers, collectors, and volu
 """
 from typing import List, Optional
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func, or_
 from pydantic import BaseModel, EmailStr
@@ -11,7 +11,9 @@ from app.core.database import get_db
 from app.auth.deps import get_current_active_user
 from app.core.security import hash_password
 from app.models.user import User
+from app.models.tenant import Tenant
 from app.models.rbac import Role
+from app.services.email_service import send_user_welcome_email
 
 router = APIRouter(prefix="/users", tags=["Users Management"])
 
@@ -110,6 +112,7 @@ def list_users(
 @router.post("", response_model=UserOutSchema, status_code=status.HTTP_201_CREATED, summary="Create New User")
 def create_user(
     payload: UserCreateSchema,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ):
@@ -139,6 +142,20 @@ def create_user(
             new_user.roles.append(role)
             db.commit()
             db.refresh(new_user)
+
+    # Send Welcome Email in background
+    tenant = db.execute(select(Tenant).where(Tenant.id == current_user.tenant_id)).scalar_one_or_none() if current_user.tenant_id else None
+    org_name = tenant.name if tenant else "Hisob ERP"
+    background_tasks.add_task(
+        send_user_welcome_email,
+        to_email=new_user.email,
+        user_name=new_user.full_name,
+        org_name=org_name,
+        role_name=payload.role_name or "Member",
+        initial_password=payload.password,
+        db=None,
+        tenant_id=current_user.tenant_id,
+    )
 
     return new_user
 

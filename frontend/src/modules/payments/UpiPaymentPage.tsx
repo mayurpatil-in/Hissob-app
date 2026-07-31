@@ -38,12 +38,32 @@ const UpiPaymentPage: React.FC = () => {
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState<boolean>(false);
   const [copiedUpi, setCopiedUpi] = useState<boolean>(false);
   const [existingDonorInfo, setExistingDonorInfo] = useState<any>(null);
+  const [qrCodeImgUrl, setQrCodeImgUrl] = useState<string | null>(null);
 
   // Fetch Public Organization Info
   const { data: org } = useQuery({
     queryKey: ['publicOrgInfo', slug],
     queryFn: () => getPublicOrgInfo(slug),
   });
+
+  // Form submit mutation
+  const submitMutation = useMutation({
+    mutationFn: submitPublicDonation,
+    onSuccess: (data) => {
+      setCompletedReceipt(data);
+      setIsSuccessModalOpen(true);
+      message.success('Donation submitted successfully! Receipt generated.');
+    },
+    onError: (err: any) => {
+      message.error(err?.response?.data?.detail || 'Failed to submit payment details');
+    },
+  });
+
+  React.useEffect(() => {
+    if (org?.mandal_name) {
+      document.title = `📱 Digital Dakshina & Donation — ${org.mandal_name}`;
+    }
+  }, [org]);
 
   const handlePhoneBlur = async (phoneVal: string) => {
     const val = phoneVal.trim();
@@ -69,20 +89,6 @@ const UpiPaymentPage: React.FC = () => {
   };
 
   const effectiveAmount = customAmount ? parseFloat(customAmount) || 0 : selectedAmount;
-
-  // Form submit mutation
-  const submitMutation = useMutation({
-    mutationFn: submitPublicDonation,
-    onSuccess: (data) => {
-      setCompletedReceipt(data);
-      setIsSuccessModalOpen(true);
-      message.success('Donation submitted successfully! Receipt generated.');
-    },
-    onError: (err: any) => {
-      message.error(err?.response?.data?.detail || 'Failed to submit payment details');
-    },
-  });
-
   const upiId = org?.upi_id || '8275831212@upi';
   const orgName = org?.name || 'Festival Trust / Mandal';
   const apiHost = import.meta.env.VITE_API_URL?.replace('/api/v1', '') || '';
@@ -90,7 +96,6 @@ const UpiPaymentPage: React.FC = () => {
 
   // Construct standard UPI Payment URI
   const upiUri = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(orgName)}&am=${effectiveAmount}&tn=${encodeURIComponent(purpose)}&cu=INR`;
-  const [qrCodeImgUrl, setQrCodeImgUrl] = useState<string | null>(null);
 
   React.useEffect(() => {
     QRCode.toDataURL(upiUri, { margin: 1, width: 250 })

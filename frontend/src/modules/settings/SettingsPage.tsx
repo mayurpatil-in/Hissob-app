@@ -26,7 +26,7 @@ const ROLE_COLORS: Record<string, string> = {
 
 const SettingsPage: React.FC = () => {
   const { message } = App.useApp();
-  const { user } = useAuthStore();
+  const { user, can } = useAuthStore();
   const [profileForm] = Form.useForm();
   const [passwordForm] = Form.useForm();
   const logoInputRef = React.useRef<HTMLInputElement>(null);
@@ -36,6 +36,15 @@ const SettingsPage: React.FC = () => {
   const [totpLoading, setTotpLoading] = React.useState(false);
   const [totpCodeInput, setTotpCodeInput] = React.useState('');
   const [totpEnabled, setTotpEnabled] = React.useState<boolean>(!!user?.totp_enabled);
+
+  const userRolesList = (user as any)?.roles || [];
+  const roleSlugs = userRolesList.map((r: any) => (r.slug || r.name || '').toLowerCase());
+  
+  // Check if current user is an Admin/Executive authorized to modify Mandal Branding & Org Settings
+  const canManageOrg = !!user?.is_super_admin ||
+    can('organization', 'manage') ||
+    can('tenant', 'update') ||
+    roleSlugs.some((r: string) => r.includes('admin') || r.includes('president') || r.includes('treasurer') || r.includes('secretary'));
 
   const handleStart2FASetup = async () => {
     setTotpLoading(true);
@@ -114,13 +123,14 @@ const SettingsPage: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
-  const userRoles = (user as any)?.roles || [];
   const initials = (user?.full_name || user?.email || 'U')
     .split(' ')
     .map(n => n[0])
     .join('')
     .toUpperCase()
     .slice(0, 2);
+
+  const [passwordLoading, setPasswordLoading] = React.useState(false);
 
   const handleProfileSave = (values: any) => {
     useAuthStore.setState((state) => ({
@@ -130,9 +140,21 @@ const SettingsPage: React.FC = () => {
     message.success('Profile details updated successfully!');
   };
 
-  const handlePasswordSave = () => {
-    passwordForm.resetFields();
-    message.success('Password updated successfully!');
+  const handlePasswordSave = async (values: any) => {
+    if (values.new_password !== values.confirm_password) {
+      message.error('New Password and Confirm Password do not match.');
+      return;
+    }
+    setPasswordLoading(true);
+    try {
+      await authService.changePassword(values.current_password, values.new_password);
+      message.success('🔑 Security password updated successfully!');
+      passwordForm.resetFields();
+    } catch (err: any) {
+      message.error(err?.response?.data?.detail || 'Failed to update password. Check your current password.');
+    } finally {
+      setPasswordLoading(false);
+    }
   };
 
   const tabItems = [
@@ -179,7 +201,7 @@ const SettingsPage: React.FC = () => {
                     onClick={() => logoInputRef.current?.click()}
                     style={{ background: '#F97316', borderColor: '#F97316', borderRadius: 8, fontSize: 12, fontWeight: 700 }}
                   >
-                    Upload Logo from Device
+                    Upload Profile Picture
                   </Button>
                   {(user as any)?.avatar_url && (
                     <Button
@@ -193,11 +215,11 @@ const SettingsPage: React.FC = () => {
                           ...state,
                           user: state.user ? { ...state.user, avatar_url: null } as any : null
                         }));
-                        message.info('Organization Logo removed');
+                        message.info('Profile picture removed');
                       }}
                       style={{ fontSize: 11 }}
                     >
-                      Remove Custom Logo
+                      Remove Picture
                     </Button>
                   )}
                 </div>
@@ -217,7 +239,7 @@ const SettingsPage: React.FC = () => {
                     {user?.is_super_admin && (
                       <Tag color="gold" icon={<CrownOutlined />} style={{ fontWeight: 700, borderRadius: 8, padding: '4px 10px' }}>SUPER ADMIN</Tag>
                     )}
-                    {userRoles.map((r: any) => {
+                    {userRolesList.map((r: any) => {
                       const slug = (r.slug || r.name || '').toLowerCase();
                       return (
                         <Tag key={r.id || slug} color={ROLE_COLORS[slug] || 'blue'} style={{ fontWeight: 700, borderRadius: 8, padding: '4px 10px' }}>
@@ -225,7 +247,7 @@ const SettingsPage: React.FC = () => {
                         </Tag>
                       );
                     })}
-                    {!user?.is_super_admin && userRoles.length === 0 && (
+                    {!user?.is_super_admin && userRolesList.length === 0 && (
                       <Tag color="orange" style={{ fontWeight: 700, borderRadius: 8, padding: '4px 10px' }}>COLLECTOR / MEMBER</Tag>
                     )}
                   </div>
@@ -261,20 +283,23 @@ const SettingsPage: React.FC = () => {
 
             <Card className="hissob-card" style={{ marginTop: 16, borderRadius: 16, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }} title={<span><KeyOutlined style={{ color: '#0EA5E9' }} /> Change Security Password</span>}>
               <Form form={passwordForm} layout="vertical" onFinish={handlePasswordSave}>
+                <Form.Item label="Current Password" name="current_password" rules={[{ required: true, message: 'Enter your current password' }]}>
+                  <Input.Password prefix={<LockOutlined />} placeholder="Current Password" />
+                </Form.Item>
                 <Row gutter={16}>
                   <Col xs={24} sm={12}>
                     <Form.Item label="New Password" name="new_password" rules={[{ required: true, min: 6, message: 'Minimum 6 characters' }]}>
-                      <Input.Password prefix={<LockOutlined />} placeholder="New Password" />
+                      <Input.Password prefix={<LockOutlined />} placeholder="New Password (min 6 chars)" />
                     </Form.Item>
                   </Col>
                   <Col xs={24} sm={12}>
-                    <Form.Item label="Confirm Password" name="confirm_password" rules={[{ required: true, message: 'Confirm password' }]}>
-                      <Input.Password prefix={<LockOutlined />} placeholder="Confirm Password" />
+                    <Form.Item label="Confirm Password" name="confirm_password" rules={[{ required: true, message: 'Confirm new password' }]}>
+                      <Input.Password prefix={<LockOutlined />} placeholder="Confirm New Password" />
                     </Form.Item>
                   </Col>
                 </Row>
                 <Form.Item style={{ textAlign: 'right', marginBottom: 0 }}>
-                  <Button type="primary" htmlType="submit" icon={<SafetyCertificateOutlined />} block={window.innerWidth < 576} style={{ background: '#0EA5E9', borderColor: '#0EA5E9', borderRadius: 8, fontWeight: 700 }}>
+                  <Button type="primary" htmlType="submit" loading={passwordLoading} icon={<SafetyCertificateOutlined />} block={window.innerWidth < 576} style={{ background: '#0EA5E9', borderColor: '#0EA5E9', borderRadius: 8, fontWeight: 700 }}>
                     Change Password
                   </Button>
                 </Form.Item>
@@ -316,11 +341,11 @@ const SettingsPage: React.FC = () => {
         </Row>
       ),
     },
-    {
+    ...(canManageOrg ? [{
       key: 'org',
       label: <span><SettingOutlined /> Organization & Printing Preferences</span>,
       children: <OrganizationSettingsTab />,
-    },
+    }] : []),
   ];
 
   return (

@@ -23,6 +23,8 @@ from app.models.planning import (
     VolunteerShift, ShiftStatus,
     FestivalEventSchedule, EventType
 )
+from app.models.user_invitation import UserInvitation, InvitationStatus
+from app.models.event_invitation import EventInvitation, RsvpStatus
 
 __all__ = [
     "UUIDMixin", "TimestampMixin", "TenantMixin",
@@ -43,6 +45,9 @@ __all__ = [
     "FestivalBudgetAllocation",
     "VolunteerShift", "ShiftStatus",
     "FestivalEventSchedule", "EventType",
+    "UserInvitation", "InvitationStatus",
+    "EventInvitation", "RsvpStatus",
 ]
+
 
 

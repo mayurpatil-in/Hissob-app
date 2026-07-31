@@ -25,6 +25,9 @@ const AIInsightsPage    = lazy(() => import('../modules/ai/AIInsightsPage'));
 const InventoryPage     = lazy(() => import('../modules/inventory/InventoryPage'));
 const PlanningPage      = lazy(() => import('../modules/planning/PlanningPage'));
 const PublicFestivalSchedulePage = lazy(() => import('../modules/planning/PublicFestivalSchedulePage').then(m => ({ default: m.PublicFestivalSchedulePage })));
+const AcceptInvitePage  = lazy(() => import('../modules/auth/AcceptInvitePage').then(m => ({ default: m.AcceptInvitePage })));
+const RsvpPage          = lazy(() => import('../modules/events/RsvpPage').then(m => ({ default: m.RsvpPage })));
+const InvitationsList   = lazy(() => import('../modules/invitations/InvitationsList').then(m => ({ default: m.InvitationsList })));
 
 const PageLoader = () => (
   <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}>
@@ -37,6 +40,8 @@ const AppRouter: React.FC = () => (
     <Routes>
       {/* Public */}
       <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
+      <Route path="/accept-invite" element={<AcceptInvitePage />} />
+      <Route path="/rsvp" element={<RsvpPage />} />
       <Route path="/verify/:id" element={<VerifyReceiptPage />} />
       <Route path="/pay" element={<UpiPaymentPage />} />
       <Route path="/pay/:slug" element={<UpiPaymentPage />} />
@@ -55,6 +60,7 @@ const AppRouter: React.FC = () => (
                 <Route path="/financial-year" element={<FinancialYearPage />} />
                 <Route path="/festivals"      element={<FestivalsPage />} />
                 <Route path="/planning"       element={<PlanningPage />} />
+                <Route path="/invitations"     element={<InvitationsList />} />
                 <Route path="/receipts"       element={<ReceiptsPage />} />
                 <Route path="/settlements"    element={<SettlementsPage />} />
                 <Route path="/expenses"       element={<ExpensesPage />} />
@@ -73,6 +79,7 @@ const AppRouter: React.FC = () => (
           </AppShell>
         </PrivateRoute>
       } />
+
 
 
       <Route path="/" element={<Navigate to="/dashboard" replace />} />

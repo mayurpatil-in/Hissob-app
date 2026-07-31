@@ -3,7 +3,7 @@ Organizations / Tenants Router — Super Admin & Org Admin profile management.
 """
 from typing import List
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.auth.deps import get_current_active_user, get_super_admin
@@ -15,6 +15,7 @@ from app.models.rbac import Role
 from app.repositories.financial import TenantRepository
 from app.repositories.user import UserRepository
 from app.schemas.tenant import TenantCreate, TenantUpdate, TenantResponse
+from app.services.email_service import send_user_welcome_email
 
 router = APIRouter(prefix="/organizations", tags=["Organizations"])
 
@@ -31,6 +32,7 @@ async def list_organizations(
 @router.post("", response_model=TenantResponse, status_code=status.HTTP_201_CREATED, summary="Create Organization (Super Admin)")
 async def create_organization(
     payload: TenantCreate,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_super_admin),
     db: Session = Depends(get_db),
 ):
@@ -79,6 +81,19 @@ async def create_organization(
         admin_user.roles.append(org_admin_role)
 
     user_repo.create(admin_user)
+
+    # Send Welcome Email to Org Admin in Background
+    background_tasks.add_task(
+        send_user_welcome_email,
+        to_email=admin_user.email,
+        user_name=admin_user.full_name,
+        org_name=created_tenant.name,
+        role_name="Organization Administrator",
+        initial_password=payload.admin_password,
+        db=None,
+        tenant_id=created_tenant.id,
+    )
+
     return created_tenant
 
 

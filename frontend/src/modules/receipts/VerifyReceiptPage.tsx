@@ -19,6 +19,17 @@ const VerifyReceiptPage: React.FC = () => {
     retry: 1,
   });
 
+  const receiptNo = data?.receipt_number;
+  const mandalName = data?.mandal_name;
+
+  React.useEffect(() => {
+    if (receiptNo) {
+      document.title = `🧾 Verified Receipt ${receiptNo} — ${mandalName || 'Hisob ERP'}`;
+    } else {
+      document.title = `🧾 Official Donation Receipt Verification — Hisob ERP`;
+    }
+  }, [receiptNo, mandalName]);
+
   if (isLoading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#f8fafc' }}>

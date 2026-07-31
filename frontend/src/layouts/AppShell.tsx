@@ -6,7 +6,7 @@ import {
   BankOutlined, CalendarOutlined, TeamOutlined, BarChartOutlined,
   SettingOutlined, BellOutlined, LogoutOutlined, MenuFoldOutlined,
   MenuUnfoldOutlined, AuditOutlined, GlobalOutlined, SafetyOutlined, CrownOutlined, RobotOutlined,
-  MenuOutlined, CheckOutlined, CloseOutlined, RocketOutlined, ToolOutlined, ProjectOutlined
+  MenuOutlined, CheckOutlined, CloseOutlined, RocketOutlined, ToolOutlined, ProjectOutlined, MailOutlined
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getNotifications, markNotificationRead, markAllNotificationsRead, getOrganizations } from '../api/services';
@@ -39,6 +39,7 @@ const ORG_NAV: NavItem[] = [
   { key: '/financial-year', label: 'Financial Year',  icon: <CalendarOutlined />, module: 'financial_year' },
   { key: '/festivals',      label: 'Festivals',       icon: <GlobalOutlined />,   module: 'festivals' },
   { key: '/planning',       label: 'Festival Planning', icon: <ProjectOutlined style={{ color: '#F97316' }} />, module: 'festivals' },
+  { key: '/invitations',    label: 'Invitations & RSVP', icon: <MailOutlined style={{ color: '#3B82F6' }} />, module: 'users' },
   { key: '/donors',         label: 'Donors',          icon: <TeamOutlined />,     module: 'donors' },
   { key: '/receipts',       label: 'Receipts',        icon: <FileTextOutlined />, module: 'receipts' },
   { key: '/settlements',    label: 'Cash Settlement', icon: <BankOutlined />,     module: 'cash_settlement' },
@@ -66,7 +67,7 @@ const AppShell: React.FC<Props> = ({ children }) => {
   const [eodModalOpen, setEodModalOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, hasModule, selectedTenantId, setSelectedTenantId } = useAuthStore();
+  const { user, can, hasModule, selectedTenantId, setSelectedTenantId } = useAuthStore();
   const queryClient = useQueryClient();
 
   const { data: organizations = [] } = useQuery({
@@ -257,6 +258,19 @@ const AppShell: React.FC<Props> = ({ children }) => {
     navigate('/login');
   };
 
+  const userRolesList = (user as any)?.roles || [];
+  const roleSlugs = userRolesList.map((r: any) => (r.slug || r.name || '').toLowerCase());
+  
+  // Check if current user is authorized to view audit logs & activity trail
+  const canViewAudit = !!user?.is_super_admin ||
+    can('audit', 'read') ||
+    can('audit_log', 'read') ||
+    roleSlugs.some((r: string) => r.includes('admin') || r.includes('auditor') || r.includes('president') || r.includes('treasurer') || r.includes('secretary'));
+
+  const primaryRoleName = user?.is_super_admin 
+    ? '👑 SUPER ADMIN' 
+    : (userRolesList[0]?.name || userRolesList[0]?.slug || (user as any)?.role || 'MEMBER');
+
   const visibleNavItems = user?.is_super_admin
     ? SUPER_ADMIN_NAV
     : ORG_NAV.filter((item) => !item.module || hasModule(item.module));
@@ -279,7 +293,7 @@ const AppShell: React.FC<Props> = ({ children }) => {
             </div>
             <div style={{ marginTop: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
               <Tag color={user?.is_super_admin ? 'gold' : 'blue'} style={{ fontSize: 10, fontWeight: 800, margin: 0, borderRadius: 4, textTransform: 'uppercase' }}>
-                {user?.is_super_admin ? '👑 SUPER ADMIN' : (user as any)?.role ? (user as any).role : 'MEMBER'}
+                {primaryRoleName}
               </Tag>
             </div>
           </div>
@@ -316,15 +330,17 @@ const AppShell: React.FC<Props> = ({ children }) => {
           </Button>
         )}
 
-        <Button
-          type="text"
-          block
-          icon={<AuditOutlined style={{ color: '#059669', fontSize: 16 }} />}
-          style={{ textAlign: 'left', height: 40, fontWeight: 600, color: '#0F172A', display: 'flex', alignItems: 'center', borderRadius: 8 }}
-          onClick={() => { setUserOpen(false); navigate('/audit'); }}
-        >
-          Audit Logs & Activity
-        </Button>
+        {canViewAudit && (
+          <Button
+            type="text"
+            block
+            icon={<AuditOutlined style={{ color: '#059669', fontSize: 16 }} />}
+            style={{ textAlign: 'left', height: 40, fontWeight: 600, color: '#0F172A', display: 'flex', alignItems: 'center', borderRadius: 8 }}
+            onClick={() => { setUserOpen(false); navigate('/audit'); }}
+          >
+            Audit Logs & Activity
+          </Button>
+        )}
 
         <div style={{ height: 1, background: '#F1F5F9', margin: '6px 0' }} />
 

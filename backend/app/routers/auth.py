@@ -6,17 +6,20 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request, Backgrou
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.config import settings
-from app.core.security import verify_password
+from app.core.security import verify_password, hash_password
 from app.auth.jwt import create_access_token, create_refresh_token, decode_token
 from app.auth.deps import get_current_active_user
 from app.repositories.user import UserRepository, RefreshTokenRepository
 from app.schemas.auth import (
     LoginRequest, LoginResponse, RefreshRequest, TokenResponse, UserInfo,
-    TOTPSetupResponse, TOTPVerifyRequest, TOTPDisableRequest
+    TOTPSetupResponse, TOTPVerifyRequest, TOTPDisableRequest,
+    ForgotPasswordRequest, ResetPasswordRequest, ChangePasswordRequest
 )
 from app.schemas.common import SuccessResponse
 from app.permissions.rbac import get_user_permissions
 from app.models.user import User
+from app.services.email_service import send_password_reset_email
+from jose import jwt
 import uuid
 import pyotp
 import qrcode
@@ -271,3 +274,83 @@ async def disable_totp(
     current_user.totp_secret = None
     db.commit()
     return SuccessResponse(message="Two-Factor Authentication (2FA) has been disabled.")
+
+
+@router.post("/forgot-password", response_model=SuccessResponse, summary="Request password reset link via email")
+async def forgot_password(
+    payload: ForgotPasswordRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    user_repo = UserRepository(db)
+    user = user_repo.get_by_email(payload.email)
+
+    # Return success even if user not found to prevent user enumeration
+    if user and user.is_active:
+        expire = datetime.now(timezone.utc) + timedelta(hours=24)
+        token = jwt.encode(
+            {"sub": str(user.id), "email": user.email, "exp": expire, "type": "password_reset"},
+            settings.JWT_SECRET_KEY,
+            algorithm=settings.JWT_ALGORITHM,
+        )
+        reset_url = f"https://hisob.in/reset-password?token={token}"
+
+        background_tasks.add_task(
+            send_password_reset_email,
+            to_email=user.email,
+            reset_url=reset_url,
+            db=None,
+            tenant_id=user.tenant_id,
+        )
+
+    return SuccessResponse(message="If an account exists with this email, a password reset link has been dispatched.")
+
+
+@router.post("/reset-password", response_model=SuccessResponse, summary="Reset password using email token")
+async def reset_password(
+    payload: ResetPasswordRequest,
+    db: Session = Depends(get_db),
+):
+    decoded = decode_token(payload.token)
+    if not decoded or decoded.get("type") != "password_reset":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired password reset link.",
+        )
+
+    user_repo = UserRepository(db)
+    user = user_repo.get(decoded["sub"])
+    if not user or not user.is_active:
+        raise HTTPException(status_code=400, detail="User account not found or deactivated.")
+
+    user.hashed_password = hash_password(payload.new_password)
+    user.email_verified = True
+    db.commit()
+
+    return SuccessResponse(message="Password successfully reset. You can now log in with your new password.")
+
+
+@router.post("/change-password", response_model=SuccessResponse, summary="Change current user security password")
+async def change_password(
+    payload: ChangePasswordRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    if not verify_password(payload.current_password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect. Please double-check your current password.",
+        )
+
+    if payload.current_password == payload.new_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New password must be different from current password.",
+        )
+
+    current_user.hashed_password = hash_password(payload.new_password)
+    db.commit()
+
+    return SuccessResponse(message="Security password updated successfully! Please use your new password for your next login.")
+
+

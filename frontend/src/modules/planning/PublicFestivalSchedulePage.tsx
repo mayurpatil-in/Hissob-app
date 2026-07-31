@@ -50,6 +50,14 @@ export const PublicFestivalSchedulePage: React.FC = () => {
     onError: () => message.error('Failed to submit sponsorship request. Please try again.'),
   });
 
+  const festivalName = data?.festival?.name;
+
+  React.useEffect(() => {
+    if (festivalName) {
+      document.title = `🪔 ${festivalName} — Live Event & Aarti Schedule`;
+    }
+  }, [festivalName]);
+
   if (isLoading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
@@ -68,6 +76,7 @@ export const PublicFestivalSchedulePage: React.FC = () => {
   }
 
   const { festival, schedules = [] } = data;
+
   const todayStr = dayjs().format('YYYY-MM-DD');
 
   const todayEvents = schedules.filter((s: any) => dayjs(s.event_date).format('YYYY-MM-DD') === todayStr);

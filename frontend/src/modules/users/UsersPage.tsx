@@ -21,6 +21,7 @@ const ROLE_COLORS: Record<string, string> = {
   president: 'orange',
   secretary: 'volcano',
   auditor: 'cyan',
+  member: 'cyan',
   volunteer: 'default',
 };
 
@@ -267,7 +268,8 @@ const UsersPage: React.FC = () => {
                   <Option value="secretary">📜 Secretary</Option>
                   <Option value="collector">📲 Collector</Option>
                   <Option value="auditor">🔍 Auditor</Option>
-                  <Option value="volunteer">🤝 Volunteer</Option>
+                  <Option value="member">👤 Member</Option>
+                  <Option value="volunteer">🤝 Volunteer / Helper</Option>
                 </Select>
               </Form.Item>
             </Col>
