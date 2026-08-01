@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
-import { Layout, Menu, Button, Avatar, Badge, Drawer, Tag, Typography, Tooltip, Select } from 'antd';
+import React, { useState, useRef, useEffect } from 'react';
+import { Layout, Menu, Button, Avatar, Badge, Drawer, Tag, Typography, Tooltip, Select, Input, Dropdown } from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  DashboardOutlined, FileTextOutlined, DollarOutlined, UserOutlined,
+  DashboardOutlined, FileTextOutlined, UserOutlined,
   BankOutlined, CalendarOutlined, TeamOutlined, BarChartOutlined,
   SettingOutlined, BellOutlined, LogoutOutlined, MenuFoldOutlined,
   MenuUnfoldOutlined, AuditOutlined, GlobalOutlined, SafetyOutlined, CrownOutlined, RobotOutlined,
-  MenuOutlined, CheckOutlined, CloseOutlined, RocketOutlined, ToolOutlined, ProjectOutlined, MailOutlined
+  MenuOutlined, CheckOutlined, CloseOutlined, RocketOutlined, ToolOutlined, ProjectOutlined, MailOutlined,
+  StarOutlined, StarFilled, SearchOutlined, PlusOutlined
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getNotifications, markNotificationRead, markAllNotificationsRead, getOrganizations } from '../api/services';
@@ -17,39 +18,58 @@ import './AppShell.css';
 
 const { Sider, Header, Content, Footer } = Layout;
 
-interface NavItem {
+const RupeeIcon: React.FC<{ style?: React.CSSProperties }> = ({ style }) => (
+  <span style={{ fontWeight: 800, fontSize: 15, lineHeight: 1, fontFamily: 'system-ui, -apple-system, sans-serif', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, ...style }}>
+    ₹
+  </span>
+);
+
+export type NavCategory = 'Core' | 'Festival & Events' | 'Finance & Operations' | 'Analytics' | 'Administration';
+
+export interface NavItem {
   key: string;
   label: string;
   icon: React.ReactNode;
   module?: string;
+  category: NavCategory;
+  badge?: React.ReactNode;
 }
 
 const SUPER_ADMIN_NAV: NavItem[] = [
-  { key: '/dashboard',   label: 'Dashboard',         icon: <DashboardOutlined /> },
-  { key: '/ai-insights', label: 'AI Insights',       icon: <RobotOutlined style={{ color: '#F97316' }} /> },
-  { key: '/super-admin', label: 'Organizations',     icon: <CrownOutlined /> },
-  { key: '/audit',       label: 'Global Audit Log',  icon: <AuditOutlined /> },
-  { key: '/users',       label: 'Platform Users',    icon: <UserOutlined /> },
-  { key: '/settings',    label: 'Global Settings',   icon: <SettingOutlined /> },
+  { key: '/dashboard',   label: 'Dashboard',         icon: <DashboardOutlined />, category: 'Core' },
+  { key: '/ai-insights', label: 'AI Insights',       icon: <RobotOutlined style={{ color: '#F97316' }} />, category: 'Core', badge: <Tag color="orange" style={{ fontSize: 10, padding: '0 4px', lineHeight: '16px', borderRadius: 4, fontWeight: 800, margin: 0 }}>AI</Tag> },
+  { key: '/super-admin', label: 'Organizations',     icon: <CrownOutlined />, category: 'Administration' },
+  { key: '/audit',       label: 'Global Audit Log',  icon: <AuditOutlined />, category: 'Administration' },
+  { key: '/users',       label: 'Platform Users',    icon: <UserOutlined />, category: 'Administration' },
+  { key: '/settings',    label: 'Global Settings',   icon: <SettingOutlined />, category: 'Administration' },
 ];
 
 const ORG_NAV: NavItem[] = [
-  { key: '/dashboard',      label: 'Dashboard',       icon: <DashboardOutlined /> },
-  { key: '/ai-insights',    label: 'AI Insights',     icon: <RobotOutlined style={{ color: '#F97316' }} /> },
-  { key: '/financial-year', label: 'Financial Year',  icon: <CalendarOutlined />, module: 'financial_year' },
-  { key: '/festivals',      label: 'Festivals',       icon: <GlobalOutlined />,   module: 'festivals' },
-  { key: '/planning',       label: 'Festival Planning', icon: <ProjectOutlined style={{ color: '#F97316' }} />, module: 'festivals' },
-  { key: '/invitations',    label: 'Invitations & RSVP', icon: <MailOutlined style={{ color: '#3B82F6' }} />, module: 'users' },
-  { key: '/donors',         label: 'Donors',          icon: <TeamOutlined />,     module: 'donors' },
-  { key: '/receipts',       label: 'Receipts',        icon: <FileTextOutlined />, module: 'receipts' },
-  { key: '/settlements',    label: 'Cash Settlement', icon: <BankOutlined />,     module: 'cash_settlement' },
-  { key: '/expenses',       label: 'Expenses',        icon: <DollarOutlined />,   module: 'expenses' },
-  { key: '/inventory',      label: 'Inventory & Assets', icon: <ToolOutlined />,  module: 'inventory' },
-  { key: '/reports',        label: 'Reports',         icon: <BarChartOutlined />, module: 'reports' },
-  { key: '/users',          label: 'Users',           icon: <UserOutlined />,     module: 'users' },
-  { key: '/rbac',           label: 'Roles & Access',  icon: <SafetyOutlined />,   module: 'rbac' },
-  { key: '/audit',          label: 'Audit Trail',     icon: <AuditOutlined />,    module: 'audit' },
-  { key: '/settings',       label: 'Settings',        icon: <SettingOutlined />,  module: 'settings' },
+  // Core
+  { key: '/dashboard',      label: 'Dashboard',       icon: <DashboardOutlined />, category: 'Core' },
+  { key: '/ai-insights',    label: 'AI Insights',     icon: <RobotOutlined style={{ color: '#F97316' }} />, category: 'Core', badge: <Tag color="orange" style={{ fontSize: 10, padding: '0 4px', lineHeight: '16px', borderRadius: 4, fontWeight: 800, margin: 0 }}>✨ AI</Tag> },
+  
+  // Festival & Events
+  { key: '/financial-year', label: 'Financial Year',  icon: <CalendarOutlined />, module: 'financial_year', category: 'Festival & Events' },
+  { key: '/festivals',      label: 'Festivals',       icon: <GlobalOutlined />,   module: 'festivals', category: 'Festival & Events' },
+  { key: '/planning',       label: 'Festival Planning', icon: <ProjectOutlined style={{ color: '#F97316' }} />, module: 'festivals', category: 'Festival & Events' },
+  { key: '/invitations',    label: 'Invitations & RSVP', icon: <MailOutlined style={{ color: '#3B82F6' }} />, module: 'users', category: 'Festival & Events', badge: <Tag color="blue" style={{ fontSize: 10, padding: '0 4px', lineHeight: '16px', borderRadius: 4, margin: 0 }}>RSVP</Tag> },
+  
+  // Finance & Operations
+  { key: '/donors',         label: 'Donors',          icon: <TeamOutlined />,     module: 'donors', category: 'Finance & Operations' },
+  { key: '/receipts',       label: 'Receipts',        icon: <FileTextOutlined />, module: 'receipts', category: 'Finance & Operations' },
+  { key: '/settlements',    label: 'Cash Settlement', icon: <BankOutlined />,     module: 'cash_settlement', category: 'Finance & Operations', badge: <Tag color="green" style={{ fontSize: 10, padding: '0 4px', lineHeight: '16px', borderRadius: 4, margin: 0 }}>CASH</Tag> },
+  { key: '/expenses',       label: 'Expenses',        icon: <RupeeIcon />,        module: 'expenses', category: 'Finance & Operations' },
+  { key: '/inventory',      label: 'Inventory & Assets', icon: <ToolOutlined />,  module: 'inventory', category: 'Finance & Operations' },
+  
+  // Analytics
+  { key: '/reports',        label: 'Reports',         icon: <BarChartOutlined />, module: 'reports', category: 'Analytics' },
+  
+  // Administration
+  { key: '/users',          label: 'Users',           icon: <UserOutlined />,     module: 'users', category: 'Administration' },
+  { key: '/rbac',           label: 'Roles & Access',  icon: <SafetyOutlined />,   module: 'rbac', category: 'Administration' },
+  { key: '/audit',          label: 'Audit Trail',     icon: <AuditOutlined />,    module: 'audit', category: 'Administration' },
+  { key: '/settings',       label: 'Settings',        icon: <SettingOutlined />,  module: 'settings', category: 'Administration' },
 ];
 
 import CollectorDailySummaryModal from '../modules/settlements/CollectorDailySummaryModal';
@@ -65,6 +85,19 @@ const AppShell: React.FC<Props> = ({ children }) => {
   const [notifOpen, setNotifOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
   const [eodModalOpen, setEodModalOpen] = useState(false);
+
+  // Sidebar enhanced features state
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef<any>(null);
+  const [pinnedKeys, setPinnedKeys] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('hissob_pinned_nav');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
   const navigate = useNavigate();
   const location = useLocation();
   const { user, can, hasModule, selectedTenantId, setSelectedTenantId } = useAuthStore();
@@ -75,6 +108,36 @@ const AppShell: React.FC<Props> = ({ children }) => {
     queryFn: getOrganizations,
     enabled: !!user?.is_super_admin,
   });
+
+  // Global Keyboard Shortcuts (Ctrl+B to collapse/expand sidebar, Ctrl+/ to focus search)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        setCollapsed((prev) => !prev);
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+        e.preventDefault();
+        if (collapsed) setCollapsed(false);
+        setTimeout(() => searchInputRef.current?.focus(), 100);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [collapsed]);
+
+  const togglePin = (key: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setPinnedKeys((prev) => {
+      const updated = prev.includes(key)
+        ? prev.filter((k) => k !== key)
+        : [...prev, key];
+      try {
+        localStorage.setItem('hissob_pinned_nav', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  };
 
   React.useEffect(() => {
     if (!notifOpen && !userOpen) return;
@@ -252,7 +315,6 @@ const AppShell: React.FC<Props> = ({ children }) => {
     </div>
   );
 
-
   const handleLogout = async () => {
     await authService.logout();
     navigate('/login');
@@ -271,7 +333,7 @@ const AppShell: React.FC<Props> = ({ children }) => {
     ? '👑 SUPER ADMIN' 
     : (userRolesList[0]?.name || userRolesList[0]?.slug || (user as any)?.role || 'MEMBER');
 
-  const visibleNavItems = user?.is_super_admin
+  const visibleNavItems: NavItem[] = user?.is_super_admin
     ? SUPER_ADMIN_NAV
     : ORG_NAV.filter((item) => !item.module || hasModule(item.module));
 
@@ -366,6 +428,155 @@ const AppShell: React.FC<Props> = ({ children }) => {
     }
   };
 
+  const handleNavClick = (key: string) => {
+    setMobileOpen(false);
+    navigate(key);
+  };
+
+  // Quick Action menu items definition
+  const quickActionMenuItems = [
+    {
+      key: 'receipt',
+      label: '💰 Issue Receipt',
+      onClick: () => handleNavClick('/receipts'),
+    },
+    {
+      key: 'expense',
+      label: '🧾 Record Expense',
+      onClick: () => handleNavClick('/expenses'),
+    },
+    {
+      key: 'settlement',
+      label: '🤝 Cash Settlement',
+      onClick: () => handleNavClick('/settlements'),
+    },
+    {
+      key: 'invite',
+      label: '📩 Send Invitations',
+      onClick: () => handleNavClick('/invitations'),
+    },
+    {
+      key: 'festival',
+      label: '🎪 Festival Planning',
+      onClick: () => handleNavClick('/planning'),
+    },
+  ];
+
+  // Custom Item Label Renderer for Menu
+  const renderItemLabel = (item: NavItem) => {
+    const isPinned = pinnedKeys.includes(item.key);
+    return (
+      <div className="sidebar-nav-item-inner">
+        <span className="sidebar-nav-item-title">{item.label}</span>
+        <div className="sidebar-nav-item-meta">
+          {item.badge}
+          {!collapsed && (
+            <span
+              className={`sidebar-star-btn ${isPinned ? 'pinned' : ''}`}
+              onClick={(e) => togglePin(item.key, e)}
+              title={isPinned ? 'Unpin from favorites' : 'Pin to favorites'}
+            >
+              {isPinned ? <StarFilled style={{ color: '#F59E0B' }} /> : <StarOutlined />}
+            </span>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // Filter items by search query
+  const filteredNavItems = visibleNavItems.filter((item) =>
+    item.label.toLowerCase().includes(searchQuery.toLowerCase().trim())
+  );
+
+  // Construct Ant Design Menu Items
+  const buildMenuItems = () => {
+    if (collapsed) {
+      return filteredNavItems.map((item) => ({
+        key: item.key,
+        icon: (
+          <Tooltip title={item.label} placement="right">
+            {item.icon}
+          </Tooltip>
+        ),
+        label: item.label,
+        onClick: () => handleNavClick(item.key),
+      }));
+    }
+
+    // Active Search View
+    if (searchQuery.trim().length > 0) {
+      if (filteredNavItems.length === 0) {
+        return [
+          {
+            key: 'no-results',
+            disabled: true,
+            label: (
+              <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.45)', padding: '12px 0', fontSize: 12 }}>
+                No pages matching "{searchQuery}"
+              </div>
+            ),
+          },
+        ];
+      }
+      return filteredNavItems.map((item) => ({
+        key: item.key,
+        icon: item.icon,
+        label: renderItemLabel(item),
+        onClick: () => handleNavClick(item.key),
+      }));
+    }
+
+    const items: any[] = [];
+
+    // 1. Favorites Pinned Section
+    const pinnedItems = visibleNavItems.filter((item) => pinnedKeys.includes(item.key));
+    if (pinnedItems.length > 0) {
+      items.push({
+        type: 'group',
+        key: 'group-favorites',
+        label: <span className="sidebar-group-heading">⭐ FAVORITES</span>,
+        children: pinnedItems.map((item) => ({
+          key: item.key,
+          icon: item.icon,
+          label: renderItemLabel(item),
+          onClick: () => handleNavClick(item.key),
+        })),
+      });
+    }
+
+    // 2. Categorized Groups
+    const CATEGORY_LABELS: Record<NavCategory, string> = {
+      'Core': '⚡ CORE',
+      'Festival & Events': '🎪 FESTIVALS & EVENTS',
+      'Finance & Operations': '💳 FINANCE & OPERATIONS',
+      'Analytics': '📊 ANALYTICS & REPORTS',
+      'Administration': '🛡️ ADMINISTRATION',
+    };
+
+    const categories: NavCategory[] = ['Core', 'Festival & Events', 'Finance & Operations', 'Analytics', 'Administration'];
+    categories.forEach((cat) => {
+      const catItems = visibleNavItems.filter((item) => item.category === cat);
+      if (catItems.length > 0) {
+        items.push({
+          type: 'group',
+          key: `group-${cat}`,
+          label: <span className="sidebar-group-heading">{CATEGORY_LABELS[cat]}</span>,
+          children: catItems.map((item) => ({
+            key: item.key,
+            icon: item.icon,
+            label: renderItemLabel(item),
+            onClick: () => handleNavClick(item.key),
+          })),
+        });
+      }
+    });
+
+    return items;
+  };
+
+  const currentPageItem = visibleNavItems.find((item) => item.key === location.pathname);
+
   return (
     <Layout className="app-shell">
       {/* ── Mobile Navigation Drawer ── */}
@@ -385,20 +596,41 @@ const AppShell: React.FC<Props> = ({ children }) => {
           header: { background: '#FFF' },
         }}
       >
+        <div style={{ padding: '12px 12px 4px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <Button
+            type="primary"
+            icon={<RobotOutlined />}
+            style={{
+              background: 'linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%)',
+              border: 'none',
+              borderRadius: 8,
+              fontWeight: 700,
+              boxShadow: '0 4px 12px rgba(30,64,175,0.4)',
+            }}
+            block
+            onClick={() => {
+              setMobileOpen(false);
+              window.dispatchEvent(new CustomEvent('open-ai-chat'));
+            }}
+          >
+            🤖 Ask Hisob AI Assistant
+          </Button>
+          <Input
+            placeholder="Search menu..."
+            prefix={<SearchOutlined style={{ color: 'rgba(255,255,255,0.45)' }} />}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            allowClear
+            size="small"
+            className="sidebar-search-input"
+          />
+        </div>
         <Menu
           mode="inline"
           theme="dark"
           selectedKeys={[location.pathname]}
           className="sidebar-menu"
-          items={visibleNavItems.map((item) => ({
-            key: item.key,
-            icon: item.icon,
-            label: item.label,
-            onClick: () => {
-              setMobileOpen(false);
-              navigate(item.key);
-            },
-          }))}
+          items={buildMenuItems()}
         />
       </Drawer>
 
@@ -414,31 +646,92 @@ const AppShell: React.FC<Props> = ({ children }) => {
         {/* Logo */}
         <div className="sidebar-logo" onClick={() => navigate('/dashboard')}>
           <div className="sidebar-logo-icon">H</div>
-          {!collapsed && <span className="sidebar-logo-text">Hisob ERP</span>}
+          {!collapsed && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}>
+              <span className="sidebar-logo-text">Hisob ERP</span>
+              <Tag color="orange" style={{ fontSize: 9, padding: '0 4px', lineHeight: '14px', borderRadius: 4, fontWeight: 800, margin: 0 }}>PRO</Tag>
+            </div>
+          )}
         </div>
 
-        {/* Navigation */}
+        {/* Quick Actions & Search Bar Utility Header */}
+        <div className="sidebar-utility-section">
+          {!collapsed ? (
+            <>
+              <Dropdown menu={{ items: quickActionMenuItems }} placement="bottomLeft" trigger={['click']}>
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  className="sidebar-quick-action-btn"
+                  block
+                >
+                  Quick Action
+                </Button>
+              </Dropdown>
+              <div className="sidebar-search-wrapper">
+                <Input
+                  ref={searchInputRef}
+                  placeholder="Search menu (Ctrl+/)"
+                  prefix={<SearchOutlined style={{ color: 'rgba(255,255,255,0.45)' }} />}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  allowClear
+                  size="small"
+                  className="sidebar-search-input"
+                />
+              </div>
+            </>
+          ) : (
+            <Dropdown menu={{ items: quickActionMenuItems }} placement="rightTop" trigger={['click']}>
+              <Tooltip title="Quick Action" placement="right">
+                <Button
+                  type="primary"
+                  shape="circle"
+                  icon={<PlusOutlined />}
+                  className="sidebar-quick-action-btn-collapsed"
+                />
+              </Tooltip>
+            </Dropdown>
+          )}
+        </div>
+
+        {/* Navigation Menu */}
         <Menu
           mode="inline"
           theme="dark"
           selectedKeys={[location.pathname]}
           className="sidebar-menu"
-          items={visibleNavItems.map((item) => ({
-            key: item.key,
-            icon: item.icon,
-            label: item.label,
-            onClick: () => navigate(item.key),
-          }))}
+          items={buildMenuItems()}
         />
+
+        {/* Compact User Profile Footer Card */}
+        {!collapsed && user && (
+          <div className="sidebar-user-footer" onClick={() => navigate('/settings')} title="View Account Settings">
+            <Avatar
+              src={(user as any)?.avatar_url}
+              style={{ backgroundColor: '#F97316', color: '#fff', fontWeight: 800, flexShrink: 0 }}
+              size={30}
+            >
+              {user?.full_name?.charAt(0) || 'U'}
+            </Avatar>
+            <div className="sidebar-user-info">
+              <span className="sidebar-user-name">{user?.full_name || 'User'}</span>
+              <span className="sidebar-user-role">{primaryRoleName}</span>
+            </div>
+            <SettingOutlined className="sidebar-user-cog" />
+          </div>
+        )}
 
         {/* Collapse toggle */}
         <div className="sidebar-collapse-btn">
-          <Button
-            type="text"
-            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-            onClick={() => setCollapsed(!collapsed)}
-            className="collapse-btn"
-          />
+          <Tooltip title={collapsed ? "Expand Sidebar (Ctrl+B)" : "Collapse Sidebar (Ctrl+B)"} placement="right">
+            <Button
+              type="text"
+              icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+              onClick={() => setCollapsed(!collapsed)}
+              className="collapse-btn"
+            />
+          </Tooltip>
         </div>
       </Sider>
 
@@ -453,13 +746,37 @@ const AppShell: React.FC<Props> = ({ children }) => {
               icon={collapsed ? <MenuUnfoldOutlined /> : <MenuOutlined />}
               onClick={handleToggleMenu}
             />
-            <span style={{ fontSize: 16, fontWeight: 800, color: '#0B2347', letterSpacing: '-0.3px' }} className="hide-mobile">
-              HISOB ERP
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }} className="hide-mobile">
+              <span style={{ fontSize: 15, fontWeight: 800, color: '#0B2347', letterSpacing: '-0.3px' }}>
+                HISOB ERP
+              </span>
+              {currentPageItem && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#94A3B8', fontSize: 13, fontWeight: 600 }}>
+                  <span>/</span>
+                  <span style={{ color: '#F97316', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    {currentPageItem.icon} {currentPageItem.label}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Quick Search Pill Button */}
+            <Button
+              type="text"
+              icon={<SearchOutlined style={{ color: '#94A3B8' }} />}
+              className="header-search-btn hide-mobile"
+              onClick={() => {
+                if (collapsed) setCollapsed(false);
+                setTimeout(() => searchInputRef.current?.focus(), 100);
+              }}
+            >
+              <span style={{ color: '#64748B', fontSize: 12, fontWeight: 600 }}>Search...</span>
+              <Tag style={{ fontSize: 10, borderRadius: 4, margin: 0, padding: '0 4px', background: '#F1F5F9', border: '1px solid #CBD5E1', color: '#64748B' }}>Ctrl + /</Tag>
+            </Button>
 
             {user?.is_super_admin && (
               <Select
-                style={{ minWidth: 260, marginLeft: 16 }}
+                style={{ minWidth: 240, marginLeft: 12 }}
                 placeholder="Select Organization View"
                 value={selectedTenantId || 'all'}
                 onChange={(val) => {
@@ -567,6 +884,58 @@ const AppShell: React.FC<Props> = ({ children }) => {
 
       {/* Global Floating AI Financial Chatbot Widget */}
       <AIChatWidget />
+
+      {/* ── Mobile Sticky Bottom Navigation Bar (RBAC Filtered) ── */}
+      <div className="mobile-bottom-nav">
+        {(() => {
+          let navTabs: any[] = [];
+          if (user?.is_super_admin) {
+            navTabs = [
+              { key: '/dashboard', label: 'Home', icon: <DashboardOutlined /> },
+              { key: '/super-admin', label: 'Orgs', icon: <CrownOutlined /> },
+              { key: '/audit', label: 'Audit', icon: <AuditOutlined /> },
+              { key: '/users', label: 'Users', icon: <UserOutlined /> },
+            ];
+          } else {
+            const candidateTabs = [
+              { key: '/dashboard', label: 'Home', icon: <DashboardOutlined /> },
+              { key: '/receipts', label: 'Receipts', icon: <FileTextOutlined />, module: 'receipts' },
+              { key: '/expenses', label: 'Expenses', icon: <RupeeIcon />, module: 'expenses' },
+              { key: '/donors', label: 'Donors', icon: <TeamOutlined />, module: 'donors' },
+              { key: '/settlements', label: 'Settlements', icon: <BankOutlined />, module: 'cash_settlement' },
+              { key: '/festivals', label: 'Festivals', icon: <GlobalOutlined />, module: 'festivals' },
+              { key: '/inventory', label: 'Inventory', icon: <ToolOutlined />, module: 'inventory' },
+              { key: '/reports', label: 'Reports', icon: <BarChartOutlined />, module: 'reports' },
+            ];
+            navTabs = candidateTabs.filter((tab) => !tab.module || hasModule(tab.module)).slice(0, 4);
+          }
+
+          const fullNavList = [
+            ...navTabs,
+            { key: 'menu-more', label: 'Menu', icon: <MenuOutlined />, action: () => setMobileOpen(true) },
+          ];
+
+          return fullNavList.map((nav) => {
+            const isActive = location.pathname === nav.key;
+            return (
+              <div
+                key={nav.key}
+                className={`mobile-bottom-nav-item ${isActive ? 'active' : ''}`}
+                onClick={() => {
+                  if (nav.action) {
+                    nav.action();
+                  } else {
+                    navigate(nav.key);
+                  }
+                }}
+              >
+                <span className="mobile-bottom-nav-icon">{nav.icon}</span>
+                <span className="mobile-bottom-nav-label">{nav.label}</span>
+              </div>
+            );
+          });
+        })()}
+      </div>
     </Layout>
   );
 };

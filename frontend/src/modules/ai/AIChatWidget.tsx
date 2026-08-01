@@ -57,6 +57,12 @@ const AIChatWidget: React.FC<Props> = ({ embedded = false }) => {
     }
   }, [org]);
 
+  useEffect(() => {
+    const handleOpenChat = () => setIsOpen(true);
+    window.addEventListener('open-ai-chat', handleOpenChat);
+    return () => window.removeEventListener('open-ai-chat', handleOpenChat);
+  }, []);
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome-1',
@@ -486,7 +492,7 @@ const AIChatWidget: React.FC<Props> = ({ embedded = false }) => {
           {/* Pop-up Window */}
           {isOpen && (
             <div
-              className="chat-popup-window"
+              className="chat-popup-window ai-chat-popup-container"
               style={{
                 position: 'fixed',
                 bottom: '92px',
@@ -500,6 +506,7 @@ const AIChatWidget: React.FC<Props> = ({ embedded = false }) => {
 
           {/* Floating Trigger Button with Pulsing Glow & Sequential Animated Typing Dots */}
           <div
+            className="ai-chat-fab-container"
             style={{
               position: 'fixed',
               bottom: '24px',
