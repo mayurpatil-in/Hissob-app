@@ -2,7 +2,7 @@
 Donor & Area models.
 """
 import uuid
-from sqlalchemy import String, Boolean, ForeignKey, Text, Date, Integer
+from sqlalchemy import String, Boolean, ForeignKey, Text, Date, Integer, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID
 from app.core.database import Base
@@ -25,6 +25,9 @@ class Area(Base, UUIDMixin, TimestampMixin, TenantMixin):
 
 class Donor(Base, UUIDMixin, TimestampMixin, TenantMixin):
     __tablename__ = "donors"
+    __table_args__ = (
+        Index("idx_donors_tenant_phone", "tenant_id", "phone"),
+    )
 
     area_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("areas.id"), nullable=True
@@ -33,7 +36,7 @@ class Donor(Base, UUIDMixin, TimestampMixin, TenantMixin):
     # Identity
     donor_number: Mapped[str | None] = mapped_column(String(50), index=True)
     full_name: Mapped[str] = mapped_column(String(200), nullable=False)
-    phone: Mapped[str | None] = mapped_column(String(20))
+    phone: Mapped[str | None] = mapped_column(String(20), index=True)
     email: Mapped[str | None] = mapped_column(String(255))
     address: Mapped[str | None] = mapped_column(Text)
     city: Mapped[str | None] = mapped_column(String(100))

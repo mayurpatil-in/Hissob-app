@@ -5,7 +5,8 @@ from typing import Dict, Any, List
 from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, case
+from sqlalchemy.orm import joinedload
 
 from app.core.database import get_db
 from app.auth.deps import get_current_user
@@ -24,61 +25,47 @@ def get_dashboard_summary(
 ):
     """
     Returns live database metrics for the active tenant's dashboard.
+    Optimized: Single SQL aggregate queries to eliminate N+1 overhead.
     """
     tenant_id = current_user.tenant_id
 
-    # 1. Total Collections & Receipts Metrics
-    receipt_query = db.query(Receipt).filter(
+    # 1. Total Collections & Receipts Aggregations (Single Query)
+    receipt_stats = db.query(
+        func.count(Receipt.id).label("total_receipts"),
+        func.coalesce(func.sum(Receipt.amount), 0.0).label("total_collections"),
+        func.coalesce(func.sum(case((Receipt.status == "settled", Receipt.amount), else_=0.0)), 0.0).label("settled_amount"),
+        func.coalesce(func.sum(case((Receipt.status.in_(["pending_settlement", "issued"]), Receipt.amount), else_=0.0)), 0.0).label("pending_amount"),
+        func.count(case((Receipt.status.in_(["pending_settlement", "issued"]), 1))).label("pending_count"),
+        func.coalesce(func.sum(case((Receipt.payment_mode == "cash", Receipt.amount), else_=0.0)), 0.0).label("cash_amount"),
+    ).filter(
         Receipt.tenant_id == tenant_id,
         Receipt.status != "cancelled"
-    )
+    ).first()
 
-    total_receipts = receipt_query.count()
-    total_collections = float(db.query(func.coalesce(func.sum(Receipt.amount), 0.0)).filter(
-        Receipt.tenant_id == tenant_id,
-        Receipt.status != "cancelled"
-    ).scalar() or 0.0)
-
-    settled_amount = float(db.query(func.coalesce(func.sum(Receipt.amount), 0.0)).filter(
-        Receipt.tenant_id == tenant_id,
-        Receipt.status == "settled"
-    ).scalar() or 0.0)
-
-    pending_amount = float(db.query(func.coalesce(func.sum(Receipt.amount), 0.0)).filter(
-        Receipt.tenant_id == tenant_id,
-        Receipt.status.in_(["pending_settlement", "issued"])
-    ).scalar() or 0.0)
-
-    pending_count = db.query(Receipt).filter(
-        Receipt.tenant_id == tenant_id,
-        Receipt.status.in_(["pending_settlement", "issued"])
-    ).count()
-
-    # 2. Donor Metrics
-    total_donors = db.query(Donor).filter(Donor.tenant_id == tenant_id).count()
-    
-    seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
-    new_donors_week = db.query(Donor).filter(
-        Donor.tenant_id == tenant_id,
-        Donor.created_at >= seven_days_ago
-    ).count()
-
-    vip_donors_count = db.query(Donor).filter(
-        Donor.tenant_id == tenant_id,
-        Donor.is_vip == True
-    ).count()
-
-    # 3. Mode Breakdown (Cash vs Digital)
-    cash_amount = float(db.query(func.coalesce(func.sum(Receipt.amount), 0.0)).filter(
-        Receipt.tenant_id == tenant_id,
-        Receipt.status != "cancelled",
-        Receipt.payment_mode == "cash"
-    ).scalar() or 0.0)
-
+    total_receipts = receipt_stats.total_receipts if receipt_stats else 0
+    total_collections = float(receipt_stats.total_collections if receipt_stats else 0.0)
+    settled_amount = float(receipt_stats.settled_amount if receipt_stats else 0.0)
+    pending_amount = float(receipt_stats.pending_amount if receipt_stats else 0.0)
+    pending_count = receipt_stats.pending_count if receipt_stats else 0
+    cash_amount = float(receipt_stats.cash_amount if receipt_stats else 0.0)
     digital_amount = total_collections - cash_amount
 
-    # 4. Recent 5 Receipts
-    recent_receipts_raw = db.query(Receipt).filter(
+    # 2. Donor Aggregations (Single Query)
+    seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
+    donor_stats = db.query(
+        func.count(Donor.id).label("total_donors"),
+        func.count(case((Donor.created_at >= seven_days_ago, 1))).label("new_donors_week"),
+        func.count(case((Donor.is_vip == True, 1))).label("vip_donors_count"),
+    ).filter(Donor.tenant_id == tenant_id).first()
+
+    total_donors = donor_stats.total_donors if donor_stats else 0
+    new_donors_week = donor_stats.new_donors_week if donor_stats else 0
+    vip_donors_count = donor_stats.vip_donors_count if donor_stats else 0
+
+    # 3. Recent 5 Receipts (With Eager Loading to avoid N+1 per row)
+    recent_receipts_raw = db.query(Receipt).options(
+        joinedload(Receipt.donor)
+    ).filter(
         Receipt.tenant_id == tenant_id
     ).order_by(Receipt.created_at.desc()).limit(5).all()
 
@@ -103,16 +90,26 @@ def get_dashboard_summary(
             "status": str(r.status)
         })
 
-    # 5. Festivals Campaign Progress
+    # 4. Festivals Campaign Progress (Grouped in 1 Query instead of N+1 loop)
     festivals_raw = db.query(Festival).filter(Festival.tenant_id == tenant_id).limit(4).all()
+    
+    festival_totals = {}
+    if festivals_raw:
+        festival_ids = [f.id for f in festivals_raw]
+        totals_query = db.query(
+            Receipt.festival_id,
+            func.coalesce(func.sum(Receipt.amount), 0.0).label("collected")
+        ).filter(
+            Receipt.tenant_id == tenant_id,
+            Receipt.festival_id.in_(festival_ids),
+            Receipt.status != "cancelled"
+        ).group_by(Receipt.festival_id).all()
+
+        festival_totals = {row.festival_id: float(row.collected) for row in totals_query}
+
     festivals = []
     for f in festivals_raw:
-        collected = float(db.query(func.coalesce(func.sum(Receipt.amount), 0.0)).filter(
-            Receipt.tenant_id == tenant_id,
-            Receipt.festival_id == f.id,
-            Receipt.status != "cancelled"
-        ).scalar() or 0.0)
-        
+        collected = festival_totals.get(f.id, 0.0)
         target = float(getattr(f, 'budget', 0.0) or 100000.0)
         pct = min(100, int((collected / target) * 100)) if target > 0 else 0
         

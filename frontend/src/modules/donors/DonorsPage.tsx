@@ -19,7 +19,7 @@ import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
 
-const CITY_PRESETS = ['Mumbai', 'Pune', 'Thane', 'Navi Mumbai', 'Nagpur', 'Nashik', 'Surat'];
+const CITY_PRESETS = ['Kolhapur', 'Sangli', 'Mumbai', 'Pune', 'Nagpur', 'Nashik', 'Surat'];
 
 const DonorsPage: React.FC = () => {
   const { message } = App.useApp();
@@ -619,7 +619,7 @@ const DonorsPage: React.FC = () => {
           <Form form={form} layout="vertical" onFinish={handleSubmit}>
             <Form.Item
               name="full_name"
-              label={<span style={{ fontWeight: 700, color: '#0F172A' }}>Full Name</span>}
+              label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Full Name</span>}
               rules={[{ required: true, message: 'Please enter the donor full name' }]}
             >
               <Input prefix={<UserOutlined style={{ color: '#94A3B8' }} />} placeholder="e.g. Ramesh Chandra Sharma" size="large" style={{ borderRadius: 8 }} />
@@ -627,12 +627,12 @@ const DonorsPage: React.FC = () => {
 
             <Row gutter={16}>
               <Col xs={24} sm={12}>
-                <Form.Item name="phone" label={<span style={{ fontWeight: 700, color: '#0F172A' }}>Phone Number</span>}>
+                <Form.Item name="phone" label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Phone Number</span>}>
                   <Input prefix={<PhoneOutlined style={{ color: '#94A3B8' }} />} placeholder="9876543210" size="large" style={{ borderRadius: 8 }} />
                 </Form.Item>
               </Col>
               <Col xs={24} sm={12}>
-                <Form.Item name="email" label={<span style={{ fontWeight: 700, color: '#0F172A' }}>Email Address</span>}>
+                <Form.Item name="email" label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Email Address</span>}>
                   <Input prefix={<MailOutlined style={{ color: '#94A3B8' }} />} placeholder="donor@gmail.com" size="large" style={{ borderRadius: 8 }} />
                 </Form.Item>
               </Col>
@@ -640,13 +640,13 @@ const DonorsPage: React.FC = () => {
 
             <Row gutter={16}>
               <Col xs={24} sm={12}>
-                <Form.Item name="pan_number" label={<span style={{ fontWeight: 700, color: '#0F172A' }}>PAN Number (80G Tax)</span>}>
+                <Form.Item name="pan_number" label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>PAN Number (80G Tax)</span>}>
                   <Input prefix={<IdcardOutlined style={{ color: '#94A3B8' }} />} placeholder="ABCDE1234F" size="large" style={{ borderRadius: 8, textTransform: 'uppercase' }} />
                 </Form.Item>
               </Col>
               <Col xs={24} sm={12}>
-                <Form.Item name="city" label={<span style={{ fontWeight: 700, color: '#0F172A' }}>City / District</span>}>
-                  <Input prefix={<EnvironmentOutlined style={{ color: '#94A3B8' }} />} placeholder="e.g. Mumbai" size="large" style={{ borderRadius: 8 }} />
+                <Form.Item name="city" label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>City / District</span>}>
+                  <Input prefix={<EnvironmentOutlined style={{ color: '#94A3B8' }} />} placeholder="e.g. Kolhapur" size="large" style={{ borderRadius: 8 }} />
                 </Form.Item>
               </Col>
             </Row>
@@ -668,8 +668,8 @@ const DonorsPage: React.FC = () => {
               </Space>
             </div>
 
-            <div style={{ background: '#F8FAFC', padding: '14px 16px', borderRadius: 10, border: '1px solid #E2E8F0', marginBottom: 20 }}>
-              <Text style={{ fontWeight: 800, color: '#0F172A', display: 'block', marginBottom: 8, fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            <div style={{ background: 'var(--color-bg-layout)', padding: '14px 16px', borderRadius: 10, border: '1px solid var(--color-border)', marginBottom: 20 }}>
+              <Text style={{ fontWeight: 800, color: 'var(--color-text-primary)', display: 'block', marginBottom: 8, fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                 Donor Preferences & Badges
               </Text>
               <Row gutter={16}>
@@ -690,7 +690,7 @@ const DonorsPage: React.FC = () => {
               </Row>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, paddingTop: 12, borderTop: '1px solid #F1F5F9' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, paddingTop: 12, borderTop: '1px solid var(--color-border)' }}>
               <Button size="large" onClick={() => setIsModalOpen(false)} style={{ borderRadius: 8, fontWeight: 600 }}>
                 Cancel
               </Button>

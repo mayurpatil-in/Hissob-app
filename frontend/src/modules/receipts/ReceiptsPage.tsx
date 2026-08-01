@@ -12,7 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { getReceipts, createReceipt, updateReceipt, cancelReceipt, deleteReceipt, settleReceipt, getDonors, getFinancialYears, getFestivals, getMyOrganization } from '../../api/services';
 import { useAuthStore } from '../../store/authStore';
 import { generateWhatsAppReceiptLink } from '../../utils/whatsapp';
-import { printReceiptWindow, shareReceiptViaWhatsApp, downloadReceiptImage, preGenerateReceiptBlob, isReceiptBlobCached } from '../../utils/printReceipt';
+import { printReceiptWindow, shareReceiptViaWhatsApp, downloadReceiptImage, preGenerateReceiptBlob, isReceiptBlobCached, preloadReceiptFonts } from '../../utils/printReceipt';
 import { exportToCSV, exportToExcel } from '../../utils/exportTable';
 import AIVoiceAssistantModal from '../ai/AIVoiceAssistantModal';
 import CollectorDailySummaryModal from '../settlements/CollectorDailySummaryModal';
@@ -96,7 +96,6 @@ const ReceiptsPage: React.FC = () => {
     typeof window !== 'undefined' && window.innerWidth <= 768 ? 'grid' : 'table'
   );
   const [actionLoadingKey, setActionLoadingKey] = useState<string | null>(null);
-  const [isPregenReady, setIsPregenReady] = useState(false);
 
 
 
@@ -178,34 +177,40 @@ const ReceiptsPage: React.FC = () => {
 
   const canPermanentlyDelete = isOrgAdmin && (user?.is_super_admin || myOrg?.allow_permanent_deletion !== false);
 
-  // Pre-generate receipt image blobs for the first 5 visible items in background promise batch.
-  // The Skeleton screen remains active until background pre-generation finishes so that
-  // when the page opens, every Share button is 100% ready for instant mobile WhatsApp sharing!
+  // Pre-generate receipt image blobs lazily in background using requestIdleCallback.
+  // Does NOT block page render — receipts page loads instantly.
+  // Uses AbortController so navigation away cancels pending renders.
   useEffect(() => {
-    if (!receipts?.length || !myOrg) {
-      setIsPregenReady(true);
-      return;
-    }
+    if (!receipts?.length || !myOrg) return;
     const orgName = myOrg?.name || 'Hisob ERP';
-    let isCancelled = false;
+    const abortCtrl = new AbortController();
+
+    // Preload receipt fonts on first visit (non-blocking)
+    preloadReceiptFonts();
 
     const runBackgroundPrep = async () => {
-      const topReceipts = receipts.slice(0, 5);
+      // Only pre-gen the first 3 visible receipts (reduced from 5)
+      const topReceipts = receipts.slice(0, 3);
       for (let i = 0; i < topReceipts.length; i++) {
-        if (isCancelled) break;
+        if (abortCtrl.signal.aborted) break;
         try {
-          await preGenerateReceiptBlob(topReceipts[i], orgName, myOrg);
+          await preGenerateReceiptBlob(topReceipts[i], orgName, myOrg, abortCtrl.signal);
         } catch (_) {}
-      }
-      if (!isCancelled) {
-        setIsPregenReady(true);
       }
     };
 
-    runBackgroundPrep();
+    // Use requestIdleCallback to start pre-gen only when browser is idle
+    const idleId = typeof requestIdleCallback === 'function'
+      ? requestIdleCallback(() => { if (!abortCtrl.signal.aborted) runBackgroundPrep(); }, { timeout: 3000 })
+      : setTimeout(() => { if (!abortCtrl.signal.aborted) runBackgroundPrep(); }, 500) as any;
 
     return () => {
-      isCancelled = true;
+      abortCtrl.abort();
+      if (typeof cancelIdleCallback === 'function') {
+        cancelIdleCallback(idleId);
+      } else {
+        clearTimeout(idleId);
+      }
     };
   }, [receipts, myOrg]);
 
@@ -493,7 +498,7 @@ const ReceiptsPage: React.FC = () => {
     },
   ];
 
-  if (isLoading || !isPregenReady) {
+  if (isLoading) {
     return <ReceiptsPageSkeleton />;
   }
 

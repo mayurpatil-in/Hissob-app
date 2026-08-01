@@ -608,7 +608,8 @@ async def create_public_donation_receipt(
         if payload.city and not donor.city:
             donor.city = payload.city
     else:
-        donor_num = f"DNR-{tenant.slug[:4].upper()}-{db.query(Donor).filter(Donor.tenant_id == tenant.id).count() + 1:05d}"
+        donor_repo = DonorRepository(db)
+        donor_num = donor_repo.generate_donor_number(tenant.id)
         donor = Donor(
             tenant_id=tenant.id,
             donor_number=donor_num,

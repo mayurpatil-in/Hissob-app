@@ -5,6 +5,7 @@ from typing import Optional, List
 from uuid import UUID
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import select, or_, func
+from app.models.tenant import Tenant
 from app.models.donor import Donor, Area
 from app.repositories.base import BaseRepository
 
@@ -50,5 +51,7 @@ class DonorRepository(BaseRepository[Donor]):
         return list(self.db.execute(stmt).scalars().all())
 
     def generate_donor_number(self, tenant_id: UUID) -> str:
+        tenant = self.db.query(Tenant).filter(Tenant.id == tenant_id).first()
+        prefix = (tenant.slug[:4].upper() if tenant and tenant.slug else "ORG")
         count = self.count_by_tenant(tenant_id) + 1
-        return f"DNR-{count:05d}"
+        return f"DNR-{prefix}-{count:05d}"

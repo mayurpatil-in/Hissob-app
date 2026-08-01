@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import * as XLSX from 'xlsx';
 import { invitationsApi, type UserInvite, type EventInvite } from '../../api/invitations';
 import { InviteUserModal } from './InviteUserModal';
 import { BulkInviteModal } from './BulkInviteModal';
@@ -109,7 +108,8 @@ export const InvitationsList: React.FC = () => {
     }
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
+    const XLSX = await import('xlsx');
     if (activeTab === 'team') {
       const rows = userInvites.map((inv) => ({
         Email: inv.email,

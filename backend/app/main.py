@@ -10,6 +10,7 @@ import traceback
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.openapi.utils import get_openapi
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -73,6 +74,7 @@ def create_app() -> FastAPI:
     )
     app.add_middleware(TenantMiddleware)
     app.add_middleware(AuditMiddleware)
+    app.add_middleware(GZipMiddleware, minimum_size=1000)
 
     # ─── Global Exception Handler ──────────────────────────────
     # Ensures unhandled 500 errors still get CORS headers applied

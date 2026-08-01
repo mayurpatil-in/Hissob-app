@@ -64,6 +64,7 @@ def send_raw_email(
     tenant_id: Optional[UUID] = None,
     email_type: str = "TRANSACTIONAL",
     metadata_json: Optional[dict] = None,
+    from_name: Optional[str] = None,
 ) -> bool:
     """
     Sends an HTML email via SMTP using server configuration.
@@ -116,10 +117,11 @@ def send_raw_email(
         return False
 
     try:
+        sender_display = from_name if from_name else settings.SMTP_FROM_NAME
         if attachments:
             msg = MIMEMultipart("mixed")
             msg["Subject"] = subject
-            msg["From"] = f"{settings.SMTP_FROM_NAME} <{settings.SMTP_FROM_EMAIL}>"
+            msg["From"] = f"{sender_display} <{settings.SMTP_FROM_EMAIL}>"
             msg["To"] = to_email
 
             body_part = MIMEMultipart("alternative")
@@ -135,7 +137,7 @@ def send_raw_email(
         else:
             msg = MIMEMultipart("alternative")
             msg["Subject"] = subject
-            msg["From"] = f"{settings.SMTP_FROM_NAME} <{settings.SMTP_FROM_EMAIL}>"
+            msg["From"] = f"{sender_display} <{settings.SMTP_FROM_EMAIL}>"
             msg["To"] = to_email
 
             if text_content:
@@ -503,6 +505,7 @@ def send_receipt_email_notification(
         tenant_id=tenant_id,
         email_type="RECEIPT",
         metadata_json={"receipt_number": receipt_number, "amount": amount, "donor_name": donor_name},
+        from_name=f"{org_name} Receipts",
     )
 
 
@@ -988,6 +991,7 @@ def send_donor_welcome_email(
         tenant_id=tenant_id,
         email_type="WELCOME",
         metadata_json={"donor_number": donor_number, "donor_name": donor_name},
+        from_name=f"{org_name} Welcome",
     )
 
 
@@ -1537,6 +1541,7 @@ def send_user_welcome_email(
         tenant_id=tenant_id,
         email_type="USER_WELCOME",
         metadata_json={"role_name": role_name},
+        from_name=f"{org_name} Credentials",
     )
 
 
