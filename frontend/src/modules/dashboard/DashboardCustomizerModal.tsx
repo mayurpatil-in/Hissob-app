@@ -135,7 +135,7 @@ export const DashboardCustomizerModal: React.FC<Props> = ({
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <SettingOutlined style={{ color: '#F97316', fontSize: 20 }} />
           <div>
-            <Title level={4} style={{ margin: 0, color: '#0B2347' }}>
+            <Title level={4} style={{ margin: 0, color: 'var(--color-text-primary)' }}>
               Customize Dashboard Widgets
             </Title>
             <Text type="secondary" style={{ fontSize: 12 }}>
@@ -173,8 +173,8 @@ export const DashboardCustomizerModal: React.FC<Props> = ({
               justifyContent: 'space-between',
               padding: '12px 14px',
               borderRadius: 10,
-              border: '1px solid #F1F5F9',
-              backgroundColor: '#FAFAFA',
+              border: '1px solid var(--color-border)',
+              backgroundColor: 'var(--color-bg)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, overflow: 'hidden' }}>
@@ -182,12 +182,12 @@ export const DashboardCustomizerModal: React.FC<Props> = ({
                 width: 38,
                 height: 38,
                 borderRadius: 8,
-                backgroundColor: '#FFF',
+                backgroundColor: 'var(--color-bg-card)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontSize: 18,
-                border: '1px solid #E2E8F0',
+                border: '1px solid var(--color-border)',
                 flexShrink: 0,
               }}>
                 {item.icon}
@@ -195,7 +195,7 @@ export const DashboardCustomizerModal: React.FC<Props> = ({
 
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Text strong style={{ color: '#0B2347', fontSize: 14 }}>{item.title}</Text>
+                  <Text strong style={{ color: 'var(--color-text-primary)', fontSize: 14 }}>{item.title}</Text>
                   <Tag color="default" style={{ fontSize: 10, borderRadius: 10 }}>{item.category}</Tag>
                 </div>
                 <Text type="secondary" style={{ fontSize: 12, display: 'block' }}>{item.description}</Text>

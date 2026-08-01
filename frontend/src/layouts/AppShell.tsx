@@ -7,12 +7,13 @@ import {
   SettingOutlined, BellOutlined, LogoutOutlined, MenuFoldOutlined,
   MenuUnfoldOutlined, AuditOutlined, GlobalOutlined, SafetyOutlined, CrownOutlined, RobotOutlined,
   MenuOutlined, CheckOutlined, CloseOutlined, RocketOutlined, ToolOutlined, ProjectOutlined, MailOutlined,
-  StarOutlined, StarFilled, SearchOutlined, PlusOutlined
+  StarOutlined, StarFilled, SearchOutlined, PlusOutlined, SunOutlined, MoonOutlined
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getNotifications, markNotificationRead, markAllNotificationsRead, getOrganizations } from '../api/services';
 import type { NotificationItem } from '../api/services';
 import { useAuthStore } from '../store/authStore';
+import { useThemeStore } from '../store/themeStore';
 import { authService } from '../auth/authService';
 import './AppShell.css';
 
@@ -101,6 +102,7 @@ const AppShell: React.FC<Props> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, can, hasModule, selectedTenantId, setSelectedTenantId } = useAuthStore();
+  const { effectiveTheme, toggleTheme } = useThemeStore();
   const queryClient = useQueryClient();
 
   const { data: organizations = [] } = useQuery({
@@ -747,7 +749,7 @@ const AppShell: React.FC<Props> = ({ children }) => {
               onClick={handleToggleMenu}
             />
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }} className="hide-mobile">
-              <span style={{ fontSize: 15, fontWeight: 800, color: '#0B2347', letterSpacing: '-0.3px' }}>
+              <span style={{ fontSize: 15, fontWeight: 800, color: 'var(--color-text-primary)', letterSpacing: '-0.3px' }}>
                 HISOB ERP
               </span>
               {currentPageItem && (
@@ -805,6 +807,16 @@ const AppShell: React.FC<Props> = ({ children }) => {
               >
                 <span className="hide-mobile">Daily Summary</span>
               </Button>
+            </Tooltip>
+
+            {/* Theme Toggle Button */}
+            <Tooltip title={`Switch to ${effectiveTheme === 'dark' ? 'Light' : 'Dark'} Mode`}>
+              <Button
+                type="text"
+                icon={effectiveTheme === 'dark' ? <SunOutlined style={{ color: '#F59E0B' }} /> : <MoonOutlined style={{ color: '#475569' }} />}
+                className="header-bell-btn"
+                onClick={toggleTheme}
+              />
             </Tooltip>
 
             {/* Notifications */}

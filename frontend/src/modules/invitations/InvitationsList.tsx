@@ -167,15 +167,15 @@ export const InvitationsList: React.FC = () => {
   const attendingRsvpCount = eventInvites.filter((i) => i.rsvp_status === 'attending').length;
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto', color: '#0F172A' }}>
+    <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto', color: 'var(--color-text-primary)' }}>
       
       {/* Page Header */}
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '16px', marginBottom: '28px' }}>
         <div>
-          <h1 style={{ fontSize: '26px', fontWeight: 900, color: '#0F172A', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <h1 style={{ fontSize: '26px', fontWeight: 900, color: 'var(--color-text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
             <Mail style={{ color: '#2563EB' }} /> Invitations & VIP RSVP Suite
           </h1>
-          <p style={{ color: '#64748B', fontSize: '14px', margin: '4px 0 0 0' }}>
+          <p style={{ color: 'var(--color-text-secondary)', fontSize: '14px', margin: '4px 0 0 0' }}>
             Manage team member invitations, bulk volunteer onboarding, and digital festival patrika cards
           </p>
         </div>
@@ -189,7 +189,7 @@ export const InvitationsList: React.FC = () => {
           </button>
           <button
             onClick={() => setShowBulkModal(true)}
-            style={{ padding: '10px 18px', background: '#FFFFFF', color: '#334155', border: '1px solid #CBD5E1', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 6px rgba(0,0,0,0.04)' }}
+            style={{ padding: '10px 18px', background: 'var(--color-bg-card)', color: 'var(--color-text-primary)', border: '1px solid var(--color-border)', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 6px rgba(0,0,0,0.04)' }}
           >
             <Upload size={16} /> Bulk Onboard
           </button>
@@ -216,42 +216,42 @@ export const InvitationsList: React.FC = () => {
 
       {/* Metrics Banner */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '28px' }}>
-        <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '18px 20px', border: '1px solid #E2E8F0', boxShadow: '0 4px 12px rgba(0,0,0,0.03)', display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ background: 'var(--color-bg-card)', borderRadius: '16px', padding: '18px 20px', border: '1px solid var(--color-border)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div style={{ padding: '12px', borderRadius: '12px', background: 'rgba(245,158,11,0.12)', color: '#D97706' }}>
             <Clock size={24} />
           </div>
           <div>
-            <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 600 }}>Pending Onboarding Invites</span>
-            <div style={{ fontSize: '22px', fontWeight: 800, color: '#0F172A' }}>{pendingCount}</div>
+            <span style={{ fontSize: '12px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Pending Onboarding Invites</span>
+            <div style={{ fontSize: '22px', fontWeight: 800, color: 'var(--color-text-primary)' }}>{pendingCount}</div>
           </div>
         </div>
 
-        <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '18px 20px', border: '1px solid #E2E8F0', boxShadow: '0 4px 12px rgba(0,0,0,0.03)', display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ background: 'var(--color-bg-card)', borderRadius: '16px', padding: '18px 20px', border: '1px solid var(--color-border)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div style={{ padding: '12px', borderRadius: '12px', background: 'rgba(34,197,94,0.12)', color: '#16A34A' }}>
             <CheckCircle2 size={24} />
           </div>
           <div>
-            <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 600 }}>Accepted Team Accounts</span>
-            <div style={{ fontSize: '22px', fontWeight: 800, color: '#0F172A' }}>{acceptedCount}</div>
+            <span style={{ fontSize: '12px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Accepted Team Accounts</span>
+            <div style={{ fontSize: '22px', fontWeight: 800, color: 'var(--color-text-primary)' }}>{acceptedCount}</div>
           </div>
         </div>
 
-        <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '18px 20px', border: '1px solid #E2E8F0', boxShadow: '0 4px 12px rgba(0,0,0,0.03)', display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ background: 'var(--color-bg-card)', borderRadius: '16px', padding: '18px 20px', border: '1px solid var(--color-border)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div style={{ padding: '12px', borderRadius: '12px', background: 'rgba(124,58,237,0.12)', color: '#7C3AED' }}>
             <Crown size={24} />
           </div>
           <div>
-            <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 600 }}>Attending VIP Guests</span>
-            <div style={{ fontSize: '22px', fontWeight: 800, color: '#0F172A' }}>{attendingRsvpCount}</div>
+            <span style={{ fontSize: '12px', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Attending VIP Guests</span>
+            <div style={{ fontSize: '22px', fontWeight: 800, color: 'var(--color-text-primary)' }}>{attendingRsvpCount}</div>
           </div>
         </div>
       </div>
 
       {/* Tabs Bar & Filters */}
-      <div style={{ background: '#FFFFFF', borderRadius: '20px', border: '1px solid #E2E8F0', padding: '20px', marginBottom: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+      <div style={{ background: 'var(--color-bg-card)', borderRadius: '20px', border: '1px solid var(--color-border)', padding: '20px', marginBottom: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
           {/* Navigation Tabs */}
-          <div style={{ display: 'flex', background: '#F1F5F9', padding: '4px', borderRadius: '14px', border: '1px solid #E2E8F0' }}>
+          <div style={{ display: 'flex', background: 'var(--color-bg)', padding: '4px', borderRadius: '14px', border: '1px solid var(--color-border)' }}>
             <button
               onClick={() => setActiveTab('team')}
               style={{
@@ -259,7 +259,7 @@ export const InvitationsList: React.FC = () => {
                 borderRadius: '10px',
                 border: 'none',
                 background: activeTab === 'team' ? '#2563EB' : 'transparent',
-                color: activeTab === 'team' ? '#FFF' : '#64748B',
+                color: activeTab === 'team' ? '#FFF' : 'var(--color-text-secondary)',
                 fontWeight: 700,
                 fontSize: '13px',
                 cursor: 'pointer',
@@ -277,7 +277,7 @@ export const InvitationsList: React.FC = () => {
                 borderRadius: '10px',
                 border: 'none',
                 background: activeTab === 'events' ? '#7C3AED' : 'transparent',
-                color: activeTab === 'events' ? '#FFF' : '#64748B',
+                color: activeTab === 'events' ? '#FFF' : 'var(--color-text-secondary)',
                 fontWeight: 700,
                 fontSize: '13px',
                 cursor: 'pointer',
@@ -299,14 +299,14 @@ export const InvitationsList: React.FC = () => {
                 placeholder="Search invites or guests..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                style={{ width: '100%', padding: '9px 12px 9px 38px', background: '#F8FAFC', border: '1px solid #CBD5E1', borderRadius: '10px', color: '#0F172A', fontSize: '13px', outline: 'none' }}
+                style={{ width: '100%', padding: '9px 12px 9px 38px', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '10px', color: 'var(--color-text-primary)', fontSize: '13px', outline: 'none' }}
               />
             </div>
 
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              style={{ padding: '9px 12px', background: '#F8FAFC', border: '1px solid #CBD5E1', borderRadius: '10px', color: '#0F172A', fontSize: '13px', outline: 'none' }}
+              style={{ padding: '9px 12px', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: '10px', color: 'var(--color-text-primary)', fontSize: '13px', outline: 'none' }}
             >
               <option value="all">All Statuses</option>
               {activeTab === 'team' ? (
@@ -331,22 +331,22 @@ export const InvitationsList: React.FC = () => {
 
       {/* Main Content Tables */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '60px 0', color: '#64748B' }}>
+        <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--color-text-secondary)' }}>
           <Loader2 className="animate-spin" size={36} style={{ color: '#2563EB', margin: '0 auto 12px' }} />
           <p>Loading invitations list...</p>
         </div>
       ) : activeTab === 'team' ? (
-        <div style={{ background: '#FFFFFF', borderRadius: '20px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+        <div style={{ background: 'var(--color-bg-card)', borderRadius: '20px', border: '1px solid var(--color-border)', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
           {filteredUserInvites.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '48px 20px', color: '#64748B' }}>
+            <div style={{ textAlign: 'center', padding: '48px 20px', color: 'var(--color-text-secondary)' }}>
               <AlertCircle size={40} style={{ margin: '0 auto 12px', color: '#94A3B8' }} />
-              <h4 style={{ color: '#0F172A', fontSize: '16px', fontWeight: 700 }}>No Team Invitations Found</h4>
+              <h4 style={{ color: 'var(--color-text-primary)', fontSize: '16px', fontWeight: 700 }}>No Team Invitations Found</h4>
               <p style={{ fontSize: '13px' }}>Click "Invite Member / Volunteer" to dispatch your first tokenized invitation link.</p>
             </div>
           ) : (
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
               <thead>
-                <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0', color: '#64748B' }}>
+                <tr style={{ background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)', color: 'var(--color-text-secondary)' }}>
                   <th style={{ padding: '14px 20px', fontWeight: 700 }}>RECIPIENT & ROLE</th>
                   <th style={{ padding: '14px 20px', fontWeight: 700 }}>STATUS</th>
                   <th style={{ padding: '14px 20px', fontWeight: 700 }}>EXPIRATION</th>
@@ -356,11 +356,11 @@ export const InvitationsList: React.FC = () => {
               </thead>
               <tbody>
                 {filteredUserInvites.map((inv) => (
-                  <tr key={inv.id} style={{ borderBottom: '1px solid #E2E8F0' }}>
+                  <tr key={inv.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
                     <td style={{ padding: '16px 20px' }}>
-                      <div style={{ fontWeight: 700, color: '#0F172A', fontSize: '14px' }}>{inv.full_name || 'Unnamed Recipient'}</div>
-                      <div style={{ color: '#64748B', fontSize: '12px' }}>{inv.email}</div>
-                      <span style={{ display: 'inline-block', marginTop: '4px', background: 'rgba(37,99,235,0.1)', color: '#2563EB', padding: '2px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700, textTransform: 'capitalize' }}>
+                      <div style={{ fontWeight: 700, color: 'var(--color-text-primary)', fontSize: '14px' }}>{inv.full_name || 'Unnamed Recipient'}</div>
+                      <div style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>{inv.email}</div>
+                      <span style={{ display: 'inline-block', marginTop: '4px', background: 'rgba(37,99,235,0.15)', color: '#60A5FA', padding: '2px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700, textTransform: 'capitalize' }}>
                         {inv.role_name}
                       </span>
                     </td>
@@ -388,7 +388,7 @@ export const InvitationsList: React.FC = () => {
                       )}
                     </td>
 
-                    <td style={{ padding: '16px 20px', color: '#475569' }}>
+                    <td style={{ padding: '16px 20px', color: 'var(--color-text-secondary)' }}>
                       {new Date(inv.expires_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
                     </td>
 
@@ -397,7 +397,7 @@ export const InvitationsList: React.FC = () => {
                         <button
                           onClick={() => copyToClipboard(inv.shareable_url)}
                           title="Copy Invitation Link"
-                          style={{ padding: '6px 10px', background: '#F8FAFC', border: '1px solid #CBD5E1', color: '#2563EB', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}
+                          style={{ padding: '6px 10px', background: 'var(--color-bg)', border: '1px solid var(--color-border)', color: '#3B82F6', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}
                         >
                           <Copy size={14} /> Copy Link
                         </button>
@@ -446,17 +446,17 @@ export const InvitationsList: React.FC = () => {
         </div>
       ) : (
         /* Event Patrikas & RSVP Tracker Table */
-        <div style={{ background: '#FFFFFF', borderRadius: '20px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+        <div style={{ background: 'var(--color-bg-card)', borderRadius: '20px', border: '1px solid var(--color-border)', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
           {filteredEventInvites.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '48px 20px', color: '#64748B' }}>
+            <div style={{ textAlign: 'center', padding: '48px 20px', color: 'var(--color-text-secondary)' }}>
               <Sparkles size={40} style={{ margin: '0 auto 12px', color: '#7C3AED' }} />
-              <h4 style={{ color: '#0F172A', fontSize: '16px', fontWeight: 700 }}>No Digital Event Patrikas Generated</h4>
+              <h4 style={{ color: 'var(--color-text-primary)', fontSize: '16px', fontWeight: 700 }}>No Digital Event Patrikas Generated</h4>
               <p style={{ fontSize: '13px' }}>Click "New Digital Patrika" to create VIP invitation cards for your donors and guests.</p>
             </div>
           ) : (
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
               <thead>
-                <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #E2E8F0', color: '#64748B' }}>
+                <tr style={{ background: 'var(--color-bg)', borderBottom: '1px solid var(--color-border)', color: 'var(--color-text-secondary)' }}>
                   <th style={{ padding: '14px 20px', fontWeight: 700 }}>EVENT & VIP GUEST</th>
                   <th style={{ padding: '14px 20px', fontWeight: 700 }}>RSVP STATUS</th>
                   <th style={{ padding: '14px 20px', fontWeight: 700 }}>ATTENDEES COUNT</th>
@@ -466,11 +466,11 @@ export const InvitationsList: React.FC = () => {
               </thead>
               <tbody>
                 {filteredEventInvites.map((inv) => (
-                  <tr key={inv.id} style={{ borderBottom: '1px solid #E2E8F0' }}>
+                  <tr key={inv.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
                     <td style={{ padding: '16px 20px' }}>
-                      <div style={{ fontWeight: 700, color: '#0F172A', fontSize: '14px' }}>{inv.guest_name}</div>
-                      <div style={{ color: '#475569', fontSize: '12px' }}>{inv.title}</div>
-                      <span style={{ display: 'inline-block', marginTop: '4px', background: 'rgba(124,58,237,0.1)', color: '#7C3AED', padding: '2px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700 }}>
+                      <div style={{ fontWeight: 700, color: 'var(--color-text-primary)', fontSize: '14px' }}>{inv.guest_name}</div>
+                      <div style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>{inv.title}</div>
+                      <span style={{ display: 'inline-block', marginTop: '4px', background: 'rgba(124,58,237,0.15)', color: '#A855F7', padding: '2px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700 }}>
                         ✨ {inv.vip_tier}
                       </span>
                     </td>
@@ -498,7 +498,7 @@ export const InvitationsList: React.FC = () => {
                       )}
                     </td>
 
-                    <td style={{ padding: '16px 20px', color: '#0F172A', fontWeight: 700 }}>
+                    <td style={{ padding: '16px 20px', color: 'var(--color-text-primary)', fontWeight: 700 }}>
                       {inv.guests_count} Guests
                     </td>
 
@@ -531,7 +531,7 @@ export const InvitationsList: React.FC = () => {
       {/* Gate Scanner Modal */}
       {showScannerModal && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
-          <div style={{ maxWidth: '480px', width: '100%', background: '#FFFFFF', borderRadius: '24px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
+          <div style={{ maxWidth: '480px', width: '100%', background: 'var(--color-bg-card)', borderRadius: '24px', border: '1px solid var(--color-border)', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
             <div style={{ padding: '20px 24px', background: 'linear-gradient(135deg, #059669 0%, #064E3B 100%)', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <h3 style={{ fontSize: '18px', fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <ScanLine size={20} /> Gate Check-In Scanner
@@ -550,7 +550,7 @@ export const InvitationsList: React.FC = () => {
 
               <form onSubmit={handleGateScanSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div>
-                  <label style={{ display: 'block', color: '#334155', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
+                  <label style={{ display: 'block', color: 'var(--color-text-primary)', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
                     Enter or Scan Guest Ticket Pass Token:
                   </label>
                   <input
@@ -560,8 +560,7 @@ export const InvitationsList: React.FC = () => {
                     value={scanTokenInput}
                     onChange={(e) => setScanTokenInput(e.target.value)}
                     placeholder="e.g. PASS_TOKEN_STRING"
-                    style={{ width: '100%', padding: '12px', background: '#F8FAFC', border: '1px solid #CBD5E1', borderRadius: '12px', color: '#0F172A', fontSize: '14px', fontFamily: 'monospace', outline: 'none' }}
-                  />
+                    />
                 </div>
 
                 <button

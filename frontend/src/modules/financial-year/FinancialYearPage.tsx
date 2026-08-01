@@ -96,7 +96,7 @@ const FinancialYearPage: React.FC = () => {
       render: (t: string, r: any) => (
         <Space>
           <CalendarOutlined style={{ color: r.is_current ? '#F97316' : '#94A3B8' }} />
-          <b style={{ color: '#0B2347', fontSize: 14 }}>{t}</b>
+          <b style={{ color: 'var(--color-text-primary)', fontSize: 14 }}>{t}</b>
           {r.is_current && (
             <Tag color="gold" style={{ borderRadius: 12, fontWeight: 700 }}>
               👑 ACTIVE
@@ -158,7 +158,7 @@ const FinancialYearPage: React.FC = () => {
       dataIndex: 'name',
       key: 'name',
       width: 160,
-      render: (t: string) => <b style={{ color: '#0B2347' }}>🌺 {t}</b>,
+      render: (t: string) => <b style={{ color: 'var(--color-text-primary)' }}>🌺 {t}</b>,
     },
     {
       title: 'Deity / Mandap',
@@ -229,7 +229,7 @@ const FinancialYearPage: React.FC = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <Text type="secondary" style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase' }}>Active Financial Year</Text>
-                <div style={{ fontSize: 20, fontWeight: 900, color: '#0B2347', marginTop: 4 }}>
+                <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--color-text-primary)', marginTop: 4 }}>
                   {activeFy?.name || 'FY 2025-26'}
                 </div>
               </div>
@@ -257,7 +257,7 @@ const FinancialYearPage: React.FC = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <Text type="secondary" style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase' }}>Configured Festivals</Text>
-                <div style={{ fontSize: 20, fontWeight: 900, color: '#1E3A8A', marginTop: 4 }}>
+                <div style={{ fontSize: 20, fontWeight: 900, color: '#3B82F6', marginTop: 4 }}>
                   {festivals.length} Events
                 </div>
               </div>
@@ -289,7 +289,7 @@ const FinancialYearPage: React.FC = () => {
             title={
               <Space>
                 <CalendarOutlined style={{ color: '#F97316' }} />
-                <span style={{ fontWeight: 800, color: '#0B2347' }}>Financial Years Master</span>
+                <span style={{ fontWeight: 800, color: 'var(--color-text-primary)' }}>Financial Years Master</span>
               </Space>
             }
             extra={
@@ -317,7 +317,7 @@ const FinancialYearPage: React.FC = () => {
             title={
               <Space>
                 <TrophyOutlined style={{ color: '#F97316' }} />
-                <span style={{ fontWeight: 800, color: '#0B2347' }}>Festivals Directory</span>
+                <span style={{ fontWeight: 800, color: 'var(--color-text-primary)' }}>Festivals Directory</span>
               </Space>
             }
             extra={

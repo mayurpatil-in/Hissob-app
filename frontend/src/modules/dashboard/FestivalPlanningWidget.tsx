@@ -45,11 +45,10 @@ export const FestivalPlanningWidget: React.FC = () => {
 
   return (
     <Card
+      className="hissob-card"
       style={{
         borderRadius: 14,
-        boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
         marginTop: 20,
-        border: '1px solid #E2E8F0',
       }}
       styles={{ body: { padding: '20px 24px' } }}
     >
@@ -67,18 +66,18 @@ export const FestivalPlanningWidget: React.FC = () => {
             width: 38,
             height: 38,
             borderRadius: 10,
-            backgroundColor: '#FFF7ED',
+            backgroundColor: 'rgba(249,115,22,0.12)',
             color: '#F97316',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             fontSize: 20,
-            border: '1px solid #FFEDD5',
+            border: '1px solid rgba(249,115,22,0.25)',
           }}>
             <ProjectOutlined />
           </div>
           <div>
-            <Title level={4} style={{ margin: 0, color: '#0B2347' }}>
+            <Title level={4} style={{ margin: 0, color: 'var(--color-text-primary)' }}>
               Festival Planning & Execution Progress
             </Title>
             <Text type="secondary" style={{ fontSize: 12 }}>
@@ -120,12 +119,12 @@ export const FestivalPlanningWidget: React.FC = () => {
               <div style={{
                 padding: '10px 12px',
                 borderRadius: 10,
-                backgroundColor: '#FAFAFA',
-                border: '1px solid #F1F5F9',
+                backgroundColor: 'var(--color-bg)',
+                border: '1px solid var(--color-border)',
                 borderLeft: '4px solid #F97316',
               }}>
                 <Text type="secondary" style={{ fontSize: 11, display: 'block' }} ellipsis><CheckCircleOutlined /> Tasks</Text>
-                <div style={{ fontSize: 18, fontWeight: 700, color: '#0B2347', margin: '2px 0' }}>
+                <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--color-text-primary)', margin: '2px 0' }}>
                   {summary.completed_tasks} / {summary.total_tasks}
                 </div>
                 <Progress percent={summary.task_completion_percentage} size="small" strokeColor="#F97316" />
@@ -137,12 +136,12 @@ export const FestivalPlanningWidget: React.FC = () => {
               <div style={{
                 padding: '10px 12px',
                 borderRadius: 10,
-                backgroundColor: '#FAFAFA',
-                border: '1px solid #F1F5F9',
+                backgroundColor: 'var(--color-bg)',
+                border: '1px solid var(--color-border)',
                 borderLeft: '4px solid #10B981',
               }}>
                 <Text type="secondary" style={{ fontSize: 11, display: 'block' }} ellipsis><DollarOutlined /> Budget Spend</Text>
-                <div style={{ fontSize: 18, fontWeight: 700, color: '#0B2347', margin: '2px 0' }}>
+                <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--color-text-primary)', margin: '2px 0' }}>
                   ₹ {summary.total_spent_budget.toLocaleString()}
                 </div>
                 <Text type="secondary" style={{ fontSize: 10, display: 'block' }}>
@@ -157,12 +156,12 @@ export const FestivalPlanningWidget: React.FC = () => {
               <div style={{
                 padding: '10px 12px',
                 borderRadius: 10,
-                backgroundColor: '#FAFAFA',
-                border: '1px solid #F1F5F9',
+                backgroundColor: 'var(--color-bg)',
+                border: '1px solid var(--color-border)',
                 borderLeft: '4px solid #3B82F6',
               }}>
                 <Text type="secondary" style={{ fontSize: 11, display: 'block' }} ellipsis><TeamOutlined /> Shifts Roster</Text>
-                <div style={{ fontSize: 18, fontWeight: 700, color: '#0B2347', margin: '2px 0' }}>
+                <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--color-text-primary)', margin: '2px 0' }}>
                   {summary.filled_shifts} / {summary.total_shifts}
                 </div>
                 <Progress
@@ -178,12 +177,12 @@ export const FestivalPlanningWidget: React.FC = () => {
               <div style={{
                 padding: '10px 12px',
                 borderRadius: 10,
-                backgroundColor: '#FAFAFA',
-                border: '1px solid #F1F5F9',
+                backgroundColor: 'var(--color-bg)',
+                border: '1px solid var(--color-border)',
                 borderLeft: '4px solid #8B5CF6',
               }}>
                 <Text type="secondary" style={{ fontSize: 11, display: 'block' }} ellipsis><ScheduleOutlined /> Events</Text>
-                <div style={{ fontSize: 18, fontWeight: 700, color: '#0B2347', margin: '2px 0' }}>
+                <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--color-text-primary)', margin: '2px 0' }}>
                   {summary.total_events} Program(s)
                 </div>
                 <Tag color="purple" style={{ fontSize: 10, margin: 0, padding: '0 6px' }}>Daily Aarti & Shows</Tag>
@@ -196,8 +195,8 @@ export const FestivalPlanningWidget: React.FC = () => {
 
         {/* Mini Preview of Upcoming Schedule Programs */}
         {schedules.length > 0 && (
-          <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid #F1F5F9' }}>
-            <Text strong style={{ color: '#0B2347', fontSize: 13, marginBottom: 8, display: 'block' }}>
+          <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--color-border)' }}>
+            <Text strong style={{ color: 'var(--color-text-primary)', fontSize: 13, marginBottom: 8, display: 'block' }}>
               <CalendarOutlined style={{ color: '#F97316' }} /> Upcoming Programs & Ritual Schedule:
             </Text>
             <Space wrap size={[8, 8]}>

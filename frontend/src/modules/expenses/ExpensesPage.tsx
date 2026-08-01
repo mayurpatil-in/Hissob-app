@@ -595,7 +595,8 @@ const ExpensesPage: React.FC = () => {
                     hoverable
                     style={{
                       borderRadius: 14,
-                      border: '1px solid #E2E8F0',
+                      border: '1px solid var(--color-border)',
+                      background: 'var(--color-bg-card)',
                       boxShadow: '0 4px 14px rgba(11,35,71,0.05)',
                       display: 'flex',
                       flexDirection: 'column',
@@ -605,10 +606,10 @@ const ExpensesPage: React.FC = () => {
                   >
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 10 }}>
                       <div>
-                        <span style={{ fontWeight: 900, color: '#1E40AF', fontFamily: 'monospace', fontSize: 14 }}>
+                        <span style={{ fontWeight: 900, color: '#3B82F6', fontFamily: 'monospace', fontSize: 14 }}>
                           {record.expense_number || record.voucher_number || 'EXP'}
                         </span>
-                        <div style={{ fontSize: 11, color: '#64748B', marginTop: 2 }}>
+                        <div style={{ fontSize: 11, color: 'var(--color-text-secondary)', marginTop: 2 }}>
                           📅 {record.expense_date ? dayjs(record.expense_date).format('DD-MM-YYYY') : ''}
                         </div>
                       </div>
@@ -622,14 +623,14 @@ const ExpensesPage: React.FC = () => {
                         {record.vendor_name?.charAt(0)?.toUpperCase() || record.category?.charAt(0)?.toUpperCase() || 'E'}
                       </Avatar>
                       <div style={{ overflow: 'hidden' }}>
-                        <div style={{ fontWeight: 800, fontSize: 14, color: '#0F172A', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                        <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--color-text-primary)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
                           {record.vendor_name || 'General Vendor'}
                         </div>
                         <Tag color="geekblue" style={{ marginTop: 4, fontSize: 11 }}>{record.category}</Tag>
                       </div>
                     </div>
 
-                    <div style={{ padding: '10px 12px', background: '#F8FAFC', borderRadius: 10, marginBottom: 12, border: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ padding: '10px 12px', background: 'var(--color-bg)', borderRadius: 10, marginBottom: 12, border: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
                         <Text type="secondary" style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase' }}>Amount</Text>
                         <div style={{ fontWeight: 900, fontSize: 18, color: '#F97316' }}>
@@ -642,7 +643,7 @@ const ExpensesPage: React.FC = () => {
                     </div>
 
                     {record.description && (
-                      <div style={{ fontSize: 11, color: '#475569', marginBottom: 12, flexGrow: 1 }}>
+                      <div style={{ fontSize: 11, color: 'var(--color-text-secondary)', marginBottom: 12, flexGrow: 1 }}>
                         📝 <b>Notes:</b> {record.description}
                       </div>
                     )}
@@ -748,7 +749,7 @@ const ExpensesPage: React.FC = () => {
 
       {/* New Expense Modal */}
       <Modal
-        title={<span style={{ fontWeight: 800, color: '#0B2347' }}>{editingExpense ? 'Edit Expense Request' : 'Submit Expense Request'}</span>}
+        title={<span style={{ fontWeight: 800, color: 'var(--color-text-primary)' }}>{editingExpense ? 'Edit Expense Request' : 'Submit Expense Request'}</span>}
         open={isModalOpen}
         onCancel={() => {
           setIsModalOpen(false);
@@ -761,8 +762,8 @@ const ExpensesPage: React.FC = () => {
         <Card
           variant="borderless"
           style={{
-            background: 'linear-gradient(135deg, #FFF7ED 0%, #EFF6FF 100%)',
-            border: '1px solid #DBEAFE',
+            background: 'var(--color-bg)',
+            border: '1px solid var(--color-border)',
             borderRadius: 14,
             marginBottom: 20,
           }}
@@ -772,7 +773,7 @@ const ExpensesPage: React.FC = () => {
               🤖
             </div>
             <div>
-              <Text style={{ fontWeight: 800, color: '#0B2347', fontSize: 14, display: 'block' }}>
+              <Text style={{ fontWeight: 800, color: 'var(--color-text-primary)', fontSize: 14, display: 'block' }}>
                 AI Vision Invoice Auto-Scanner
               </Text>
               <Text type="secondary" style={{ fontSize: 11 }}>
@@ -790,7 +791,7 @@ const ExpensesPage: React.FC = () => {
             multiple={false}
             accept=".jpg,.jpeg,.png,.webp,.pdf"
             disabled={scanningAi}
-            style={{ background: '#FFFFFF', borderRadius: 10, padding: '12px 0' }}
+            style={{ background: 'var(--color-bg-card)', borderRadius: 10, padding: '12px 0' }}
           >
             {scanningAi ? (
               <div style={{ padding: '8px 0' }}>
@@ -801,11 +802,11 @@ const ExpensesPage: React.FC = () => {
               </div>
             ) : (
               <div>
-                <ScanOutlined style={{ fontSize: 28, color: '#2563EB', marginBottom: 4 }} />
-                <p style={{ margin: 0, fontWeight: 700, color: '#1E40AF', fontSize: 13 }}>
+                <ScanOutlined style={{ fontSize: 28, color: '#3B82F6', marginBottom: 4 }} />
+                <p style={{ margin: 0, fontWeight: 700, color: '#3B82F6', fontSize: 13 }}>
                   📸 Drag & Drop Bill Image / PDF here to Auto-Fill
                 </p>
-                <p style={{ margin: '2px 0 0 0', fontSize: 11, color: '#64748B' }}>
+                <p style={{ margin: '2px 0 0 0', fontSize: 11, color: 'var(--color-text-secondary)' }}>
                   Supports Sound, Stage, Catering & Mandap vendor invoices
                 </p>
               </div>
@@ -816,10 +817,10 @@ const ExpensesPage: React.FC = () => {
             <Alert
               type="success"
               showIcon
-              style={{ marginTop: 12, borderRadius: 10, fontSize: 12, background: '#F0FDF4', borderColor: '#BBF7D0' }}
+              style={{ marginTop: 12, borderRadius: 10, fontSize: 12, background: 'rgba(16,185,129,0.15)', borderColor: 'rgba(16,185,129,0.3)' }}
               message={
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontWeight: 800, color: '#15803D' }}>✨ AI Extracted Invoice Data</span>
+                  <span style={{ fontWeight: 800, color: '#10B981' }}>✨ AI Extracted Invoice Data</span>
                   <Space wrap size={[4, 4]}>
                     <Tag color="purple" style={{ borderRadius: 6, fontSize: 10, margin: 0 }}>
                       {aiParsedResult.is_llm_parsed ? '🤖 LLM Vision Active' : '⚡ OCR Engine'}
@@ -831,7 +832,7 @@ const ExpensesPage: React.FC = () => {
                 </div>
               }
               description={
-                <div style={{ marginTop: 6, color: '#166534' }}>
+                <div style={{ marginTop: 6, color: 'var(--color-text-primary)' }}>
                   <Row gutter={[8, 4]}>
                     <Col xs={24} sm={12}>Vendor: <b>{aiParsedResult.vendor_name || 'N/A'}</b></Col>
                     <Col xs={24} sm={12}>Amount: <b>₹{aiParsedResult.amount?.toLocaleString('en-IN') || '0'}</b></Col>
@@ -840,8 +841,8 @@ const ExpensesPage: React.FC = () => {
                     {aiParsedResult.invoice_number && <Col span={24}>Invoice #: <b>{aiParsedResult.invoice_number}</b></Col>}
                   </Row>
                   {aiParsedResult.line_items && aiParsedResult.line_items.length > 0 && (
-                    <div style={{ marginTop: 8, paddingTop: 6, borderTop: '1px dashed #BBF7D0' }}>
-                      <Text style={{ fontSize: 11, fontWeight: 700, color: '#15803D' }}>Itemized Breakdown:</Text>
+                    <div style={{ marginTop: 8, paddingTop: 6, borderTop: '1px dashed rgba(16,185,129,0.3)' }}>
+                      <Text style={{ fontSize: 11, fontWeight: 700, color: '#10B981' }}>Itemized Breakdown:</Text>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
                         {aiParsedResult.line_items.map((item: any, idx: number) => (
                           <Tag key={idx} color="blue" style={{ fontSize: 10, borderRadius: 4 }}>
@@ -862,7 +863,7 @@ const ExpensesPage: React.FC = () => {
             <Col xs={24} sm={12}>
               <Form.Item
                 name="financial_year_id"
-                label="Financial Year *"
+                label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Financial Year *</span>}
                 rules={[{ required: true, message: 'Select Financial Year' }]}
               >
                 <Select placeholder="Select Financial Year">
@@ -873,7 +874,7 @@ const ExpensesPage: React.FC = () => {
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
-              <Form.Item name="category" label="Expense Category *" rules={[{ required: true, message: 'Select category' }]}>
+              <Form.Item name="category" label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Expense Category *</span>} rules={[{ required: true, message: 'Select category' }]}>
                 <Select placeholder="Select category">
                   <Option value="Decoration">Decoration & Mandap</Option>
                   <Option value="Pooja & Rituals">Pooja & Rituals</Option>
@@ -889,12 +890,12 @@ const ExpensesPage: React.FC = () => {
 
           <Row gutter={[12, 0]}>
             <Col xs={24} sm={12}>
-              <Form.Item name="expense_date" label="Expense / Bill Date *" rules={[{ required: true, message: 'Select date' }]}>
+              <Form.Item name="expense_date" label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Expense / Bill Date *</span>} rules={[{ required: true, message: 'Select date' }]}>
                 <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" placeholder="Select expense date" />
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
-              <Form.Item name="voucher_number" label="Invoice / Voucher #">
+              <Form.Item name="voucher_number" label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Invoice / Voucher #</span>}>
                 <Input placeholder="e.g. INV-2026-889" />
               </Form.Item>
             </Col>
@@ -902,30 +903,30 @@ const ExpensesPage: React.FC = () => {
 
           <Row gutter={[12, 0]}>
             <Col xs={24} sm={12}>
-              <Form.Item name="amount" label="Amount (₹) *" rules={[{ required: true, message: 'Enter amount' }]}>
+              <Form.Item name="amount" label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Amount (₹) *</span>} rules={[{ required: true, message: 'Enter amount' }]}>
                 <InputNumber style={{ width: '100%' }} min={1} placeholder="Amount in ₹" />
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
-              <Form.Item name="vendor_name" label="Vendor / Contractor Name">
+              <Form.Item name="vendor_name" label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Vendor / Contractor Name</span>}>
                 <Input placeholder="Vendor Name (e.g. Raju Sound Co.)" />
               </Form.Item>
             </Col>
           </Row>
 
-          <Form.Item name="description" label="Description / Purpose Notes">
+          <Form.Item name="description" label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Description / Purpose Notes</span>}>
             <Input.TextArea rows={2} placeholder="Add voucher details or invoice notes" />
           </Form.Item>
 
           {/* Bill Document Attachment Option */}
-          <Form.Item label="Bill / Invoice Document (Audit Proof)">
+          <Form.Item label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Bill / Invoice Document (Audit Proof)</span>}>
             {uploadedBillUrl ? (
-              <div style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', padding: '10px 14px', borderRadius: 10, display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', padding: '10px 14px', borderRadius: 10, display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <Text style={{ fontWeight: 800, color: '#15803D', fontSize: 13, display: 'block' }}>
+                  <Text style={{ fontWeight: 800, color: '#10B981', fontSize: 13, display: 'block' }}>
                     ✓ Bill Audit Document Attached
                   </Text>
-                  <Text type="secondary" style={{ fontSize: 11, color: '#166534', wordBreak: 'break-all' }}>
+                  <Text type="secondary" style={{ fontSize: 11, color: 'var(--color-text-secondary)', wordBreak: 'break-all' }}>
                     File: {uploadedBillUrl.split('/').pop()}
                   </Text>
                 </div>
@@ -982,7 +983,7 @@ const ExpensesPage: React.FC = () => {
           <Modal
             open={Boolean(previewUrl)}
             onCancel={() => setPreviewUrl(null)}
-            title="Expense Bill / Receipt Voucher Preview"
+            title={<span style={{ color: 'var(--color-text-primary)', fontWeight: 800 }}>Expense Bill / Receipt Voucher Preview</span>}
             footer={[
               <Button key="close" onClick={() => setPreviewUrl(null)}>Close</Button>,
               <Button
@@ -1019,7 +1020,7 @@ const ExpensesPage: React.FC = () => {
         <Modal
           open={Boolean(attachExpenseId)}
           onCancel={() => setAttachExpenseId(null)}
-          title="Attach / Replace Expense Bill Document"
+          title={<span style={{ color: 'var(--color-text-primary)', fontWeight: 800 }}>Attach / Replace Expense Bill Document</span>}
           footer={null}
         >
           <div style={{ padding: 10 }}>
@@ -1038,12 +1039,13 @@ const ExpensesPage: React.FC = () => {
               }}
               showUploadList={false}
               accept=".jpg,.jpeg,.png,.webp,.pdf"
+              style={{ background: 'var(--color-bg-card)', borderRadius: 10 }}
             >
               <p className="ant-upload-drag-icon">
                 <UploadOutlined style={{ fontSize: 36, color: '#F97316' }} />
               </p>
-              <p className="ant-upload-text">Select Bill photo or PDF to attach or replace</p>
-              <p className="ant-upload-hint">Supports JPG, PNG, WEBP & PDF (Max 10MB)</p>
+              <p className="ant-upload-text" style={{ color: '#3B82F6', fontWeight: 700 }}>Select Bill photo or PDF to attach or replace</p>
+              <p className="ant-upload-hint" style={{ color: 'var(--color-text-secondary)' }}>Supports JPG, PNG, WEBP & PDF (Max 10MB)</p>
             </Upload.Dragger>
           </div>
         </Modal>
@@ -1058,11 +1060,11 @@ const ExpensesPage: React.FC = () => {
         width={440}
         styles={{ body: { padding: 0 } }}
       >
-        <div style={{ padding: '20px 24px', background: '#FEF2F2', borderBottom: '1px solid #FEE2E2' }}>
-          <Title level={4} style={{ margin: 0, color: '#DC2626', fontWeight: 900 }}>
+        <div style={{ padding: '20px 24px', background: 'rgba(239, 68, 68, 0.15)', borderBottom: '1px solid rgba(239, 68, 68, 0.3)' }}>
+          <span style={{ fontSize: 18, fontWeight: 900, color: '#EF4444', display: 'block', marginBottom: 4 }}>
             Delete Expense Voucher #{deleteModalExpense?.expense_number}?
-          </Title>
-          <Text type="secondary" style={{ fontSize: 12, color: '#991B1B' }}>
+          </span>
+          <Text type="secondary" style={{ fontSize: 12, color: 'var(--color-text-primary)' }}>
             This will permanently remove expense record ₹{Number(deleteModalExpense?.amount || 0).toLocaleString('en-IN')} ({deleteModalExpense?.category}).
           </Text>
         </div>
@@ -1075,7 +1077,7 @@ const ExpensesPage: React.FC = () => {
             danger
             loading={deleteMutation.isPending}
             onClick={() => deleteMutation.mutate(deleteModalExpense.id)}
-            style={{ fontWeight: 800, borderRadius: 8, background: '#DC2626', borderColor: '#DC2626' }}
+            style={{ fontWeight: 800, borderRadius: 8, background: '#EF4444', borderColor: '#EF4444' }}
           >
             Confirm Delete
           </Button>

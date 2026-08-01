@@ -34,7 +34,7 @@ const FinancialAnalyticsWidget: React.FC<Props> = ({
     <Card className="hissob-card animate-fadeIn" style={{ marginTop: 20 }}>
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
         <div>
-          <Title level={4} style={{ margin: 0, color: '#0B2347', fontWeight: 800 }}>
+          <Title level={4} style={{ margin: 0, color: 'var(--color-text-primary)', fontWeight: 800 }}>
             <BarChartOutlined style={{ color: '#F97316', marginRight: 8 }} />
             Financial Analytics & Payment Distribution
           </Title>
@@ -48,8 +48,8 @@ const FinancialAnalyticsWidget: React.FC<Props> = ({
       <Row gutter={[20, 20]}>
         {/* Payment Channels Visual Breakdown */}
         <Col xs={24} md={12}>
-          <div style={{ padding: 16, background: '#F8FAFC', borderRadius: 10, border: '1px solid #E2E8F0', height: '100%' }}>
-            <Text style={{ fontWeight: 700, fontSize: 14, color: '#0B2347' }}>
+          <div style={{ padding: 16, background: 'var(--color-bg)', borderRadius: 10, border: '1px solid var(--color-border)', height: '100%' }}>
+            <Text style={{ fontWeight: 700, fontSize: 14, color: 'var(--color-text-primary)' }}>
               Collection Channel Split (Cash vs UPI/Digital)
             </Text>
 
@@ -73,8 +73,8 @@ const FinancialAnalyticsWidget: React.FC<Props> = ({
 
         {/* Audit Verification & Reserve Health */}
         <Col xs={24} md={12}>
-          <div style={{ padding: 16, background: '#F8FAFC', borderRadius: 10, border: '1px solid #E2E8F0', height: '100%' }}>
-            <Text style={{ fontWeight: 700, fontSize: 14, color: '#0B2347' }}>
+          <div style={{ padding: 16, background: 'var(--color-bg)', borderRadius: 10, border: '1px solid var(--color-border)', height: '100%' }}>
+            <Text style={{ fontWeight: 700, fontSize: 14, color: 'var(--color-text-primary)' }}>
               Treasury Settlement & Net Reserve Health
             </Text>
 
@@ -94,7 +94,7 @@ const FinancialAnalyticsWidget: React.FC<Props> = ({
               <Progress percent={pendingPct} strokeColor="#F59E0B" showInfo={false} />
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 18, padding: 10, background: '#FFF', borderRadius: 8, border: '1px solid #E2E8F0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 18, padding: 10, background: 'var(--color-bg)', borderRadius: 8, border: '1px solid var(--color-border)' }}>
               <div>
                 <Text type="secondary" style={{ fontSize: 11 }}>NET SURPLUS / RESERVE BALANCE</Text><br />
                 <span style={{ fontSize: 18, fontWeight: 900, color: netSurplus >= 0 ? '#22C55E' : '#EF4444' }}>

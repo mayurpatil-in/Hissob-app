@@ -62,7 +62,7 @@ export const ReceiptFormModal: React.FC<ReceiptFormModalProps> = ({
             <Col xs={24} sm={12}>
               <Form.Item
                 name="financial_year_id"
-                label={<span style={{ fontWeight: 700, color: '#0F172A' }}>Financial Year</span>}
+                label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Financial Year</span>}
                 rules={[{ required: true, message: 'Select Financial Year' }]}
               >
                 <Select size="large" style={{ borderRadius: 8 }} placeholder="Select Financial Year">
@@ -75,7 +75,7 @@ export const ReceiptFormModal: React.FC<ReceiptFormModalProps> = ({
             <Col xs={24} sm={12}>
               <Form.Item
                 name="receipt_date"
-                label={<span style={{ fontWeight: 700, color: '#0F172A' }}>Receipt Date</span>}
+                label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Receipt Date</span>}
                 rules={[{ required: true, message: 'Select receipt date' }]}
               >
                 <DatePicker
@@ -91,7 +91,7 @@ export const ReceiptFormModal: React.FC<ReceiptFormModalProps> = ({
 
           <Form.Item
             name="donor_id"
-            label={<span style={{ fontWeight: 700, color: '#0F172A' }}>Select Donor</span>}
+            label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Select Donor</span>}
             rules={[{ required: true, message: 'Please select or search a donor' }]}
           >
             <Select
@@ -111,7 +111,7 @@ export const ReceiptFormModal: React.FC<ReceiptFormModalProps> = ({
 
           <Form.Item
             name="festival_id"
-            label={<span style={{ fontWeight: 700, color: '#0F172A' }}>Link to Festival Campaign (Optional)</span>}
+            label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Link to Festival Campaign (Optional)</span>}
           >
             <Select
               size="large"
@@ -131,7 +131,7 @@ export const ReceiptFormModal: React.FC<ReceiptFormModalProps> = ({
             <Col xs={24} sm={12}>
               <Form.Item
                 name="amount"
-                label={<span style={{ fontWeight: 700, color: '#0F172A' }}>Amount (₹)</span>}
+                label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Amount (₹)</span>}
                 rules={[
                   { required: true, message: 'Enter donation amount' },
                   { type: 'number', min: 1, message: 'Amount must be at least ₹1' },
@@ -144,14 +144,14 @@ export const ReceiptFormModal: React.FC<ReceiptFormModalProps> = ({
                   min={1}
                   max={100000000}
                   placeholder="e.g. 5100"
-                  prefix={<span style={{ color: '#059669', fontWeight: 800 }}>₹</span>}
+                  prefix={<span style={{ color: '#10B981', fontWeight: 800 }}>₹</span>}
                 />
               </Form.Item>
             </Col>
             <Col xs={24} sm={12}>
               <Form.Item
                 name="payment_mode"
-                label={<span style={{ fontWeight: 700, color: '#0F172A' }}>Payment Mode</span>}
+                label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Payment Mode</span>}
                 rules={[{ required: true }]}
               >
                 <Select size="large" style={{ borderRadius: 8 }}>
@@ -166,7 +166,7 @@ export const ReceiptFormModal: React.FC<ReceiptFormModalProps> = ({
 
           {/* Quick Amount Presets */}
           <div style={{ marginBottom: 16, marginTop: -8 }}>
-            <Text type="secondary" style={{ fontSize: 11, fontWeight: 700, marginRight: 8 }}>Quick Amounts:</Text>
+            <Text type="secondary" style={{ fontSize: 11, fontWeight: 700, marginRight: 8, color: 'var(--color-text-secondary)' }}>Quick Amounts:</Text>
             <Space size={4} wrap>
               {[500, 1000, 2100, 5100, 11000, 25000, 51000].map((amt) => (
                 <Tag
@@ -188,7 +188,7 @@ export const ReceiptFormModal: React.FC<ReceiptFormModalProps> = ({
                 return (
                   <Form.Item
                     name="upi_reference"
-                    label={<span style={{ fontWeight: 700, color: '#0F172A' }}>UPI Reference / UTR Number</span>}
+                    label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>UPI Reference / UTR Number</span>}
                     rules={[{ max: 50, message: 'UPI reference cannot exceed 50 characters' }]}
                   >
                     <Input size="large" placeholder="e.g. 420519847120 or UPI/998877665544" prefix={<Tag color="cyan">UPI UTR</Tag>} style={{ borderRadius: 8 }} maxLength={50} />
@@ -201,7 +201,7 @@ export const ReceiptFormModal: React.FC<ReceiptFormModalProps> = ({
                     <Col span={12}>
                       <Form.Item
                         name="transaction_ref"
-                        label={<span style={{ fontWeight: 700, color: '#0F172A' }}>NEFT / UTR Reference</span>}
+                        label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>NEFT / UTR Reference</span>}
                         rules={[{ max: 50, message: 'Reference cannot exceed 50 characters' }]}
                       >
                         <Input size="large" placeholder="e.g. NEFT/HDFC20260725" style={{ borderRadius: 8 }} maxLength={50} />
@@ -210,7 +210,7 @@ export const ReceiptFormModal: React.FC<ReceiptFormModalProps> = ({
                     <Col span={12}>
                       <Form.Item
                         name="bank_name"
-                        label={<span style={{ fontWeight: 700, color: '#0F172A' }}>Remitting Bank</span>}
+                        label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Remitting Bank</span>}
                         rules={[{ max: 100, message: 'Bank name cannot exceed 100 characters' }]}
                       >
                         <Input size="large" placeholder="e.g. HDFC Bank, SBI, ICICI" style={{ borderRadius: 8 }} maxLength={100} />
@@ -225,7 +225,7 @@ export const ReceiptFormModal: React.FC<ReceiptFormModalProps> = ({
                     <Col span={12}>
                       <Form.Item
                         name="cheque_number"
-                        label={<span style={{ fontWeight: 700, color: '#0F172A' }}>Cheque Number</span>}
+                        label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Cheque Number</span>}
                         rules={[{ max: 30, message: 'Cheque number cannot exceed 30 characters' }]}
                       >
                         <Input size="large" placeholder="e.g. CHQ-445566" style={{ borderRadius: 8 }} maxLength={30} />
@@ -234,7 +234,7 @@ export const ReceiptFormModal: React.FC<ReceiptFormModalProps> = ({
                     <Col span={12}>
                       <Form.Item
                         name="bank_name"
-                        label={<span style={{ fontWeight: 700, color: '#0F172A' }}>Drawn Bank</span>}
+                        label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Drawn Bank</span>}
                         rules={[{ max: 100, message: 'Bank name cannot exceed 100 characters' }]}
                       >
                         <Input size="large" placeholder="e.g. State Bank of India" style={{ borderRadius: 8 }} maxLength={100} />
@@ -249,7 +249,7 @@ export const ReceiptFormModal: React.FC<ReceiptFormModalProps> = ({
 
           <Form.Item
             name="purpose"
-            label={<span style={{ fontWeight: 700, color: '#0F172A' }}>Purpose / Cause</span>}
+            label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Purpose / Cause</span>}
             rules={[{ max: 150, message: 'Purpose cannot exceed 150 characters' }]}
           >
             <Input size="large" placeholder="e.g. Festival Collection, Pooja, General Donation" style={{ borderRadius: 8 }} maxLength={150} />
@@ -257,7 +257,7 @@ export const ReceiptFormModal: React.FC<ReceiptFormModalProps> = ({
 
           {/* Quick Cause Presets */}
           <div style={{ marginBottom: 20, marginTop: -8 }}>
-            <Text type="secondary" style={{ fontSize: 11, fontWeight: 700, marginRight: 8 }}>Quick Causes:</Text>
+            <Text type="secondary" style={{ fontSize: 11, fontWeight: 700, marginRight: 8, color: 'var(--color-text-secondary)' }}>Quick Causes:</Text>
             <Space size={4} wrap>
               {['Ganesh Utsav 2025', 'Annadaanam', 'Temple Construction', 'Pooja Seva', 'General Donation'].map((cause) => (
                 <Tag
@@ -272,7 +272,7 @@ export const ReceiptFormModal: React.FC<ReceiptFormModalProps> = ({
             </Space>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, paddingTop: 12, borderTop: '1px solid #F1F5F9' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, paddingTop: 12, borderTop: '1px solid var(--color-border)' }}>
             <Button size="large" onClick={onCancel} style={{ borderRadius: 8, fontWeight: 600 }}>
               Cancel
             </Button>

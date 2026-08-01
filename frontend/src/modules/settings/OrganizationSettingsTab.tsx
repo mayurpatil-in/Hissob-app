@@ -218,12 +218,12 @@ const OrganizationSettingsTab: React.FC = () => {
       <Form form={form} layout="vertical" onFinish={handleSave}>
         <Row gutter={16}>
           <Col xs={24} md={12}>
-            <Form.Item label="Organization / Mandal Name" name="name" rules={[{ required: true, message: 'Please enter Organization Name' }]}>
+            <Form.Item label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Organization / Mandal Name</span>} name="name" rules={[{ required: true, message: 'Please enter Organization Name' }]}>
               <Input placeholder="e.g. Vighnaharta Ganesh Utsav Mandal" />
             </Form.Item>
           </Col>
           <Col xs={24} md={12}>
-            <Form.Item label="UPI ID (For dynamic QR generation)" name="upi_id">
+            <Form.Item label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>UPI ID (For dynamic QR generation)</span>} name="upi_id">
               <Input placeholder="e.g. yourbank@upi" />
             </Form.Item>
           </Col>
@@ -231,7 +231,7 @@ const OrganizationSettingsTab: React.FC = () => {
 
         <Row gutter={16}>
           <Col xs={24}>
-            <Form.Item label="Street Address / Location" name="address">
+            <Form.Item label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Street Address / Location</span>} name="address">
               <Input.TextArea rows={2} placeholder="e.g. Station Road, Near Main Temple, Kolhapur" />
             </Form.Item>
           </Col>
@@ -239,17 +239,17 @@ const OrganizationSettingsTab: React.FC = () => {
 
         <Row gutter={16}>
           <Col xs={24} sm={8}>
-            <Form.Item label="City / District" name="city">
+            <Form.Item label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>City / District</span>} name="city">
               <Input placeholder="e.g. Kolhapur" />
             </Form.Item>
           </Col>
           <Col xs={24} sm={8}>
-            <Form.Item label="State" name="state">
+            <Form.Item label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>State</span>} name="state">
               <Input placeholder="e.g. Maharashtra" />
             </Form.Item>
           </Col>
           <Col xs={24} sm={8}>
-            <Form.Item label="Pincode" name="pincode">
+            <Form.Item label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Pincode</span>} name="pincode">
               <Input placeholder="e.g. 416001" />
             </Form.Item>
           </Col>
@@ -257,12 +257,12 @@ const OrganizationSettingsTab: React.FC = () => {
         
         <Row gutter={16}>
           <Col xs={24} md={12}>
-            <Form.Item label="Trust / Society Reg. No." name="registration_number">
+            <Form.Item label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Trust / Society Reg. No.</span>} name="registration_number">
               <Input placeholder="e.g. Reg. No. MAH/1234/2020" />
             </Form.Item>
           </Col>
           <Col xs={24} md={12}>
-            <Form.Item label="Receipt Print Template" name="receipt_template" tooltip="Choose how your receipts look when printed.">
+            <Form.Item label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Receipt Print Template</span>} name="receipt_template" tooltip="Choose how your receipts look when printed.">
               <Select style={{ width: '100%' }}>
                 <Select.Option value="modern">Modern English (Default)</Select.Option>
                 <Select.Option value="marathi_traditional">Traditional Marathi (Classic Maroon)</Select.Option>
@@ -274,13 +274,13 @@ const OrganizationSettingsTab: React.FC = () => {
         <Divider style={{ margin: '20px 0 16px 0' }} />
 
         {/* ── Email & Notification Control Section ── */}
-        <Title level={5} style={{ color: '#2563EB', marginTop: 0 }}><MailOutlined /> Automated Email & Notification Controls</Title>
+        <Title level={5} style={{ color: '#3B82F6', marginTop: 0 }}><MailOutlined /> Automated Email & Notification Controls</Title>
         <Text type="secondary">Manage automated email receipts and daily executive financial digests.</Text>
 
-        <div style={{ marginTop: 16, background: '#F8FAFC', padding: '16px 12px', borderRadius: 12, border: '1px solid #E2E8F0' }}>
+        <div style={{ marginTop: 16, background: 'var(--color-bg)', padding: '16px 12px', borderRadius: 12, border: '1px solid var(--color-border)' }}>
           <Row gutter={16} align="middle" style={{ marginBottom: 16 }}>
             <Col xs={18} sm={19}>
-              <Text strong style={{ fontSize: 13 }}>Send Instant Email Receipts to Donors</Text>
+              <Text strong style={{ fontSize: 13, color: 'var(--color-text-primary)' }}>Send Instant Email Receipts to Donors</Text>
               <br />
               <Text type="secondary" style={{ fontSize: 12 }}>Automatically email electronic receipt cards to donors when an email ID is provided.</Text>
             </Col>
@@ -293,7 +293,7 @@ const OrganizationSettingsTab: React.FC = () => {
 
           <Row gutter={16} align="middle" style={{ marginBottom: 16 }}>
             <Col xs={18} sm={19}>
-              <Text strong style={{ fontSize: 13 }}>Send Welcome Email to New Donors</Text>
+              <Text strong style={{ fontSize: 13, color: 'var(--color-text-primary)' }}>Send Welcome Email to New Donors</Text>
               <br />
               <Text type="secondary" style={{ fontSize: 12 }}>Automatically email a welcome greeting card & official Donor ID to newly registered donors.</Text>
             </Col>
@@ -306,7 +306,7 @@ const OrganizationSettingsTab: React.FC = () => {
 
           <Row gutter={16} align="middle" style={{ marginBottom: 16 }}>
             <Col xs={18} sm={19}>
-              <Text strong style={{ fontSize: 13 }}>Enable Daily Financial Digest Email (9:00 PM)</Text>
+              <Text strong style={{ fontSize: 13, color: 'var(--color-text-primary)' }}>Enable Daily Financial Digest Email (9:00 PM)</Text>
               <br />
               <Text type="secondary" style={{ fontSize: 12 }}>Send daily 9:00 PM summary of total collections, expenses, and pending cash handovers.</Text>
             </Col>
@@ -317,7 +317,7 @@ const OrganizationSettingsTab: React.FC = () => {
             </Col>
           </Row>
 
-          <Form.Item label="Custom Daily Digest Recipient Emails (Optional)" name="digest_recipients" tooltip="Separate multiple emails with commas. If left empty, all active Org Admins & Committee members will receive the digest automatically.">
+          <Form.Item label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Custom Daily Digest Recipient Emails (Optional)</span>} name="digest_recipients" tooltip="Separate multiple emails with commas. If left empty, all active Org Admins & Committee members will receive the digest automatically.">
             <Input.TextArea rows={2} placeholder="e.g. president@mandal.org, treasurer@gmail.com, secretary@mandal.org" />
           </Form.Item>
 
@@ -330,7 +330,7 @@ const OrganizationSettingsTab: React.FC = () => {
                 icon={<ApiOutlined />}
                 loading={testingSmtp}
                 onClick={openTestSmtpModal}
-                style={{ width: '100%', borderColor: '#2563EB', color: '#2563EB', fontWeight: 600 }}
+                style={{ width: '100%', borderColor: '#3B82F6', color: '#3B82F6', fontWeight: 600 }}
               >
                 Test SMTP Connection
               </Button>
@@ -367,11 +367,11 @@ const OrganizationSettingsTab: React.FC = () => {
         <Divider style={{ margin: '24px 0 16px 0' }} />
 
         {/* ── AI LLM Engine Provider Selection Section ── */}
-        <Title level={5} style={{ color: '#0066FF', marginTop: 0 }}><RobotOutlined /> AI Assistant & LLM Intelligence Engine</Title>
+        <Title level={5} style={{ color: '#3B82F6', marginTop: 0 }}><RobotOutlined /> AI Assistant & LLM Intelligence Engine</Title>
         <Text type="secondary">Choose which Large Language Model (LLM) powers your organization's AI financial chatbot, voice parser & audit intelligence.</Text>
 
-        <div style={{ marginTop: 16, background: '#F8FAFC', padding: '16px', borderRadius: 12, border: '1px solid #E2E8F0' }}>
-          <Form.Item label="Preferred AI Engine Model Provider" name="ai_provider" tooltip="Select between Google Gemini 2.0 Flash (Recommended, Ultra Fast) and OpenAI GPT-4o-Mini. Both support context-aware financial Q&A.">
+        <div style={{ marginTop: 16, background: 'var(--color-bg)', padding: '16px', borderRadius: 12, border: '1px solid var(--color-border)' }}>
+          <Form.Item label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Preferred AI Engine Model Provider</span>} name="ai_provider" tooltip="Select between Google Gemini 2.0 Flash (Recommended, Ultra Fast) and OpenAI GPT-4o-Mini. Both support context-aware financial Q&A.">
             <Select style={{ width: '100%' }}>
               <Select.Option value="gemini">✨ Google Gemini 2.0 Flash (Recommended • Fast & High Accuracy)</Select.Option>
               <Select.Option value="openai">🤖 OpenAI GPT-4o-Mini (Powerful Natural Language Reasoning)</Select.Option>

@@ -137,17 +137,17 @@ const AIInsightsPage: React.FC = () => {
   // ── Render formatted report text ──
   const renderReport = (text: string) => {
     return text.split('\n').map((line, idx) => {
-      if (line.startsWith('# ')) return <Title key={idx} level={3} style={{ color: '#0B2347', marginTop: 16 }}>{line.slice(2)}</Title>;
-      if (line.startsWith('## ')) return <Title key={idx} level={4} style={{ color: '#1E40AF', marginTop: 14, marginBottom: 6 }}>{line.slice(3)}</Title>;
-      if (line.startsWith('---')) return <hr key={idx} style={{ border: 'none', borderTop: '1px solid #E2E8F0', margin: '12px 0' }} />;
+      if (line.startsWith('# ')) return <Title key={idx} level={3} style={{ color: 'var(--color-text-primary)', marginTop: 16 }}>{line.slice(2)}</Title>;
+      if (line.startsWith('## ')) return <Title key={idx} level={4} style={{ color: '#3B82F6', marginTop: 14, marginBottom: 6 }}>{line.slice(3)}</Title>;
+      if (line.startsWith('---')) return <hr key={idx} style={{ border: 'none', borderTop: '1px solid var(--color-border)', margin: '12px 0' }} />;
       const parts = line.split(/(\*\*.*?\*\*)/g);
       const rendered = parts.map((part, pIdx) => {
-        if (part.startsWith('**') && part.endsWith('**')) return <strong key={pIdx}>{part.slice(2, -2)}</strong>;
+        if (part.startsWith('**') && part.endsWith('**')) return <strong key={pIdx} style={{ color: 'var(--color-text-primary)', fontWeight: 700 }}>{part.slice(2, -2)}</strong>;
         return part;
       });
-      if (line.startsWith('- ')) return <div key={idx} style={{ paddingLeft: 12, marginBottom: 3, display: 'flex', alignItems: 'flex-start' }}><span style={{ color: '#0066FF', marginRight: 8, fontWeight: 900 }}>•</span><span>{rendered}</span></div>;
-      if (/^\d+\. /.test(line)) return <div key={idx} style={{ paddingLeft: 12, marginBottom: 3 }}>{rendered}</div>;
-      return <div key={idx} style={{ marginBottom: line.trim() ? 4 : 2 }}>{rendered}</div>;
+      if (line.startsWith('- ')) return <div key={idx} style={{ paddingLeft: 12, marginBottom: 3, display: 'flex', alignItems: 'flex-start' }}><span style={{ color: '#3B82F6', marginRight: 8, fontWeight: 900 }}>•</span><span style={{ color: 'var(--color-text-primary)' }}>{rendered}</span></div>;
+      if (/^\d+\. /.test(line)) return <div key={idx} style={{ paddingLeft: 12, marginBottom: 3, color: 'var(--color-text-primary)' }}>{rendered}</div>;
+      return <div key={idx} style={{ marginBottom: line.trim() ? 4 : 2, color: 'var(--color-text-primary)' }}>{rendered}</div>;
     });
   };
 
@@ -363,7 +363,7 @@ const AIInsightsPage: React.FC = () => {
         title={
           <Space>
             <SearchOutlined style={{ color: '#F97316', fontSize: 18 }} />
-            <span style={{ fontWeight: 700, color: '#0B2347' }}>AI Financial Audit Scanner</span>
+            <span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>AI Financial Audit Scanner</span>
             <Tooltip title="Scans receipts, expenses, donors & settlements for 8 types of anomalies">
               <InfoCircleOutlined style={{ color: '#94A3B8' }} />
             </Tooltip>
@@ -405,8 +405,8 @@ const AIInsightsPage: React.FC = () => {
             {/* Audit Summary Bar */}
             <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
               <Col xs={12} sm={6}>
-                <div style={{ padding: 12, background: '#F8FAFC', borderRadius: 8, textAlign: 'center' }}>
-                  <Text type="secondary" style={{ fontSize: 10, fontWeight: 700 }}>HEALTH SCORE</Text>
+                <div style={{ padding: 12, background: 'var(--color-bg)', borderRadius: 8, textAlign: 'center', border: '1px solid var(--color-border)' }}>
+                  <Text style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-text-secondary)' }}>HEALTH SCORE</Text>
                   <div>
                     <Text style={{ fontSize: 24, fontWeight: 900, color: auditResult.health_score >= 80 ? '#22C55E' : auditResult.health_score >= 50 ? '#F59E0B' : '#EF4444' }}>
                       {auditResult.health_score}
@@ -416,20 +416,20 @@ const AIInsightsPage: React.FC = () => {
                 </div>
               </Col>
               <Col xs={12} sm={6}>
-                <div style={{ padding: 12, background: '#FEF2F2', borderRadius: 8, textAlign: 'center' }}>
-                  <Text type="secondary" style={{ fontSize: 10, fontWeight: 700 }}>HIGH</Text>
+                <div style={{ padding: 12, background: 'var(--color-bg)', borderRadius: 8, textAlign: 'center', border: '1px solid rgba(239, 68, 68, 0.35)' }}>
+                  <Text style={{ fontSize: 10, fontWeight: 700, color: '#EF4444' }}>HIGH</Text>
                   <div><Text style={{ fontSize: 24, fontWeight: 900, color: '#EF4444' }}>{auditResult.high_count}</Text></div>
                 </div>
               </Col>
               <Col xs={12} sm={6}>
-                <div style={{ padding: 12, background: '#FFFBEB', borderRadius: 8, textAlign: 'center' }}>
-                  <Text type="secondary" style={{ fontSize: 10, fontWeight: 700 }}>MEDIUM</Text>
+                <div style={{ padding: 12, background: 'var(--color-bg)', borderRadius: 8, textAlign: 'center', border: '1px solid rgba(245, 158, 11, 0.35)' }}>
+                  <Text style={{ fontSize: 10, fontWeight: 700, color: '#F59E0B' }}>MEDIUM</Text>
                   <div><Text style={{ fontSize: 24, fontWeight: 900, color: '#F59E0B' }}>{auditResult.medium_count}</Text></div>
                 </div>
               </Col>
               <Col xs={12} sm={6}>
-                <div style={{ padding: 12, background: '#EFF6FF', borderRadius: 8, textAlign: 'center' }}>
-                  <Text type="secondary" style={{ fontSize: 10, fontWeight: 700 }}>INFO</Text>
+                <div style={{ padding: 12, background: 'var(--color-bg)', borderRadius: 8, textAlign: 'center', border: '1px solid rgba(59, 130, 246, 0.35)' }}>
+                  <Text style={{ fontSize: 10, fontWeight: 700, color: '#3B82F6' }}>INFO</Text>
                   <div><Text style={{ fontSize: 24, fontWeight: 900, color: '#3B82F6' }}>{auditResult.info_count}</Text></div>
                 </div>
               </Col>
@@ -457,7 +457,7 @@ const AIInsightsPage: React.FC = () => {
         title={
           <Space>
             <FileTextOutlined style={{ color: '#3B82F6', fontSize: 18 }} />
-            <span style={{ fontWeight: 700, color: '#0B2347' }}>AI Executive Summary Report</span>
+            <span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>AI Executive Summary Report</span>
           </Space>
         }
         extra={
@@ -498,7 +498,7 @@ const AIInsightsPage: React.FC = () => {
         )}
 
         {reportResult && (
-          <div style={{ padding: '8px 4px', lineHeight: 1.7, fontSize: 13, color: '#1E293B' }}>
+          <div style={{ padding: '8px 4px', lineHeight: 1.7, fontSize: 13, color: 'var(--color-text-primary)' }}>
             {reportResult.ai_provider && (
               <Tag color="blue" style={{ marginBottom: 12 }}>
                 Powered by {reportResult.ai_provider} {reportResult.is_llm_powered ? '✨' : '📊'}
@@ -513,20 +513,20 @@ const AIInsightsPage: React.FC = () => {
       <Row gutter={[20, 20]}>
         <Col xs={24} md={12}>
           <Card className="hissob-card" title={<span><SafetyCertificateOutlined style={{ color: '#F97316' }} /> AI Fraud & Anomaly Audit Scanner</span>}>
-            <div style={{ padding: 12, background: '#F8FAFC', borderRadius: 8, marginBottom: 14 }}>
+            <div style={{ padding: 12, background: 'var(--color-bg)', borderRadius: 8, marginBottom: 14, border: '1px solid var(--color-border)' }}>
               <Space align="start">
                 <CheckCircleOutlined style={{ fontSize: 20, color: '#22C55E', marginTop: 2 }} />
                 <div>
-                  <Text style={{ fontWeight: 700, color: '#0B2347' }}>Multi-Tenant Security & Role Isolation</Text><br />
+                  <Text style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Multi-Tenant Security & Role Isolation</Text><br />
                   <Text type="secondary" style={{ fontSize: 12 }}>AI verifies that only authorized Treasurers & Trustees verify settlement batches.</Text>
                 </div>
               </Space>
             </div>
-            <div style={{ padding: 12, background: '#F8FAFC', borderRadius: 8, marginBottom: 14 }}>
+            <div style={{ padding: 12, background: 'var(--color-bg)', borderRadius: 8, marginBottom: 14, border: '1px solid var(--color-border)' }}>
               <Space align="start">
                 <CheckCircleOutlined style={{ fontSize: 20, color: '#22C55E', marginTop: 2 }} />
                 <div>
-                  <Text style={{ fontWeight: 700, color: '#0B2347' }}>Duplicate Receipt Prevention</Text><br />
+                  <Text style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Duplicate Receipt Prevention</Text><br />
                   <Text type="secondary" style={{ fontSize: 12 }}>AI cross-checks UTR reference numbers to prevent double recording of UPI donations.</Text>
                 </div>
               </Space>
@@ -543,42 +543,42 @@ const AIInsightsPage: React.FC = () => {
             ) : (
               <>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <div style={{ padding: 12, background: '#F0FDF4', borderRadius: 8, border: '1px solid #BBF7D0' }}>
+                  <div style={{ padding: 12, background: 'var(--color-bg)', borderRadius: 8, border: '1px solid rgba(34, 197, 94, 0.3)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Text style={{ fontWeight: 700, color: '#166534' }}>Total Collections</Text>
-                      <Text style={{ fontWeight: 900, fontSize: 16, color: '#166534' }}>₹ {(summary?.metrics?.total_collections ?? 0).toLocaleString('en-IN')}</Text>
+                      <Text style={{ fontWeight: 700, color: '#22C55E' }}>Total Collections</Text>
+                      <Text style={{ fontWeight: 900, fontSize: 16, color: '#22C55E' }}>₹ {(summary?.metrics?.total_collections ?? 0).toLocaleString('en-IN')}</Text>
                     </div>
                   </div>
-                  <div style={{ padding: 12, background: '#EFF6FF', borderRadius: 8, border: '1px solid #BFDBFE' }}>
+                  <div style={{ padding: 12, background: 'var(--color-bg)', borderRadius: 8, border: '1px solid rgba(59, 130, 246, 0.3)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Text style={{ fontWeight: 700, color: '#1E40AF' }}>Settled Amount</Text>
-                      <Text style={{ fontWeight: 900, fontSize: 16, color: '#1E40AF' }}>₹ {(summary?.metrics?.settled_amount ?? 0).toLocaleString('en-IN')}</Text>
+                      <Text style={{ fontWeight: 700, color: '#3B82F6' }}>Settled Amount</Text>
+                      <Text style={{ fontWeight: 900, fontSize: 16, color: '#3B82F6' }}>₹ {(summary?.metrics?.settled_amount ?? 0).toLocaleString('en-IN')}</Text>
                     </div>
                   </div>
-                  <div style={{ padding: 12, background: '#FFFBEB', borderRadius: 8, border: '1px solid #FDE68A' }}>
+                  <div style={{ padding: 12, background: 'var(--color-bg)', borderRadius: 8, border: '1px solid rgba(245, 158, 11, 0.3)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Text style={{ fontWeight: 700, color: '#92400E' }}>Pending Settlement</Text>
-                      <Text style={{ fontWeight: 900, fontSize: 16, color: '#92400E' }}>
+                      <Text style={{ fontWeight: 700, color: '#F59E0B' }}>Pending Settlement</Text>
+                      <Text style={{ fontWeight: 900, fontSize: 16, color: '#F59E0B' }}>
                         ₹ {(summary?.metrics?.pending_amount ?? 0).toLocaleString('en-IN')}
-                        <span style={{ fontWeight: 500, fontSize: 11, color: '#B45309', marginLeft: 6 }}>({summary?.metrics?.pending_count ?? 0} receipts)</span>
+                        <span style={{ fontWeight: 500, fontSize: 11, color: '#FB923C', marginLeft: 6 }}>({summary?.metrics?.pending_count ?? 0} receipts)</span>
                       </Text>
                     </div>
                   </div>
-                  <div style={{ padding: 12, background: '#F5F3FF', borderRadius: 8, border: '1px solid #DDD6FE' }}>
+                  <div style={{ padding: 12, background: 'var(--color-bg)', borderRadius: 8, border: '1px solid rgba(139, 92, 246, 0.3)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Text style={{ fontWeight: 700, color: '#5B21B6' }}>Active Donors</Text>
-                      <Text style={{ fontWeight: 900, fontSize: 16, color: '#5B21B6' }}>
+                      <Text style={{ fontWeight: 700, color: '#8B5CF6' }}>Active Donors</Text>
+                      <Text style={{ fontWeight: 900, fontSize: 16, color: '#8B5CF6' }}>
                         {summary?.metrics?.active_donors ?? 0}
-                        <span style={{ fontWeight: 500, fontSize: 11, color: '#7C3AED', marginLeft: 6 }}>({summary?.metrics?.vip_donors ?? 0} VIP)</span>
+                        <span style={{ fontWeight: 500, fontSize: 11, color: '#A78BFA', marginLeft: 6 }}>({summary?.metrics?.vip_donors ?? 0} VIP)</span>
                       </Text>
                     </div>
                   </div>
                 </div>
-                <div style={{ marginTop: 16, padding: 12, background: '#EFF6FF', borderRadius: 8, border: '1px solid #BFDBFE' }}>
-                  <Text style={{ fontWeight: 700, color: '#1E40AF' }}>
+                <div style={{ marginTop: 16, padding: 12, background: 'var(--color-bg)', borderRadius: 8, border: '1px solid rgba(59, 130, 246, 0.3)' }}>
+                  <Text style={{ fontWeight: 700, color: '#3B82F6' }}>
                     <ThunderboltOutlined style={{ marginRight: 6 }} />AI Recommendation:
                   </Text><br />
-                  <Text style={{ fontSize: 12, color: '#1E3A8A' }}>
+                  <Text style={{ fontSize: 12, color: 'var(--color-text-primary)' }}>
                     {(summary?.metrics?.pending_count ?? 0) > 0
                       ? 'Collectors should submit cash settlements to the Treasurer before EOD to maintain clear audit compliance.'
                       : 'All financials are up to date. Enable WhatsApp Receipt sharing to boost donor engagement during peak festival days.'}

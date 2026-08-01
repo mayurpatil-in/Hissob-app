@@ -143,7 +143,7 @@ const AIChatWidget: React.FC<Props> = ({ embedded = false }) => {
       const parts = line.split(/(\*\*.*?\*\*)/g);
       const renderedParts = parts.map((part, pIdx) => {
         if (part.startsWith('**') && part.endsWith('**')) {
-          return <strong key={pIdx} style={{ color: '#0F172A', fontWeight: 700 }}>{part.slice(2, -2)}</strong>;
+          return <strong key={pIdx} style={{ color: 'var(--color-text-primary)', fontWeight: 700 }}>{part.slice(2, -2)}</strong>;
         }
         return part;
       });
@@ -171,10 +171,10 @@ const AIChatWidget: React.FC<Props> = ({ embedded = false }) => {
         width: embedded ? '100%' : '370px',
         height: embedded ? '580px' : '560px',
         maxHeight: 'calc(100vh - 120px)',
-        backgroundColor: '#FFFFFF',
+        backgroundColor: 'var(--color-bg-card)',
         borderRadius: '24px',
-        boxShadow: embedded ? '0 10px 30px rgba(0,0,0,0.06)' : '0 20px 50px rgba(11,35,71,0.22)',
-        border: '1px solid #EAEFF5',
+        boxShadow: embedded ? '0 10px 30px rgba(0,0,0,0.2)' : '0 20px 50px rgba(0,0,0,0.4)',
+        border: '1px solid var(--color-border)',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
@@ -185,11 +185,11 @@ const AIChatWidget: React.FC<Props> = ({ embedded = false }) => {
       <div
         style={{
           padding: '16px 20px',
-          borderBottom: '1px solid #F0F4F8',
+          borderBottom: '1px solid var(--color-border)',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          background: '#FFFFFF',
+          background: 'var(--color-bg-card)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -215,7 +215,7 @@ const AIChatWidget: React.FC<Props> = ({ embedded = false }) => {
                 width: 11,
                 height: 11,
                 backgroundColor: '#22C55E',
-                border: '2px solid #FFFFFF',
+                border: '2px solid var(--color-bg-card)',
                 borderRadius: '50%',
               }}
             />
@@ -223,9 +223,9 @@ const AIChatWidget: React.FC<Props> = ({ embedded = false }) => {
 
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontWeight: 800, fontSize: 16, color: '#0F172A' }}>Hisob AI</span>
+              <span style={{ fontWeight: 800, fontSize: 16, color: 'var(--color-text-primary)' }}>Hisob AI</span>
             </div>
-            <div style={{ fontSize: 11, color: '#64748B', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ fontSize: 11, color: 'var(--color-text-secondary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
               <span>ONLINE</span>
               <span>•</span>
               <span style={{ color: '#0066FF' }}>{activeProvider}</span>
@@ -238,7 +238,7 @@ const AIChatWidget: React.FC<Props> = ({ embedded = false }) => {
           <Button
             type="text"
             shape="circle"
-            icon={<CloseOutlined style={{ fontSize: 16, color: '#64748B' }} />}
+            icon={<CloseOutlined style={{ fontSize: 16, color: 'var(--color-text-secondary)' }} />}
             onClick={() => setIsOpen(false)}
           />
         )}
@@ -254,7 +254,7 @@ const AIChatWidget: React.FC<Props> = ({ embedded = false }) => {
           display: 'flex',
           flexDirection: 'column',
           gap: 14,
-          background: '#FFFFFF',
+          background: 'var(--color-bg-card)',
         }}
       >
 
@@ -269,8 +269,9 @@ const AIChatWidget: React.FC<Props> = ({ embedded = false }) => {
             <div
               style={{
                 maxWidth: '85%',
-                backgroundColor: msg.sender === 'user' ? '#0066FF' : '#F4F6F8',
-                color: msg.sender === 'user' ? '#FFFFFF' : '#1E293B',
+                backgroundColor: msg.sender === 'user' ? '#0066FF' : 'var(--color-bg)',
+                border: msg.sender === 'user' ? 'none' : '1px solid var(--color-border)',
+                color: msg.sender === 'user' ? '#FFFFFF' : 'var(--color-text-primary)',
                 borderRadius: msg.sender === 'user' ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
                 padding: '14px 18px',
                 fontSize: 14,
@@ -282,7 +283,7 @@ const AIChatWidget: React.FC<Props> = ({ embedded = false }) => {
               <div
                 style={{
                   fontSize: 10,
-                  color: msg.sender === 'user' ? 'rgba(255,255,255,0.7)' : '#94A3B8',
+                  color: msg.sender === 'user' ? 'rgba(255,255,255,0.7)' : 'var(--color-text-secondary)',
                   textAlign: 'right',
                   marginTop: 4,
                   fontWeight: 500,
@@ -298,7 +299,8 @@ const AIChatWidget: React.FC<Props> = ({ embedded = false }) => {
           <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
             <div
               style={{
-                background: '#F4F6F8',
+                background: 'var(--color-bg)',
+                border: '1px solid var(--color-border)',
                 borderRadius: '20px 20px 20px 4px',
                 padding: '12px 18px',
                 display: 'flex',
@@ -307,7 +309,7 @@ const AIChatWidget: React.FC<Props> = ({ embedded = false }) => {
               }}
             >
               <Spin size="small" />
-              <span style={{ fontSize: 13, color: '#64748B', fontWeight: 500 }}>Hisob AI is thinking...</span>
+              <span style={{ fontSize: 13, color: 'var(--color-text-secondary)', fontWeight: 500 }}>Hisob AI is thinking...</span>
             </div>
           </div>
         )}
@@ -315,7 +317,7 @@ const AIChatWidget: React.FC<Props> = ({ embedded = false }) => {
 
 
       {/* ── Pill Chips Section (Matching Screenshot) ── */}
-      <div style={{ padding: '0 16px 12px', background: '#FFFFFF' }}>
+      <div style={{ padding: '0 16px 12px', background: 'var(--color-bg-card)' }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
           {CHIP_SUGGESTIONS.map((chip, idx) => (
             <button
@@ -323,29 +325,29 @@ const AIChatWidget: React.FC<Props> = ({ embedded = false }) => {
               disabled={loading}
               onClick={() => handleSend(chip.query)}
               style={{
-                background: '#F8FAFC',
-                border: '1px solid #E2E8F0',
+                background: 'var(--color-bg)',
+                border: '1px solid var(--color-border)',
                 borderRadius: '20px',
                 padding: '7px 14px',
                 fontSize: 11,
                 fontWeight: 700,
-                color: '#475569',
+                color: 'var(--color-text-primary)',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 4,
                 transition: 'all 0.2s ease',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.borderColor = '#0066FF';
                 e.currentTarget.style.color = '#0066FF';
-                e.currentTarget.style.background = '#EFF6FF';
+                e.currentTarget.style.background = 'rgba(0, 102, 255, 0.15)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = '#E2E8F0';
-                e.currentTarget.style.color = '#475569';
-                e.currentTarget.style.background = '#F8FAFC';
+                e.currentTarget.style.borderColor = 'var(--color-border)';
+                e.currentTarget.style.color = 'var(--color-text-primary)';
+                e.currentTarget.style.background = 'var(--color-bg)';
               }}
             >
               <span>{chip.label}</span>
@@ -356,15 +358,15 @@ const AIChatWidget: React.FC<Props> = ({ embedded = false }) => {
       </div>
 
       {/* ── Bottom Input Container ── */}
-      <div style={{ padding: '0 16px 14px', background: '#FFFFFF' }}>
+      <div style={{ padding: '0 16px 14px', background: 'var(--color-bg-card)' }}>
         <div
           style={{
-            background: '#F4F6F8',
+            background: 'var(--color-bg)',
             borderRadius: '28px',
             padding: '4px 6px 4px 16px',
             display: 'flex',
             alignItems: 'center',
-            border: '1px solid #E2E8F0',
+            border: '1px solid var(--color-border)',
           }}
         >
           <Input
@@ -376,7 +378,7 @@ const AIChatWidget: React.FC<Props> = ({ embedded = false }) => {
             variant="borderless"
             style={{
               fontSize: 14,
-              color: '#0F172A',
+              color: 'var(--color-text-primary)',
               padding: 0,
               boxShadow: 'none',
             }}
@@ -398,7 +400,7 @@ const AIChatWidget: React.FC<Props> = ({ embedded = false }) => {
 
         {/* Disclaimer Footer */}
         <div style={{ textAlign: 'center', marginTop: 8 }}>
-          <span style={{ fontSize: 10, color: '#94A3B8' }}>
+          <span style={{ fontSize: 10, color: 'var(--color-text-secondary)' }}>
             Hisob AI can make mistakes. The session is encrypted.
           </span>
         </div>

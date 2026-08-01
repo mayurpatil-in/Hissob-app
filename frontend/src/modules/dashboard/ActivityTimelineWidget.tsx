@@ -19,11 +19,11 @@ const MODULE_ICONS: Record<string, React.ReactNode> = {
 };
 
 const MODULE_BG: Record<string, string> = {
-  receipts: '#FFF7ED',
-  cash_settlement: '#ECFDF5',
-  expenses: '#FDF2F8',
-  donors: '#EFF6FF',
-  auth: '#FEF3C7',
+  receipts: 'rgba(249, 115, 22, 0.12)',
+  cash_settlement: 'rgba(16, 185, 129, 0.12)',
+  expenses: 'rgba(236, 72, 153, 0.12)',
+  donors: 'rgba(59, 130, 246, 0.12)',
+  auth: 'rgba(245, 158, 11, 0.12)',
 };
 
 const MODULE_TAG_COLOR: Record<string, string> = {
@@ -58,13 +58,14 @@ export const ActivityTimelineWidget: React.FC<ActivityTimelineWidgetProps> = ({
       style={{
         borderRadius: 16,
         boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
-        border: '1px solid #E2E8F0',
+        border: '1px solid var(--color-border)',
+        background: 'var(--color-bg-card)',
       }}
       title={
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <ThunderboltOutlined style={{ color: '#F97316', fontSize: 18 }} />
-            <span style={{ fontWeight: 800, fontSize: 16, color: '#0F172A' }}>Live Activity Feed</span>
+            <span style={{ fontWeight: 800, fontSize: 16, color: 'var(--color-text-primary)' }}>Live Activity Feed</span>
             <Tag color="orange" style={{ borderRadius: 10, fontWeight: 700, fontSize: 11 }}>
               REAL-TIME
             </Tag>
@@ -74,7 +75,7 @@ export const ActivityTimelineWidget: React.FC<ActivityTimelineWidgetProps> = ({
             icon={<ReloadOutlined spin={isFetching} />}
             onClick={() => refetch()}
             size="small"
-            style={{ color: '#64748B' }}
+            style={{ color: 'var(--color-text-secondary)' }}
           >
             Refresh
           </Button>
@@ -93,7 +94,7 @@ export const ActivityTimelineWidget: React.FC<ActivityTimelineWidgetProps> = ({
               { label: '💸 Expenses', value: 'expenses' },
               { label: '🔐 Auth', value: 'auth' },
             ]}
-            style={{ border: '1px solid #E2E8F0', background: '#F8FAFC' }}
+            style={{ border: '1px solid var(--color-border)', background: 'var(--color-bg)' }}
           />
         </div>
       )}
@@ -106,14 +107,14 @@ export const ActivityTimelineWidget: React.FC<ActivityTimelineWidgetProps> = ({
           </Text>
         </div>
       ) : feedItems.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '24px 0', color: '#94A3B8' }}>
+        <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--color-text-secondary)' }}>
           <Text type="secondary" style={{ fontSize: 13 }}>No recent activity records found.</Text>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {feedItems.map((item: ActivityFeedItem) => {
             const icon = MODULE_ICONS[item.module] || <ThunderboltOutlined />;
-            const bg = MODULE_BG[item.module] || '#F8FAFC';
+            const bg = MODULE_BG[item.module] || 'var(--color-bg)';
             const tagColor = MODULE_TAG_COLOR[item.module] || 'default';
 
             return (
@@ -126,7 +127,7 @@ export const ActivityTimelineWidget: React.FC<ActivityTimelineWidgetProps> = ({
                   padding: '12px 14px',
                   borderRadius: 12,
                   background: bg,
-                  border: '1px solid rgba(226, 232, 240, 0.7)',
+                  border: '1px solid var(--color-border)',
                   transition: 'all 0.2s ease-in-out',
                 }}
               >
@@ -146,9 +147,9 @@ export const ActivityTimelineWidget: React.FC<ActivityTimelineWidgetProps> = ({
                 {/* Content */}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
-                    <div style={{ fontSize: 13, color: '#1E293B', fontWeight: 500, lineHeight: 1.4 }}>
-                      <b style={{ color: '#0F172A', fontWeight: 800 }}>{item.user_name}</b>{' '}
-                      <span style={{ color: '#64748B', fontSize: 11 }}>({item.user_email})</span>{' '}
+                    <div style={{ fontSize: 13, color: 'var(--color-text-primary)', fontWeight: 500, lineHeight: 1.4 }}>
+                      <b style={{ color: 'var(--color-text-primary)', fontWeight: 800 }}>{item.user_name}</b>{' '}
+                      <span style={{ color: 'var(--color-text-secondary)', fontSize: 11 }}>({item.user_email})</span>{' '}
                       <span>{item.story.replace(item.user_name, '').trim()}</span>
                     </div>
 

@@ -141,7 +141,7 @@ const CollectorDailySummaryModal: React.FC<Props> = ({
       title: 'Amount (₹)',
       dataIndex: 'amount',
       key: 'amount',
-      render: (val: number) => <span style={{ fontWeight: 700, color: '#0B2347', whiteSpace: 'nowrap' }}>₹ {Number(val).toLocaleString('en-IN')}</span>,
+      render: (val: number) => <span style={{ fontWeight: 700, color: 'var(--color-text-primary)', whiteSpace: 'nowrap' }}>₹ {Number(val).toLocaleString('en-IN')}</span>,
     },
     {
       title: 'Mode',
@@ -172,7 +172,7 @@ const CollectorDailySummaryModal: React.FC<Props> = ({
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingRight: 48 }}>
           <RocketOutlined style={{ color: '#F97316', fontSize: 22, flexShrink: 0 }} />
           <div>
-            <Title level={4} style={{ margin: 0, color: '#0B2347', fontSize: 14, lineHeight: 1.3, wordBreak: 'break-word' }}>Collector EOD Daily Summary & Cash Handover</Title>
+            <Title level={4} style={{ margin: 0, color: 'var(--color-text-primary)', fontSize: 14, lineHeight: 1.3, wordBreak: 'break-word' }}>Collector EOD Daily Summary & Cash Handover</Title>
             <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 2 }}>Daily collections report & physical cash handover</Text>
           </div>
         </div>
@@ -185,12 +185,12 @@ const CollectorDailySummaryModal: React.FC<Props> = ({
       styles={{ body: { padding: '16px 12px' } }}
       destroyOnHidden
     >
-      <div style={{ marginBottom: 20, background: '#F8F9FC', padding: 12, borderRadius: 8, border: '1px solid #E2E8F0' }}>
+      <div style={{ marginBottom: 20, background: 'var(--color-bg)', padding: 12, borderRadius: 8, border: '1px solid var(--color-border)' }}>
         <Row gutter={[12, 12]} align="bottom">
           <Col xs={12} sm={6}>
             <Text type="secondary" style={{ fontSize: 11, display: 'block', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>Collector</Text>
             <div style={{ height: 32, display: 'flex', alignItems: 'center' }}>
-              <Text style={{ fontWeight: 800, color: '#0B2347', fontSize: 13, whiteSpace: 'nowrap' }}>👤 {data?.collector_name || 'Collector'}</Text>
+              <Text style={{ fontWeight: 800, color: 'var(--color-text-primary)', fontSize: 13, whiteSpace: 'nowrap' }}>👤 {data?.collector_name || 'Collector'}</Text>
             </div>
           </Col>
 
@@ -244,9 +244,9 @@ const CollectorDailySummaryModal: React.FC<Props> = ({
                 style={{
                   width: '100%',
                   height: '100%',
-                  background: 'linear-gradient(180deg, #F8FAFC 0%, #FFFFFF 100%)',
-                  border: '1px solid #E2E8F0',
-                  borderTop: '4px solid #0B2347',
+                  background: 'var(--color-bg-card)',
+                  border: '1px solid var(--color-border)',
+                  borderTop: '4px solid #F97316',
                   borderRadius: 12,
                   display: 'flex',
                   flexDirection: 'column',
@@ -254,10 +254,10 @@ const CollectorDailySummaryModal: React.FC<Props> = ({
                 }}
                 styles={{ body: { padding: '12px 8px' } }}
               >
-                <Text style={{ fontSize: 10, fontWeight: 700, color: '#0B2347', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                <Text style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
                   💰 Today's Collection
                 </Text>
-                <div style={{ marginTop: 6, color: '#0B2347', fontSize: 15, fontWeight: 900, whiteSpace: 'nowrap' }}>
+                <div style={{ marginTop: 6, color: 'var(--color-text-primary)', fontSize: 15, fontWeight: 900, whiteSpace: 'nowrap' }}>
                   ₹ {Number(data?.total_collected || 0).toLocaleString('en-IN')}
                 </div>
               </Card>
@@ -269,8 +269,8 @@ const CollectorDailySummaryModal: React.FC<Props> = ({
                 style={{
                   width: '100%',
                   height: '100%',
-                  background: 'linear-gradient(180deg, #FFF7ED 0%, #FFFFFF 100%)',
-                  border: '1px solid #FFEDD5',
+                  background: 'var(--color-bg-card)',
+                  border: '1px solid rgba(249, 115, 22, 0.3)',
                   borderTop: '4px solid #F97316',
                   borderRadius: 12,
                   display: 'flex',
@@ -294,8 +294,8 @@ const CollectorDailySummaryModal: React.FC<Props> = ({
                 style={{
                   width: '100%',
                   height: '100%',
-                  background: 'linear-gradient(180deg, #EFF6FF 0%, #FFFFFF 100%)',
-                  border: '1px solid #DBEAFE',
+                  background: 'var(--color-bg-card)',
+                  border: '1px solid rgba(37, 99, 235, 0.3)',
                   borderTop: '4px solid #2563EB',
                   borderRadius: 12,
                   display: 'flex',
@@ -319,8 +319,8 @@ const CollectorDailySummaryModal: React.FC<Props> = ({
                 style={{
                   width: '100%',
                   height: '100%',
-                  background: 'linear-gradient(180deg, #ECFDF5 0%, #FFFFFF 100%)',
-                  border: '1px solid #BBF7D0',
+                  background: 'var(--color-bg-card)',
+                  border: '1px solid rgba(16, 185, 129, 0.3)',
                   borderTop: '4px solid #10B981',
                   borderRadius: 12,
                   display: 'flex',

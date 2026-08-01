@@ -260,18 +260,18 @@ const SettlementsPage: React.FC = () => {
   ];
 
   const receiptColumns = [
-    { title: 'Receipt #', dataIndex: 'receipt_number', key: 'receipt_number', render: (t: string) => <b>{t}</b> },
-    { title: 'Date', dataIndex: 'receipt_date', key: 'receipt_date' },
-    { title: 'Donor', dataIndex: 'donor', key: 'donor', render: (d: any) => d?.full_name || 'Donor' },
+    { title: 'Receipt #', dataIndex: 'receipt_number', key: 'receipt_number', render: (t: string) => <b style={{ color: '#3B82F6', fontFamily: 'monospace' }}>{t}</b> },
+    { title: 'Date', dataIndex: 'receipt_date', key: 'receipt_date', render: (d: string) => <span style={{ color: 'var(--color-text-secondary)' }}>{d}</span> },
+    { title: 'Donor', dataIndex: 'donor', key: 'donor', render: (d: any) => <span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>{d?.full_name || 'Donor'}</span> },
     { title: 'Collector', dataIndex: 'collector_name', key: 'collector_name', render: (c: string) => <Tag color="orange">👤 {c || 'Collector'}</Tag> },
-    { title: 'Amount (₹)', dataIndex: 'amount', key: 'amount', render: (val: number) => `₹ ${Number(val).toLocaleString('en-IN')}` },
+    { title: 'Amount (₹)', dataIndex: 'amount', key: 'amount', render: (val: number) => <span style={{ fontWeight: 700, color: '#10B981' }}>₹ {Number(val).toLocaleString('en-IN')}</span> },
     { title: 'Status', dataIndex: 'status', key: 'status', render: (st: string) => <Tag color="warning">{st.toUpperCase()}</Tag> },
   ];
 
   const digitalReceiptColumns = [
-    { title: 'Receipt #', dataIndex: 'receipt_number', key: 'receipt_number', render: (t: string) => <b>{t}</b> },
-    { title: 'Date', dataIndex: 'receipt_date', key: 'receipt_date' },
-    { title: 'Donor', dataIndex: 'donor', key: 'donor', render: (d: any) => d?.full_name || 'Donor' },
+    { title: 'Receipt #', dataIndex: 'receipt_number', key: 'receipt_number', render: (t: string) => <b style={{ color: '#3B82F6', fontFamily: 'monospace' }}>{t}</b> },
+    { title: 'Date', dataIndex: 'receipt_date', key: 'receipt_date', render: (d: string) => <span style={{ color: 'var(--color-text-secondary)' }}>{d}</span> },
+    { title: 'Donor', dataIndex: 'donor', key: 'donor', render: (d: any) => <span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>{d?.full_name || 'Donor'}</span> },
     { title: 'Collector', dataIndex: 'collector_name', key: 'collector_name', render: (c: string) => <Tag color="orange">👤 {c || 'Collector'}</Tag> },
     {
       title: 'Payment Mode & UTR / Ref',
@@ -280,7 +280,7 @@ const SettlementsPage: React.FC = () => {
         <div>
           <Tag color="cyan">{r.payment_mode?.toUpperCase()}</Tag>
           <br />
-          <Text style={{ fontSize: 12 }}><b>Ref/UTR:</b> {r.upi_reference || r.transaction_ref || r.cheque_number || 'N/A'}</Text>
+          <Text style={{ fontSize: 12, color: 'var(--color-text-primary)' }}><b>Ref/UTR:</b> {r.upi_reference || r.transaction_ref || r.cheque_number || 'N/A'}</Text>
           {r.bank_name && <><br /><Text type="secondary" style={{ fontSize: 11 }}>Bank: {r.bank_name}</Text></>}
         </div>
       ),
@@ -289,7 +289,7 @@ const SettlementsPage: React.FC = () => {
       title: 'Amount (₹)',
       dataIndex: 'amount',
       key: 'amount',
-      render: (val: number) => <span style={{ fontWeight: 700, color: '#22C55E' }}>₹ {Number(val).toLocaleString('en-IN')}</span>,
+      render: (val: number) => <span style={{ fontWeight: 700, color: '#10B981' }}>₹ {Number(val).toLocaleString('en-IN')}</span>,
     },
     {
       title: 'Status',
@@ -382,8 +382,8 @@ const SettlementsPage: React.FC = () => {
                       }}
                       style={{
                         borderRadius: 14,
-                        border: isChecked ? '2px solid #F97316' : '1px solid #E2E8F0',
-                        backgroundColor: isChecked ? '#FFF7ED' : '#FFFFFF',
+                        border: isChecked ? '2px solid #F97316' : '1px solid var(--color-border)',
+                        backgroundColor: isChecked ? 'rgba(249, 115, 22, 0.15)' : 'var(--color-bg-card)',
                         boxShadow: '0 4px 14px rgba(11,35,71,0.05)',
                         cursor: 'pointer',
                         display: 'flex',
@@ -393,7 +393,7 @@ const SettlementsPage: React.FC = () => {
                       styles={{ body: { padding: 16, display: 'flex', flexDirection: 'column', height: '100%' } }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                        <span style={{ fontWeight: 900, color: '#1E40AF', fontFamily: 'monospace', fontSize: 14 }}>
+                        <span style={{ fontWeight: 900, color: '#3B82F6', fontFamily: 'monospace', fontSize: 14 }}>
                           {record.receipt_number}
                         </span>
                         <Checkbox checked={isChecked} style={{ transform: 'scale(1.2)' }} />
@@ -403,16 +403,16 @@ const SettlementsPage: React.FC = () => {
                           {record.donor?.full_name?.charAt(0)?.toUpperCase() || 'D'}
                         </Avatar>
                         <div style={{ overflow: 'hidden' }}>
-                          <div style={{ fontWeight: 800, fontSize: 14, color: '#0F172A', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                          <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--color-text-primary)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
                             {record.donor?.full_name || 'Anonymous Donor'}
                           </div>
-                          <div style={{ fontSize: 11, color: '#64748B' }}>📅 {record.receipt_date}</div>
+                          <div style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>📅 {record.receipt_date}</div>
                         </div>
                       </div>
-                      <div style={{ padding: '10px 12px', background: '#F8FAFC', borderRadius: 10, border: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ padding: '10px 12px', background: 'var(--color-bg)', borderRadius: 10, border: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
                           <Text type="secondary" style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase' }}>Amount</Text>
-                          <div style={{ fontWeight: 900, fontSize: 17, color: '#059669' }}>
+                          <div style={{ fontWeight: 900, fontSize: 17, color: '#10B981' }}>
                             ₹ {Number(record.amount || 0).toLocaleString('en-IN')}
                           </div>
                         </div>
@@ -574,7 +574,8 @@ const SettlementsPage: React.FC = () => {
                       hoverable
                       style={{
                         borderRadius: 14,
-                        border: '1px solid #E2E8F0',
+                        border: '1px solid var(--color-border)',
+                        background: 'var(--color-bg-card)',
                         boxShadow: '0 4px 14px rgba(11,35,71,0.05)',
                         display: 'flex',
                         flexDirection: 'column',
@@ -583,7 +584,7 @@ const SettlementsPage: React.FC = () => {
                       styles={{ body: { padding: 16, display: 'flex', flexDirection: 'column', height: '100%' } }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                        <span style={{ fontWeight: 900, color: '#1E40AF', fontFamily: 'monospace', fontSize: 14 }}>
+                        <span style={{ fontWeight: 900, color: '#3B82F6', fontFamily: 'monospace', fontSize: 14 }}>
                           {record.receipt_number}
                         </span>
                         <Tag color={isSettled ? 'success' : 'processing'} style={{ fontWeight: 800, borderRadius: 6, margin: 0 }}>
@@ -591,28 +592,28 @@ const SettlementsPage: React.FC = () => {
                         </Tag>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                        <Avatar style={{ backgroundColor: '#059669', fontWeight: 900, flexShrink: 0 }} size={36}>
+                        <Avatar style={{ backgroundColor: '#10B981', fontWeight: 900, flexShrink: 0 }} size={36}>
                           {record.donor?.full_name?.charAt(0)?.toUpperCase() || 'D'}
                         </Avatar>
                         <div style={{ overflow: 'hidden' }}>
-                          <div style={{ fontWeight: 800, fontSize: 14, color: '#0F172A', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                          <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--color-text-primary)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
                             {record.donor?.full_name || 'Anonymous Donor'}
                           </div>
                           <Tag color="cyan" style={{ fontSize: 10, marginTop: 2 }}>{record.payment_mode?.toUpperCase()}</Tag>
                         </div>
                       </div>
-                      <div style={{ padding: '10px 12px', background: '#F8FAFC', borderRadius: 10, marginBottom: 12, border: '1px solid #F1F5F9' }}>
+                      <div style={{ padding: '10px 12px', background: 'var(--color-bg)', borderRadius: 10, marginBottom: 12, border: '1px solid var(--color-border)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                           <Text type="secondary" style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase' }}>Amount</Text>
-                          <span style={{ fontWeight: 900, fontSize: 17, color: '#22C55E' }}>
+                          <span style={{ fontWeight: 900, fontSize: 17, color: '#10B981' }}>
                             ₹ {Number(record.amount || 0).toLocaleString('en-IN')}
                           </span>
                         </div>
-                        <div style={{ fontSize: 11, color: '#475569' }}>
+                        <div style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>
                           <b>Ref/UTR:</b> {record.upi_reference || record.transaction_ref || record.cheque_number || 'N/A'}
                         </div>
                         {record.bank_name && (
-                          <div style={{ fontSize: 11, color: '#64748B' }}><b>Bank:</b> {record.bank_name}</div>
+                          <div style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}><b>Bank:</b> {record.bank_name}</div>
                         )}
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'auto', paddingTop: 10, borderTop: '1px dashed #E2E8F0' }}>
@@ -648,7 +649,7 @@ const SettlementsPage: React.FC = () => {
     <div className="settlements-module animate-fadeIn">
       <div className="page-header" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 16, marginBottom: 24 }}>
         <div style={{ flex: '1 1 300px', minWidth: '240px' }}>
-          <Title level={3} style={{ margin: 0, color: '#0F172A', fontWeight: 900 }}>
+          <Title level={3} style={{ margin: 0, color: 'var(--color-text-primary)', fontWeight: 900 }}>
             Cash & Bank Settlement Workflow
           </Title>
           <Text type="secondary" style={{ fontSize: 13, fontWeight: 600, display: 'block', marginTop: 4 }}>
@@ -677,14 +678,14 @@ const SettlementsPage: React.FC = () => {
       {/* ── Quick Overview Metric Cards ── */}
       <div className="hissob-stat-row" style={{ marginBottom: 20 }}>
         <div className="hissob-stat-col">
-          <Card className="hissob-stat-card" style={{ borderTop: '4px solid #1E40AF', borderRadius: 12 }}>
+          <Card className="hissob-stat-card" style={{ borderTop: '4px solid #3B82F6', borderRadius: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
               <Text type="secondary" style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.2, whiteSpace: 'nowrap' }}>
                 UNSETTLED CASH
               </Text>
-              <Avatar style={{ backgroundColor: '#DBEAFE', color: '#1E40AF', flexShrink: 0 }} icon={<ClockCircleOutlined />} size="small" />
+              <Avatar style={{ backgroundColor: 'rgba(59,130,246,0.15)', color: '#3B82F6', flexShrink: 0 }} icon={<ClockCircleOutlined />} size="small" />
             </div>
-            <Title level={4} style={{ margin: '4px 0 0 0', color: '#0F172A', fontWeight: 900, whiteSpace: 'nowrap' }}>
+            <Title level={4} style={{ margin: '4px 0 0 0', color: 'var(--color-text-primary)', fontWeight: 900, whiteSpace: 'nowrap' }}>
               ₹ {totalPendingCash.toLocaleString('en-IN')}
             </Title>
             <Text type="secondary" style={{ fontSize: 10, whiteSpace: 'nowrap' }}>{pendingReceipts.length} Receipts Pending</Text>
@@ -692,14 +693,14 @@ const SettlementsPage: React.FC = () => {
         </div>
 
         <div className="hissob-stat-col">
-          <Card className="hissob-stat-card" style={{ borderTop: '4px solid #059669', borderRadius: 12 }}>
+          <Card className="hissob-stat-card" style={{ borderTop: '4px solid #10B981', borderRadius: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
               <Text type="secondary" style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.2, whiteSpace: 'nowrap' }}>
                 SETTLED CASH
               </Text>
-              <Avatar style={{ backgroundColor: '#D1FAE5', color: '#059669', flexShrink: 0 }} icon={<CheckCircleOutlined />} size="small" />
+              <Avatar style={{ backgroundColor: 'rgba(16,185,129,0.15)', color: '#10B981', flexShrink: 0 }} icon={<CheckCircleOutlined />} size="small" />
             </div>
-            <Title level={4} style={{ margin: '4px 0 0 0', color: '#059669', fontWeight: 900, whiteSpace: 'nowrap' }}>
+            <Title level={4} style={{ margin: '4px 0 0 0', color: '#10B981', fontWeight: 900, whiteSpace: 'nowrap' }}>
               ₹ {totalSettledCash.toLocaleString('en-IN')}
             </Title>
             <Text type="secondary" style={{ fontSize: 10, whiteSpace: 'nowrap' }}>Verified by Treasurer</Text>
@@ -712,9 +713,9 @@ const SettlementsPage: React.FC = () => {
               <Text type="secondary" style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.2, whiteSpace: 'nowrap' }}>
                 CASH VERIFY QUEUE
               </Text>
-              <Avatar style={{ backgroundColor: '#FEF3C7', color: '#D97706', flexShrink: 0 }} icon={<AuditOutlined />} size="small" />
+              <Avatar style={{ backgroundColor: 'rgba(245,158,11,0.15)', color: '#F59E0B', flexShrink: 0 }} icon={<AuditOutlined />} size="small" />
             </div>
-            <Title level={4} style={{ margin: '4px 0 0 0', color: '#D97706', fontWeight: 900 }}>
+            <Title level={4} style={{ margin: '4px 0 0 0', color: '#F59E0B', fontWeight: 900 }}>
               {pendingCashBatches}
             </Title>
             <Text type="secondary" style={{ fontSize: 10, whiteSpace: 'nowrap' }}>Batches Awaiting Review</Text>
@@ -722,14 +723,14 @@ const SettlementsPage: React.FC = () => {
         </div>
 
         <div className="hissob-stat-col">
-          <Card className="hissob-stat-card" style={{ borderTop: '4px solid #6366F1', borderRadius: 12 }}>
+          <Card className="hissob-stat-card" style={{ borderTop: '4px solid #818CF8', borderRadius: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
               <Text type="secondary" style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.2, whiteSpace: 'nowrap' }}>
                 UPI / BANK QUEUE
               </Text>
-              <Avatar style={{ backgroundColor: '#E0E7FF', color: '#4F46E5', flexShrink: 0 }} icon={<BankOutlined />} size="small" />
+              <Avatar style={{ backgroundColor: 'rgba(129,140,248,0.15)', color: '#818CF8', flexShrink: 0 }} icon={<BankOutlined />} size="small" />
             </div>
-            <Title level={4} style={{ margin: '4px 0 0 0', color: '#4F46E5', fontWeight: 900 }}>
+            <Title level={4} style={{ margin: '4px 0 0 0', color: '#818CF8', fontWeight: 900 }}>
               {pendingDigitalCount}
             </Title>
             <Text type="secondary" style={{ fontSize: 10, whiteSpace: 'nowrap' }}>Unverified Digital Receipts</Text>
@@ -807,15 +808,15 @@ const SettlementsPage: React.FC = () => {
 
       {/* Submit Settlement Modal */}
       <Modal
-        title="Submit Cash Settlement Batch"
+        title={<span style={{ color: 'var(--color-text-primary)', fontWeight: 800 }}>Submit Cash Settlement Batch</span>}
         open={isSubmitModalOpen}
         onCancel={() => setIsSubmitModalOpen(false)}
         footer={null}
       >
         <Form form={form} layout="vertical" onFinish={handleFormSubmit}>
-          <div style={{ padding: 12, background: '#FFF7ED', borderRadius: 8, marginBottom: 16, border: '1px solid #FFEDD5' }}>
-            <Text>Receipts Selected: <b>{selectedReceiptKeys.length}</b></Text><br />
-            <Text>Total Cash Amount: <b style={{ color: '#22C55E', fontSize: 16 }}>₹ {selectedTotal.toLocaleString('en-IN')}</b></Text>
+          <div style={{ padding: 12, background: 'rgba(249, 115, 22, 0.15)', borderRadius: 8, marginBottom: 16, border: '1px solid rgba(249, 115, 22, 0.3)', color: 'var(--color-text-primary)' }}>
+            <Text style={{ color: 'var(--color-text-primary)' }}>Receipts Selected: <b>{selectedReceiptKeys.length}</b></Text><br />
+            <Text style={{ color: 'var(--color-text-primary)' }}>Total Cash Amount: <b style={{ color: '#10B981', fontSize: 16 }}>₹ {selectedTotal.toLocaleString('en-IN')}</b></Text>
           </div>
 
           <Button
@@ -826,7 +827,7 @@ const SettlementsPage: React.FC = () => {
             Count Physical Currency Notes (₹500, ₹200, ₹100...)
           </Button>
 
-          <Form.Item name="financial_year_id" label="Financial Year" rules={[{ required: true, message: 'Select Financial Year' }]}>
+          <Form.Item name="financial_year_id" label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Financial Year</span>} rules={[{ required: true, message: 'Select Financial Year' }]}>
             <Select placeholder="Select Financial Year">
               {fiscalYears.map((fy: any) => (
                 <Option key={fy.id} value={fy.id}>{fy.name} {fy.is_current ? '(Active)' : ''}</Option>
@@ -834,7 +835,7 @@ const SettlementsPage: React.FC = () => {
             </Select>
           </Form.Item>
 
-          <Form.Item name="notes" label="Notes / Handover Reference / Denominations">
+          <Form.Item name="notes" label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Notes / Handover Reference / Denominations</span>}>
             <Input.TextArea rows={2} placeholder="Optional handover notes or denomination summary" />
           </Form.Item>
 
@@ -874,8 +875,8 @@ const SettlementsPage: React.FC = () => {
         <Modal
           title={
             <Space>
-              <BankOutlined style={{ color: '#22C55E' }} />
-              <span>Verify Bank Credit & UTR Reference</span>
+              <BankOutlined style={{ color: '#10B981' }} />
+              <span style={{ color: 'var(--color-text-primary)', fontWeight: 800 }}>Verify Bank Credit & UTR Reference</span>
             </Space>
           }
           open={Boolean(verifyModalReceipt)}
@@ -900,25 +901,25 @@ const SettlementsPage: React.FC = () => {
               });
             }}
           >
-            <div style={{ padding: 12, background: '#F8FAFC', borderRadius: 8, marginBottom: 16, border: '1px solid #E2E8F0' }}>
+            <div style={{ padding: 12, background: 'var(--color-bg)', borderRadius: 8, marginBottom: 16, border: '1px solid var(--color-border)', color: 'var(--color-text-primary)' }}>
               <Row>
                 <Col span={12}><b>Receipt No:</b> {verifyModalReceipt.receipt_number}</Col>
                 <Col span={12} style={{ textAlign: 'right' }}><b>Donor:</b> {verifyModalReceipt.donor?.full_name || 'Donor'}</Col>
                 <Col span={24} style={{ marginTop: 6 }}>
-                  <b>Amount to Credit:</b> <span style={{ fontSize: 18, color: '#22C55E', fontWeight: 900 }}>₹ {Number(verifyModalReceipt.amount).toLocaleString('en-IN')}</span>
+                  <b>Amount to Credit:</b> <span style={{ fontSize: 18, color: '#10B981', fontWeight: 900 }}>₹ {Number(verifyModalReceipt.amount).toLocaleString('en-IN')}</span>
                 </Col>
               </Row>
             </div>
 
             <Form.Item
               name="upi_reference"
-              label={verifyModalReceipt.payment_mode === 'cheque' ? "Cheque Number" : "Bank UTR / Transaction Reference #"}
+              label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>{verifyModalReceipt.payment_mode === 'cheque' ? "Cheque Number" : "Bank UTR / Transaction Reference #"}</span>}
               rules={[{ required: true, message: 'Enter or confirm UTR / Transaction Reference Number' }]}
             >
               <Input placeholder="Enter UTR / Transaction Ref # from Bank Passbook" prefix={<Tag color="cyan">UTR</Tag>} />
             </Form.Item>
 
-            <Form.Item name="bank_name" label="Verified Bank / Account">
+            <Form.Item name="bank_name" label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Verified Bank / Account</span>}>
               <Input placeholder="e.g. HDFC Trust Main Account" />
             </Form.Item>
 
@@ -929,7 +930,7 @@ const SettlementsPage: React.FC = () => {
                   type="primary"
                   htmlType="submit"
                   loading={verifyDigitalMutation.isPending}
-                  style={{ background: '#22C55E', borderColor: '#22C55E', borderRadius: 8, fontWeight: 700 }}
+                  style={{ background: '#10B981', borderColor: '#10B981', borderRadius: 8, fontWeight: 700 }}
                 >
                   Confirm Credit & Settle
                 </Button>

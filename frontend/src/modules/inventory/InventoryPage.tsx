@@ -335,7 +335,7 @@ const InventoryPage: React.FC = () => {
       {/* ── Page Title Header ── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <Title level={3} style={{ margin: 0, color: '#0B2347', fontWeight: 800 }}>
+          <Title level={3} style={{ margin: 0, color: 'var(--color-text-primary)', fontWeight: 800 }}>
             📦 Mandal Equipment & Physical Asset Inventory
           </Title>
           <Text type="secondary">
@@ -353,7 +353,7 @@ const InventoryPage: React.FC = () => {
           <Button
             type="primary"
             icon={<PlusOutlined />}
-            style={{ background: '#0B2347', borderColor: '#0B2347', fontWeight: 700 }}
+            style={{ background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)', borderColor: '#F97316', fontWeight: 700 }}
             onClick={() => {
               setEditingAsset(null);
               assetForm.resetFields();
@@ -370,39 +370,39 @@ const InventoryPage: React.FC = () => {
         <Col xs={24} sm={12} md={6}>
           <Card variant="borderless" style={{ borderRadius: 12, boxShadow: '0 4px 12px rgba(11,35,71,0.06)' }}>
             <Statistic
-              title={<span style={{ fontWeight: 700, color: '#475569' }}>Total Registered Assets</span>}
+              title={<span style={{ fontWeight: 700, color: 'var(--color-text-secondary)' }}>Total Registered Assets</span>}
               value={summary?.total_assets_count ?? 0}
-              prefix={<ShoppingOutlined style={{ color: '#0B2347' }} />}
-              styles={{ content: { fontWeight: 900, color: '#0B2347' } }}
+              prefix={<ShoppingOutlined style={{ color: '#3B82F6' }} />}
+              styles={{ content: { fontWeight: 900, color: 'var(--color-text-primary)' } }}
             />
           </Card>
         </Col>
         <Col xs={24} sm={12} md={6}>
           <Card variant="borderless" style={{ borderRadius: 12, boxShadow: '0 4px 12px rgba(11,35,71,0.06)' }}>
             <Statistic
-              title={<span style={{ fontWeight: 700, color: '#475569' }}>Total Items Quantity</span>}
+              title={<span style={{ fontWeight: 700, color: 'var(--color-text-secondary)' }}>Total Items Quantity</span>}
               value={summary?.total_items_quantity ?? 0}
               suffix="Pcs/Sets"
-              prefix={<ToolOutlined style={{ color: '#2563EB' }} />}
-              styles={{ content: { fontWeight: 900, color: '#2563EB' } }}
+              prefix={<ToolOutlined style={{ color: '#3B82F6' }} />}
+              styles={{ content: { fontWeight: 900, color: '#3B82F6' } }}
             />
           </Card>
         </Col>
         <Col xs={24} sm={12} md={6}>
           <Card variant="borderless" style={{ borderRadius: 12, boxShadow: '0 4px 12px rgba(11,35,71,0.06)' }}>
             <Statistic
-              title={<span style={{ fontWeight: 700, color: '#475569' }}>Total Estimated Value</span>}
+              title={<span style={{ fontWeight: 700, color: 'var(--color-text-secondary)' }}>Total Estimated Value</span>}
               value={summary?.total_estimated_value ?? 0}
               precision={2}
               prefix="₹"
-              styles={{ content: { fontWeight: 900, color: '#059669' } }}
+              styles={{ content: { fontWeight: 900, color: '#10B981' } }}
             />
           </Card>
         </Col>
         <Col xs={24} sm={12} md={6}>
           <Card variant="borderless" style={{ borderRadius: 12, boxShadow: '0 4px 12px rgba(11,35,71,0.06)' }}>
             <Statistic
-              title={<span style={{ fontWeight: 700, color: '#475569' }}>Active Checkouts / Issued</span>}
+              title={<span style={{ fontWeight: 700, color: 'var(--color-text-secondary)' }}>Active Checkouts / Issued</span>}
               value={summary?.active_checkouts_count ?? 0}
               prefix={<ExportOutlined style={{ color: '#F97316' }} />}
               styles={{ content: { fontWeight: 900, color: '#F97316' } }}
@@ -532,7 +532,7 @@ const InventoryPage: React.FC = () => {
 
       {/* ── Modal: Add / Edit Asset ── */}
       <Modal
-        title={<span style={{ fontWeight: 800, color: '#0B2347' }}>{editingAsset ? 'Edit Asset Item' : 'Add New Mandal Asset'}</span>}
+        title={<span style={{ fontWeight: 800, color: 'var(--color-text-primary)' }}>{editingAsset ? 'Edit Asset Item' : 'Add New Mandal Asset'}</span>}
         open={assetModalOpen}
         onCancel={() => setAssetModalOpen(false)}
         footer={null}
@@ -549,7 +549,7 @@ const InventoryPage: React.FC = () => {
             }
           }}
         >
-          <Form.Item name="category_id" label="Asset Category" rules={[{ required: true, message: 'Select category' }]}>
+          <Form.Item name="category_id" label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Asset Category</span>} rules={[{ required: true, message: 'Select category' }]}>
             <Select placeholder="Select category">
               {categories.map((c) => (
                 <Select.Option key={c.id} value={c.id}>{c.name}</Select.Option>
@@ -557,18 +557,18 @@ const InventoryPage: React.FC = () => {
             </Select>
           </Form.Item>
 
-          <Form.Item name="name" label="Item Name" rules={[{ required: true, message: 'Enter item name' }]}>
+          <Form.Item name="name" label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Item Name</span>} rules={[{ required: true, message: 'Enter item name' }]}>
             <Input placeholder="e.g. JBL Sound System Speaker, Gold Crown, Silver Plate" />
           </Form.Item>
 
           <Row gutter={12}>
             <Col span={12}>
-              <Form.Item name="quantity_total" label="Total Quantity" initialValue={1} rules={[{ required: true }]}>
+              <Form.Item name="quantity_total" label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Total Quantity</span>} initialValue={1} rules={[{ required: true }]}>
                 <InputNumber min={1} style={{ width: '100%' }} />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="unit" label="Unit of Measurement" initialValue="Pcs">
+              <Form.Item name="unit" label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Unit of Measurement</span>} initialValue="Pcs">
                 <Input placeholder="Pcs, Sets, Boxes, Meters" />
               </Form.Item>
             </Col>
@@ -576,7 +576,7 @@ const InventoryPage: React.FC = () => {
 
           <Row gutter={12}>
             <Col span={12}>
-              <Form.Item name="condition" label="Condition" initialValue="good">
+              <Form.Item name="condition" label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Condition</span>} initialValue="good">
                 <Select>
                   <Select.Option value="new">🆕 New</Select.Option>
                   <Select.Option value="good">✅ Good</Select.Option>
@@ -587,24 +587,24 @@ const InventoryPage: React.FC = () => {
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="estimated_value" label="Est. Value (₹)" initialValue={0}>
+              <Form.Item name="estimated_value" label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Est. Value (₹)</span>} initialValue={0}>
                 <InputNumber min={0} style={{ width: '100%' }} />
               </Form.Item>
             </Col>
           </Row>
 
-          <Form.Item name="storage_location" label="Storage Location">
+          <Form.Item name="storage_location" label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Storage Location</span>}>
             <Input placeholder="e.g. Main Godown Rack B3, Storage Room 2" />
           </Form.Item>
 
-          <Form.Item name="notes" label="Notes / Description">
+          <Form.Item name="notes" label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Notes / Description</span>}>
             <Input.TextArea rows={2} placeholder="Serial numbers, specifications, maintenance instructions..." />
           </Form.Item>
 
           <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
             <Space>
               <Button onClick={() => setAssetModalOpen(false)}>Cancel</Button>
-              <Button type="primary" htmlType="submit" loading={createAssetMut.isPending || updateAssetMut.isPending} style={{ background: '#0B2347', borderColor: '#0B2347', fontWeight: 700 }}>
+              <Button type="primary" htmlType="submit" loading={createAssetMut.isPending || updateAssetMut.isPending} style={{ background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)', borderColor: '#F97316', fontWeight: 700 }}>
                 {editingAsset ? 'Update Asset' : 'Save Asset'}
               </Button>
             </Space>
@@ -614,7 +614,7 @@ const InventoryPage: React.FC = () => {
 
       {/* ── Modal: Manage Categories ── */}
       <Modal
-        title={<span style={{ fontWeight: 800, color: '#0B2347' }}>Manage Asset Categories</span>}
+        title={<span style={{ fontWeight: 800, color: 'var(--color-text-primary)' }}>Manage Asset Categories</span>}
         open={catModalOpen}
         onCancel={() => setCatModalOpen(false)}
         footer={null}
@@ -645,7 +645,7 @@ const InventoryPage: React.FC = () => {
           size="small"
           pagination={false}
           columns={[
-            { title: 'Category Name', dataIndex: 'name', key: 'name', render: (n: string) => <Text style={{ fontWeight: 700 }}>{n}</Text> },
+            { title: 'Category Name', dataIndex: 'name', key: 'name', render: (n: string) => <Text style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>{n}</Text> },
             { title: 'Code', dataIndex: 'code', key: 'code', render: (c: string) => c || '-' },
           ]}
         />
@@ -653,18 +653,18 @@ const InventoryPage: React.FC = () => {
 
       {/* ── Drawer: Issue Equipment Checkout ── */}
       <Drawer
-        title={<span style={{ fontWeight: 800, color: '#0B2347' }}>🤝 Issue Equipment to Volunteer / Vendor</span>}
+        title={<span style={{ fontWeight: 800, color: 'var(--color-text-primary)' }}>🤝 Issue Equipment to Volunteer / Vendor</span>}
         placement="right"
         styles={{ wrapper: { width: '420px', maxWidth: '100vw' } }}
         onClose={() => setCheckoutModalOpen(false)}
         open={checkoutModalOpen}
       >
         {selectedAssetForCheckout && (
-          <div style={{ background: '#FFF7ED', padding: 14, borderRadius: 10, marginBottom: 20, border: '1px solid #FFEDD5' }}>
-            <Text style={{ fontWeight: 800, color: '#0B2347', display: 'block', fontSize: 16 }}>{selectedAssetForCheckout.name}</Text>
+          <div style={{ background: 'rgba(249, 115, 22, 0.15)', padding: 14, borderRadius: 10, marginBottom: 20, border: '1px solid rgba(249, 115, 22, 0.3)', color: 'var(--color-text-primary)' }}>
+            <Text style={{ fontWeight: 800, color: 'var(--color-text-primary)', display: 'block', fontSize: 16 }}>{selectedAssetForCheckout.name}</Text>
             <Text type="secondary" style={{ fontSize: 12 }}>Code: {selectedAssetForCheckout.asset_code}</Text>
             <div style={{ marginTop: 6 }}>
-              <Badge status="success" text={<span style={{ fontWeight: 800 }}>Available: {selectedAssetForCheckout.quantity_available} {selectedAssetForCheckout.unit}</span>} />
+              <Badge status="success" text={<span style={{ fontWeight: 800, color: '#10B981' }}>Available: {selectedAssetForCheckout.quantity_available} {selectedAssetForCheckout.unit}</span>} />
             </div>
           </div>
         )}
@@ -676,19 +676,19 @@ const InventoryPage: React.FC = () => {
         >
           <Form.Item name="asset_id" hidden><Input /></Form.Item>
 
-          <Form.Item name="issued_to_person" label="Issued To (Volunteer / Contractor Name)" rules={[{ required: true, message: 'Enter recipient name' }]}>
+          <Form.Item name="issued_to_person" label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Issued To (Volunteer / Contractor Name)</span>} rules={[{ required: true, message: 'Enter recipient name' }]}>
             <Input prefix={<UserOutlined />} placeholder="e.g. Ramesh Patil (Sound Incharge)" />
           </Form.Item>
 
-          <Form.Item name="quantity" label="Quantity to Issue" rules={[{ required: true }]}>
+          <Form.Item name="quantity" label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Quantity to Issue</span>} rules={[{ required: true }]}>
             <InputNumber min={1} max={selectedAssetForCheckout?.quantity_available || 1} style={{ width: '100%' }} />
           </Form.Item>
 
-          <Form.Item name="expected_return_at" label="Expected Return Date">
+          <Form.Item name="expected_return_at" label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Expected Return Date</span>}>
             <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
           </Form.Item>
 
-          <Form.Item name="notes" label="Checkout Notes / Handover Condition">
+          <Form.Item name="notes" label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Checkout Notes / Handover Condition</span>}>
             <Input.TextArea rows={3} placeholder="Note any pre-existing scratches or specific event usage details..." />
           </Form.Item>
 
@@ -700,14 +700,14 @@ const InventoryPage: React.FC = () => {
 
       {/* ── Modal: Process Return & Damage Assessment ── */}
       <Modal
-        title={<span style={{ fontWeight: 800, color: '#0B2347' }}>📥 Process Equipment Return</span>}
+        title={<span style={{ fontWeight: 800, color: 'var(--color-text-primary)' }}>📥 Process Equipment Return</span>}
         open={returnModalOpen}
         onCancel={() => setReturnModalOpen(false)}
         footer={null}
       >
         {selectedCheckoutForReturn && (
-          <div style={{ background: '#F1F5F9', padding: 14, borderRadius: 10, marginBottom: 20 }}>
-            <Text style={{ fontWeight: 800, color: '#0B2347', display: 'block' }}>{selectedCheckoutForReturn.asset?.name}</Text>
+          <div style={{ background: 'var(--color-bg)', padding: 14, borderRadius: 10, marginBottom: 20, border: '1px solid var(--color-border)', color: 'var(--color-text-primary)' }}>
+            <Text style={{ fontWeight: 800, color: 'var(--color-text-primary)', display: 'block' }}>{selectedCheckoutForReturn.asset?.name}</Text>
             <Text type="secondary" style={{ fontSize: 12 }}>
               Issued to: <b>{selectedCheckoutForReturn.issued_to_person}</b> (Qty: {selectedCheckoutForReturn.quantity})
             </Text>
@@ -721,7 +721,7 @@ const InventoryPage: React.FC = () => {
         >
           <Form.Item name="checkout_id" hidden><Input /></Form.Item>
 
-          <Form.Item name="returned_condition" label="Returned Condition" rules={[{ required: true }]}>
+          <Form.Item name="returned_condition" label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Returned Condition</span>} rules={[{ required: true }]}>
             <Select>
               <Select.Option value="good">✅ Good / Intact Condition</Select.Option>
               <Select.Option value="fair">⚠️ Minor Wear / Fair</Select.Option>
@@ -730,15 +730,15 @@ const InventoryPage: React.FC = () => {
             </Select>
           </Form.Item>
 
-          <Form.Item name="damage_notes" label="Damage / Assessment Notes">
+          <Form.Item name="damage_notes" label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Damage / Assessment Notes</span>}>
             <Input.TextArea rows={3} placeholder="Describe any broken parts, missing accessories or repairs required..." />
           </Form.Item>
 
-          <Form.Item name="damage_charge" label="Damage Penalty / Charge (₹)" initialValue={0}>
+          <Form.Item name="damage_charge" label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Damage Penalty / Charge (₹)</span>} initialValue={0}>
             <InputNumber min={0} style={{ width: '100%' }} />
           </Form.Item>
 
-          <Button type="primary" htmlType="submit" block size="large" loading={returnMut.isPending} style={{ background: '#059669', borderColor: '#059669', fontWeight: 800 }}>
+          <Button type="primary" htmlType="submit" block size="large" loading={returnMut.isPending} style={{ background: '#10B981', borderColor: '#10B981', fontWeight: 800 }}>
             Submit Return & Update Stock
           </Button>
         </Form>

@@ -289,7 +289,7 @@ const PlanningPage: React.FC = () => {
         marginBottom: 20
       }}>
         <div>
-          <Title level={isMobile ? 3 : 2} style={{ margin: 0, color: '#0B2347', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Title level={isMobile ? 3 : 2} style={{ margin: 0, color: 'var(--color-text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
             <ProjectOutlined style={{ color: '#F97316' }} /> Festival Planning & Execution
           </Title>
           <Text type="secondary" style={{ fontSize: isMobile ? 12 : 14, display: 'block', marginTop: 2 }}>
@@ -299,7 +299,7 @@ const PlanningPage: React.FC = () => {
 
         {/* Festival Selector Block */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, width: isMobile ? '100%' : 'auto' }}>
-          <Text strong style={{ color: '#0B2347', fontSize: 13, whiteSpace: 'nowrap' }}>Select Festival:</Text>
+          <Text strong style={{ color: 'var(--color-text-primary)', fontSize: 13, whiteSpace: 'nowrap' }}>Select Festival:</Text>
           <Select
             value={selectedFestivalId}
             onChange={setSelectedFestivalId}
@@ -328,7 +328,7 @@ const PlanningPage: React.FC = () => {
                 title={<Text type="secondary" style={{ fontSize: isMobile ? 11 : 13 }}><CheckCircleOutlined /> Tasks</Text>}
                 value={summary.completed_tasks}
                 suffix={`/ ${summary.total_tasks}`}
-                styles={{ content: { color: '#0B2347', fontWeight: 'bold', fontSize: isMobile ? 18 : 22 } }}
+                styles={{ content: { color: 'var(--color-text-primary)', fontWeight: 'bold', fontSize: isMobile ? 18 : 22 } }}
               />
               <Progress
                 percent={summary.task_completion_percentage}
@@ -349,7 +349,7 @@ const PlanningPage: React.FC = () => {
                 value={summary.total_spent_budget}
                 prefix="₹ "
                 precision={0}
-                styles={{ content: { color: '#0B2347', fontWeight: 'bold', fontSize: isMobile ? 18 : 22 } }}
+                styles={{ content: { color: '#10B981', fontWeight: 'bold', fontSize: isMobile ? 18 : 22 } }}
               />
               <Text type="secondary" style={{ fontSize: 10, display: 'block', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                 Allocated: ₹ {summary.total_allocated_budget.toLocaleString()}
@@ -372,7 +372,7 @@ const PlanningPage: React.FC = () => {
                 title={<Text type="secondary" style={{ fontSize: isMobile ? 11 : 13 }}><TeamOutlined /> Shifts</Text>}
                 value={summary.filled_shifts}
                 suffix={`/ ${summary.total_shifts}`}
-                styles={{ content: { color: '#0B2347', fontWeight: 'bold', fontSize: isMobile ? 18 : 22 } }}
+                styles={{ content: { color: '#3B82F6', fontWeight: 'bold', fontSize: isMobile ? 18 : 22 } }}
               />
               <Progress
                 percent={summary.total_shifts > 0 ? Math.round((summary.filled_shifts / summary.total_shifts) * 100) : 0}
@@ -392,7 +392,7 @@ const PlanningPage: React.FC = () => {
                 title={<Text type="secondary" style={{ fontSize: isMobile ? 11 : 13 }}><ScheduleOutlined /> Events</Text>}
                 value={summary.total_events}
                 suffix="Program(s)"
-                styles={{ content: { color: '#0B2347', fontWeight: 'bold', fontSize: isMobile ? 18 : 22 } }}
+                styles={{ content: { color: '#8B5CF6', fontWeight: 'bold', fontSize: isMobile ? 18 : 22 } }}
               />
               <Text type="secondary" style={{ fontSize: 10, marginTop: 2, display: 'block' }}>
                 Aarti & Cultural
@@ -474,7 +474,7 @@ const PlanningPage: React.FC = () => {
                         key: 'title',
                         render: (text, record: FestivalTask) => (
                           <div>
-                            <Text strong style={{ textDecoration: record.status === 'completed' ? 'line-through' : 'none' }}>
+                            <Text strong style={{ textDecoration: record.status === 'completed' ? 'line-through' : 'none', color: 'var(--color-text-primary)' }}>
                               {text}
                             </Text>
                             {record.description && (

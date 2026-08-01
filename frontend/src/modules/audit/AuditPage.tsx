@@ -116,7 +116,7 @@ const AuditPage: React.FC = () => {
     <div className="audit-module animate-fadeIn">
       <div className="page-header" style={{ marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <Title level={3} style={{ margin: 0, color: '#0B2347', fontWeight: 900 }}>
+          <Title level={3} style={{ margin: 0, color: 'var(--color-text-primary)', fontWeight: 900 }}>
             <SafetyCertificateOutlined style={{ color: '#F97316', marginRight: 8 }} />
             System Audit Trail & Compliance Monitor
           </Title>
@@ -130,7 +130,7 @@ const AuditPage: React.FC = () => {
             { label: <span><ThunderboltOutlined style={{ color: '#F97316' }} /> Social Activity Feed</span>, value: 'feed' },
             { label: <span><TableOutlined /> Technical Audit Table</span>, value: 'table' },
           ]}
-          style={{ border: '1px solid #CBD5E1', background: '#FFFFFF', padding: 2 }}
+          style={{ border: '1px solid var(--color-border)', background: 'var(--color-bg)', padding: 2 }}
           size="large"
         />
       </div>
@@ -139,7 +139,7 @@ const AuditPage: React.FC = () => {
         <Col xs={24} sm={8}>
           <Card className="hissob-card">
             <Text type="secondary" style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase' }}>Total Audit Events</Text>
-            <Title level={3} style={{ margin: 0, color: '#0B2347', fontWeight: 900 }}>{auditLogs.length}</Title>
+            <Title level={3} style={{ margin: 0, color: 'var(--color-text-primary)', fontWeight: 900 }}>{auditLogs.length}</Title>
           </Card>
         </Col>
         <Col xs={24} sm={8}>

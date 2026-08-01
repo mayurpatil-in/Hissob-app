@@ -88,6 +88,83 @@
   --color-text-muted: #4A6285;
 }
 
+[data-theme="dark"] .ant-typography,
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] h4,
+[data-theme="dark"] h5,
+[data-theme="dark"] h6 {
+  color: var(--color-text-primary) !important;
+}
+
+[data-theme="dark"] .ant-typography-secondary {
+  color: var(--color-text-secondary) !important;
+}
+
+[data-theme="dark"] .ant-card {
+  background-color: var(--color-bg-card) !important;
+  border-color: var(--color-border) !important;
+  color: var(--color-text-primary) !important;
+}
+
+[data-theme="dark"] .ant-card-head-title {
+  color: var(--color-text-primary) !important;
+}
+
+[data-theme="dark"] .ant-table {
+  background: var(--color-bg-card) !important;
+  color: var(--color-text-primary) !important;
+}
+
+[data-theme="dark"] .ant-table-cell {
+  background: var(--color-bg-card) !important;
+  border-bottom-color: var(--color-border) !important;
+  color: var(--color-text-primary) !important;
+}
+
+[data-theme="dark"] .ant-table-thead > tr > th {
+  background: #1A2842 !important;
+  color: var(--color-text-primary) !important;
+  border-bottom-color: var(--color-border) !important;
+}
+
+[data-theme="dark"] .ant-select:not(.ant-select-customize-input) .ant-select-selector {
+  background-color: #1A2842 !important;
+  border-color: #263C66 !important;
+  color: var(--color-text-primary) !important;
+}
+
+[data-theme="dark"] .ant-select-selection-item {
+  color: var(--color-text-primary) !important;
+}
+
+[data-theme="dark"] .ant-select-arrow {
+  color: var(--color-text-secondary) !important;
+}
+
+[data-theme="dark"] .ant-progress-inner {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+[data-theme="dark"] .ant-alert-warning {
+  background-color: rgba(245, 158, 11, 0.12) !important;
+  border-color: rgba(245, 158, 11, 0.3) !important;
+}
+
+[data-theme="dark"] .ant-alert-info {
+  background-color: rgba(59, 130, 246, 0.12) !important;
+  border-color: rgba(59, 130, 246, 0.3) !important;
+}
+
+[data-theme="dark"] .ant-alert-message {
+  color: var(--color-text-primary) !important;
+}
+
+[data-theme="dark"] .ant-alert-description {
+  color: var(--color-text-secondary) !important;
+}
+
 /* ── Reset & Base ── */
 *, *::before, *::after {
   box-sizing: border-box;

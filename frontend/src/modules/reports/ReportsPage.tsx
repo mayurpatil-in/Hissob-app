@@ -469,7 +469,7 @@ const ReportsPage: React.FC = () => {
       title: 'Total Collection (₹)',
       dataIndex: 'total_amount',
       key: 'total_amount',
-      render: (v: number) => <span style={{ fontWeight: 700, color: '#0B2347' }}>₹ {Number(v || 0).toLocaleString('en-IN')}</span>,
+      render: (v: number) => <span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>₹ {Number(v || 0).toLocaleString('en-IN')}</span>,
     },
   ];
 
@@ -502,7 +502,8 @@ const ReportsPage: React.FC = () => {
                     hoverable
                     style={{
                       borderRadius: 14,
-                      border: '1px solid #E2E8F0',
+                      border: '1px solid var(--color-border)',
+                      background: 'var(--color-bg-card)',
                       boxShadow: '0 4px 14px rgba(11,35,71,0.05)',
                       display: 'flex',
                       flexDirection: 'column',
@@ -511,7 +512,7 @@ const ReportsPage: React.FC = () => {
                     styles={{ body: { padding: 16, display: 'flex', flexDirection: 'column', height: '100%' } }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                      <span style={{ fontWeight: 900, color: '#1E40AF', fontSize: 15 }}>
+                      <span style={{ fontWeight: 900, color: '#3B82F6', fontSize: 15 }}>
                         📅 {record.date}
                       </span>
                       <Tag color="blue" style={{ fontWeight: 800, borderRadius: 6, margin: 0 }}>
@@ -519,24 +520,24 @@ const ReportsPage: React.FC = () => {
                       </Tag>
                     </div>
 
-                    <div style={{ padding: '10px 12px', background: '#F8FAFC', borderRadius: 10, border: '1px solid #F1F5F9', marginBottom: 12 }}>
+                    <div style={{ padding: '10px 12px', background: 'var(--color-bg)', borderRadius: 10, border: '1px solid var(--color-border)', marginBottom: 12 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
                         <Text type="secondary">Cash:</Text>
-                        <span style={{ fontWeight: 700 }}>₹ {Number(record.cash_amount || 0).toLocaleString('en-IN')}</span>
+                        <span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>₹ {Number(record.cash_amount || 0).toLocaleString('en-IN')}</span>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
                         <Text type="secondary">UPI:</Text>
-                        <span style={{ fontWeight: 700, color: '#2563EB' }}>₹ {Number(record.upi_amount || 0).toLocaleString('en-IN')}</span>
+                        <span style={{ fontWeight: 700, color: '#3B82F6' }}>₹ {Number(record.upi_amount || 0).toLocaleString('en-IN')}</span>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
                         <Text type="secondary">Cheque:</Text>
-                        <span style={{ fontWeight: 700 }}>₹ {Number(record.cheque_amount || 0).toLocaleString('en-IN')}</span>
+                        <span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>₹ {Number(record.cheque_amount || 0).toLocaleString('en-IN')}</span>
                       </div>
                     </div>
 
-                    <div style={{ marginTop: 'auto', paddingTop: 10, borderTop: '1px dashed #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ marginTop: 'auto', paddingTop: 10, borderTop: '1px dashed var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <Text type="secondary" style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>Total Collection</Text>
-                      <span style={{ fontWeight: 900, fontSize: 17, color: '#059669' }}>
+                      <span style={{ fontWeight: 900, fontSize: 17, color: '#10B981' }}>
                         ₹ {Number(record.total_amount || 0).toLocaleString('en-IN')}
                       </span>
                     </div>
@@ -568,7 +569,8 @@ const ReportsPage: React.FC = () => {
                       hoverable
                       style={{
                         borderRadius: 14,
-                        border: '1px solid #E2E8F0',
+                        border: '1px solid var(--color-border)',
+                        background: 'var(--color-bg-card)',
                         boxShadow: '0 4px 14px rgba(11,35,71,0.05)',
                         display: 'flex',
                         flexDirection: 'column',
@@ -577,7 +579,7 @@ const ReportsPage: React.FC = () => {
                       styles={{ body: { padding: 16, display: 'flex', flexDirection: 'column', height: '100%' } }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                        <span style={{ fontWeight: 900, color: '#1E40AF', fontFamily: 'monospace', fontSize: 14 }}>
+                        <span style={{ fontWeight: 900, color: '#3B82F6', fontFamily: 'monospace', fontSize: 14 }}>
                           {record.voucher_number || 'VOUCHER'}
                         </span>
                         <Tag color={isReceipt ? 'success' : 'error'} style={{ fontWeight: 800, borderRadius: 6, margin: 0 }}>
@@ -585,27 +587,27 @@ const ReportsPage: React.FC = () => {
                         </Tag>
                       </div>
 
-                      <div style={{ fontSize: 11, color: '#64748B', marginBottom: 10 }}>
+                      <div style={{ fontSize: 11, color: 'var(--color-text-secondary)', marginBottom: 10 }}>
                         📅 Date: {record.date}
                       </div>
 
-                      <div style={{ padding: '10px 12px', background: '#F8FAFC', borderRadius: 10, border: '1px solid #F1F5F9', marginBottom: 12, flexGrow: 1 }}>
-                        <div style={{ fontSize: 12, color: '#0F172A', fontWeight: 600, marginBottom: 8 }}>
+                      <div style={{ padding: '10px 12px', background: 'var(--color-bg)', borderRadius: 10, border: '1px solid var(--color-border)', marginBottom: 12, flexGrow: 1 }}>
+                        <div style={{ fontSize: 12, color: 'var(--color-text-primary)', fontWeight: 600, marginBottom: 8 }}>
                           {record.particulars || 'No description provided'}
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <Text type="secondary" style={{ fontSize: 11 }}>Amount:</Text>
                           {isReceipt ? (
-                            <span style={{ fontWeight: 800, color: '#059669', fontSize: 15 }}>+ ₹ {Number(record.debit_amount || 0).toLocaleString('en-IN')}</span>
+                            <span style={{ fontWeight: 800, color: '#10B981', fontSize: 15 }}>+ ₹ {Number(record.debit_amount || 0).toLocaleString('en-IN')}</span>
                           ) : (
-                            <span style={{ fontWeight: 800, color: '#DC2626', fontSize: 15 }}>- ₹ {Number(record.credit_amount || 0).toLocaleString('en-IN')}</span>
+                            <span style={{ fontWeight: 800, color: '#EF4444', fontSize: 15 }}>- ₹ {Number(record.credit_amount || 0).toLocaleString('en-IN')}</span>
                           )}
                         </div>
                       </div>
 
-                      <div style={{ marginTop: 'auto', paddingTop: 8, borderTop: '1px dashed #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ marginTop: 'auto', paddingTop: 8, borderTop: '1px dashed var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <Text type="secondary" style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>Running Balance</Text>
-                        <span style={{ fontWeight: 900, fontSize: 16, color: '#0F172A' }}>
+                        <span style={{ fontWeight: 900, fontSize: 16, color: 'var(--color-text-primary)' }}>
                           ₹ {Number(record.running_balance || 0).toLocaleString('en-IN')}
                         </span>
                       </div>
@@ -640,21 +642,21 @@ const ReportsPage: React.FC = () => {
           </div>
           <Row gutter={[20, 20]} style={{ marginBottom: 20 }}>
             <Col xs={24} sm={8}>
-              <Card style={{ background: 'linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%)', border: '1px solid #A7F3D0', borderRadius: 16, padding: '8px 4px', boxShadow: '0 4px 14px rgba(5, 150, 105, 0.08)' }}>
-                <Text type="secondary" style={{ fontWeight: 800, color: '#065F46', textTransform: 'uppercase', fontSize: 11, letterSpacing: 0.5 }}>Total Income</Text>
-                <Title level={2} style={{ color: '#059669', margin: '8px 0 0 0', fontWeight: 900 }}>₹ {Number(totalIncome || 0).toLocaleString('en-IN')}</Title>
+              <Card style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border)', borderRadius: 16, padding: '8px 4px', boxShadow: '0 4px 14px rgba(5, 150, 105, 0.08)' }}>
+                <Text type="secondary" style={{ fontWeight: 800, color: '#10B981', textTransform: 'uppercase', fontSize: 11, letterSpacing: 0.5 }}>Total Income</Text>
+                <Title level={2} style={{ color: '#10B981', margin: '8px 0 0 0', fontWeight: 900 }}>₹ {Number(totalIncome || 0).toLocaleString('en-IN')}</Title>
               </Card>
             </Col>
             <Col xs={24} sm={8}>
-              <Card style={{ background: 'linear-gradient(135deg, #FEF2F2 0%, #FEE2E2 100%)', border: '1px solid #FECACA', borderRadius: 16, padding: '8px 4px', boxShadow: '0 4px 14px rgba(220, 38, 38, 0.08)' }}>
-                <Text type="secondary" style={{ fontWeight: 800, color: '#991B1B', textTransform: 'uppercase', fontSize: 11, letterSpacing: 0.5 }}>Total Expenditure</Text>
-                <Title level={2} style={{ color: '#DC2626', margin: '8px 0 0 0', fontWeight: 900 }}>₹ {Number(totalExpenditure || 0).toLocaleString('en-IN')}</Title>
+              <Card style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border)', borderRadius: 16, padding: '8px 4px', boxShadow: '0 4px 14px rgba(220, 38, 38, 0.08)' }}>
+                <Text type="secondary" style={{ fontWeight: 800, color: '#EF4444', textTransform: 'uppercase', fontSize: 11, letterSpacing: 0.5 }}>Total Expenditure</Text>
+                <Title level={2} style={{ color: '#EF4444', margin: '8px 0 0 0', fontWeight: 900 }}>₹ {Number(totalExpenditure || 0).toLocaleString('en-IN')}</Title>
               </Card>
             </Col>
             <Col xs={24} sm={8}>
-              <Card style={{ background: 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)', border: '1px solid #BFDBFE', borderRadius: 16, padding: '8px 4px', boxShadow: '0 4px 14px rgba(37, 99, 235, 0.08)' }}>
-                <Text type="secondary" style={{ fontWeight: 800, color: '#1E40AF', textTransform: 'uppercase', fontSize: 11, letterSpacing: 0.5 }}>Net Surplus / Deficit</Text>
-                <Title level={2} style={{ color: '#2563EB', margin: '8px 0 0 0', fontWeight: 900 }}>₹ {Number(netSurplus || 0).toLocaleString('en-IN')}</Title>
+              <Card style={{ background: 'var(--color-bg-card)', border: '1px solid var(--color-border)', borderRadius: 16, padding: '8px 4px', boxShadow: '0 4px 14px rgba(37, 99, 235, 0.08)' }}>
+                <Text type="secondary" style={{ fontWeight: 800, color: '#3B82F6', textTransform: 'uppercase', fontSize: 11, letterSpacing: 0.5 }}>Net Surplus / Deficit</Text>
+                <Title level={2} style={{ color: '#3B82F6', margin: '8px 0 0 0', fontWeight: 900 }}>₹ {Number(netSurplus || 0).toLocaleString('en-IN')}</Title>
               </Card>
             </Col>
           </Row>
@@ -663,15 +665,15 @@ const ReportsPage: React.FC = () => {
           <Row gutter={[20, 20]} style={{ marginTop: 24 }}>
             <Col xs={24} lg={12}>
               <Card
-                title={<span><RiseOutlined style={{ color: '#059669', marginRight: 8 }} /> Income Schedule (By Donation Category)</span>}
-                style={{ borderRadius: 14, border: '1px solid #E2E8F0', boxShadow: '0 4px 12px rgba(11,35,71,0.03)', height: '100%' }}
+                title={<span><RiseOutlined style={{ color: '#10B981', marginRight: 8 }} /> Income Schedule (By Donation Category)</span>}
+                style={{ borderRadius: 14, border: '1px solid var(--color-border)', boxShadow: '0 4px 12px rgba(11,35,71,0.03)', height: '100%' }}
               >
                 <Table
                   dataSource={Object.entries(incomeByCategory).map(([cat, amt]) => ({ category: cat, amount: amt, pct: totalCategoryIncome > 0 ? Math.round((amt / totalCategoryIncome) * 100) : 0 }))}
                   columns={[
-                    { title: 'Category', dataIndex: 'category', key: 'category', render: (c) => <span style={{ fontWeight: 700, color: '#0F172A' }}>{c}</span> },
-                    { title: 'Amount (₹)', dataIndex: 'amount', key: 'amount', render: (a) => <span style={{ color: '#059669', fontWeight: 800 }}>₹ {Number(a).toLocaleString('en-IN')}</span> },
-                    { title: 'Share (%)', dataIndex: 'pct', key: 'pct', width: 120, render: (p) => <Progress percent={p} size="small" strokeColor="#059669" /> },
+                    { title: 'Category', dataIndex: 'category', key: 'category', render: (c) => <span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>{c}</span> },
+                    { title: 'Amount (₹)', dataIndex: 'amount', key: 'amount', render: (a) => <span style={{ color: '#10B981', fontWeight: 800 }}>₹ {Number(a).toLocaleString('en-IN')}</span> },
+                    { title: 'Share (%)', dataIndex: 'pct', key: 'pct', width: 120, render: (p) => <Progress percent={p} size="small" strokeColor="#10B981" /> },
                   ]}
                   rowKey="category"
                   pagination={false}
@@ -682,15 +684,15 @@ const ReportsPage: React.FC = () => {
             </Col>
             <Col xs={24} lg={12}>
               <Card
-                title={<span><FallOutlined style={{ color: '#DC2626', marginRight: 8 }} /> Expenditure Schedule (By Operational Category)</span>}
-                style={{ borderRadius: 14, border: '1px solid #E2E8F0', boxShadow: '0 4px 12px rgba(11,35,71,0.03)', height: '100%' }}
+                title={<span><FallOutlined style={{ color: '#EF4444', marginRight: 8 }} /> Expenditure Schedule (By Operational Category)</span>}
+                style={{ borderRadius: 14, border: '1px solid var(--color-border)', boxShadow: '0 4px 12px rgba(11,35,71,0.03)', height: '100%' }}
               >
                 <Table
                   dataSource={Object.entries(expenseByCategory).map(([cat, amt]) => ({ category: cat, amount: amt, pct: totalCategoryExpense > 0 ? Math.round((amt / totalCategoryExpense) * 100) : 0 }))}
                   columns={[
-                    { title: 'Category', dataIndex: 'category', key: 'category', render: (c) => <span style={{ fontWeight: 700, color: '#0F172A' }}>{c}</span> },
-                    { title: 'Amount (₹)', dataIndex: 'amount', key: 'amount', render: (a) => <span style={{ color: '#DC2626', fontWeight: 800 }}>₹ {Number(a).toLocaleString('en-IN')}</span> },
-                    { title: 'Share (%)', dataIndex: 'pct', key: 'pct', width: 120, render: (p) => <Progress percent={p} size="small" strokeColor="#DC2626" /> },
+                    { title: 'Category', dataIndex: 'category', key: 'category', render: (c) => <span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>{c}</span> },
+                    { title: 'Amount (₹)', dataIndex: 'amount', key: 'amount', render: (a) => <span style={{ color: '#EF4444', fontWeight: 800 }}>₹ {Number(a).toLocaleString('en-IN')}</span> },
+                    { title: 'Share (%)', dataIndex: 'pct', key: 'pct', width: 120, render: (p) => <Progress percent={p} size="small" strokeColor="#EF4444" /> },
                   ]}
                   rowKey="category"
                   pagination={false}
@@ -714,7 +716,7 @@ const ReportsPage: React.FC = () => {
     <div className="reports-module animate-fadeIn" style={{ maxWidth: '100%', overflowX: 'hidden' }}>
       <div className="page-header" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 16, marginBottom: 24, maxWidth: '100%' }}>
         <div style={{ flex: '1 1 280px', maxWidth: '100%' }}>
-          <Title level={3} style={{ margin: 0, color: '#0F172A', fontWeight: 900 }}>
+          <Title level={3} style={{ margin: 0, color: 'var(--color-text-primary)', fontWeight: 900 }}>
             Financial Reports & Statements
           </Title>
           <Text type="secondary" style={{ fontSize: 13, fontWeight: 600, display: 'block', marginTop: 4 }}>
@@ -778,18 +780,18 @@ const ReportsPage: React.FC = () => {
           type="success"
           showIcon
           icon={<CheckCircleOutlined style={{ fontSize: 18 }} />}
-          title="✅ Ledger Reconciliation & Liquidity Status: Normal & Verified"
-          description="Total recorded collections & inflows fully cover all operational expenses and outflows. Physical cash balances and digital accounts are operating within positive solvency margins."
-          style={{ marginBottom: 16, borderRadius: 12, border: '1px solid #A7F3D0', backgroundColor: '#ECFDF5', fontWeight: 500 }}
+          title={<span style={{ color: '#10B981', fontWeight: 800 }}>✅ Ledger Reconciliation & Liquidity Status: Normal & Verified</span>}
+          description={<span style={{ color: 'var(--color-text-primary)' }}>Total recorded collections & inflows fully cover all operational expenses and outflows. Physical cash balances and digital accounts are operating within positive solvency margins.</span>}
+          style={{ marginBottom: 16, borderRadius: 12, border: '1px solid rgba(16,185,129,0.3)', backgroundColor: 'rgba(16,185,129,0.15)', fontWeight: 500 }}
         />
       ) : (
         <Alert
           type="warning"
           showIcon
           icon={<WarningOutlined style={{ fontSize: 18 }} />}
-          title="⚠️ Attention Required: Operational Outflows Exceed Recorded Inflows"
-          description="The selected audit range indicates a net fiscal deficit where disbursements exceed collections. Please ensure adequate bank reserve balances are maintained."
-          style={{ marginBottom: 16, borderRadius: 12, border: '1px solid #FCD34D', backgroundColor: '#FFFBEB', fontWeight: 500 }}
+          title={<span style={{ color: '#F59E0B', fontWeight: 800 }}>⚠️ Attention Required: Operational Outflows Exceed Recorded Inflows</span>}
+          description={<span style={{ color: 'var(--color-text-primary)' }}>The selected audit range indicates a net fiscal deficit where disbursements exceed collections. Please ensure adequate bank reserve balances are maintained.</span>}
+          style={{ marginBottom: 16, borderRadius: 12, border: '1px solid rgba(245,158,11,0.3)', backgroundColor: 'rgba(245,158,11,0.15)', fontWeight: 500 }}
         />
       )}
 

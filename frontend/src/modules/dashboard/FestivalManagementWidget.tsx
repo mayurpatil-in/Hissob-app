@@ -62,7 +62,7 @@ const FestivalManagementWidget: React.FC<Props> = ({ selectedFyId }) => {
       width: 130,
       render: (d: string) => (
         d ? (
-          <span style={{ fontSize: 13, color: '#0B2347', whiteSpace: 'nowrap' }}>
+          <span style={{ fontSize: 13, color: 'var(--color-text-primary)', whiteSpace: 'nowrap' }}>
             <CalendarOutlined style={{ color: '#F97316', marginRight: 4 }} />
             {d}
           </span>
@@ -95,7 +95,7 @@ const FestivalManagementWidget: React.FC<Props> = ({ selectedFyId }) => {
       {/* Widget Header */}
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
         <div style={{ flex: 1, minWidth: 220 }}>
-          <Title level={4} style={{ margin: 0, color: '#0B2347', fontWeight: 800 }}>
+          <Title level={4} style={{ margin: 0, color: 'var(--color-text-primary)', fontWeight: 800 }}>
             <GlobalOutlined style={{ color: '#F97316', marginRight: 8 }} />
             Festival & Event Task Management
           </Title>
@@ -127,9 +127,9 @@ const FestivalManagementWidget: React.FC<Props> = ({ selectedFyId }) => {
 
       <Spin spinning={isLoading}>
         {fetchedFestivals.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '36px 20px', background: '#F8FAFC', borderRadius: 12, border: '1px dashed #CBD5E1' }}>
+          <div style={{ textAlign: 'center', padding: '36px 20px', background: 'var(--color-bg)', borderRadius: 12, border: '1px dashed var(--color-border)' }}>
             <div style={{ fontSize: 36, marginBottom: 8 }}>🎪</div>
-            <Title level={5} style={{ margin: 0, color: '#0B2347' }}>No Active Festivals or Event Campaigns</Title>
+            <Title level={5} style={{ margin: 0, color: 'var(--color-text-primary)' }}>No Active Festivals or Event Campaigns</Title>
             <Text type="secondary" style={{ fontSize: 13, display: 'block', margin: '4px 0 16px 0' }}>
               Create your organization's first festival (e.g. Ganesh Utsav, Navratri, Diwali) to track tasks, budgets, and collections.
             </Text>
@@ -158,15 +158,15 @@ const FestivalManagementWidget: React.FC<Props> = ({ selectedFyId }) => {
                     <div
                       style={{
                         padding: 14,
-                        background: '#FFF',
+                        background: 'var(--color-bg)',
                         borderRadius: 10,
-                        border: '1px solid #E4E8F0',
-                        boxShadow: '0 2px 8px rgba(11, 35, 71, 0.04)',
+                        border: '1px solid var(--color-border)',
+                        boxShadow: 'var(--shadow-card)',
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
                         <div>
-                          <span style={{ fontSize: 16, fontWeight: 800, color: '#0B2347' }}>
+                          <span style={{ fontSize: 16, fontWeight: 800, color: 'var(--color-text-primary)' }}>
                             🌺 {fest.name}
                           </span>
                           {fest.deity && (
@@ -180,7 +180,7 @@ const FestivalManagementWidget: React.FC<Props> = ({ selectedFyId }) => {
                         </Tag>
                       </div>
 
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6, margin: '10px 0', fontSize: 12, color: '#64748B' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6, margin: '10px 0', fontSize: 12, color: 'var(--color-text-secondary)' }}>
                         <span>
                           <CalendarOutlined style={{ marginRight: 6, color: '#F97316' }} />
                           <b>Dates:</b> {fest.start_date} to {fest.end_date}
@@ -203,7 +203,7 @@ const FestivalManagementWidget: React.FC<Props> = ({ selectedFyId }) => {
             {/* Dashboard Assigned Event Tasks Table */}
             <div style={{ marginTop: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
-                <span style={{ fontWeight: 800, color: '#0B2347', fontSize: 14 }}>
+                <span style={{ fontWeight: 800, color: 'var(--color-text-primary)', fontSize: 14 }}>
                   <UnorderedListOutlined style={{ color: '#F97316', marginRight: 6 }} />
                   Assigned Event Tasks & Target Dates
                 </span>

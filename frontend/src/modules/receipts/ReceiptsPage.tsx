@@ -337,13 +337,13 @@ const ReceiptsPage: React.FC = () => {
       title: 'Receipt #',
       dataIndex: 'receipt_number',
       key: 'receipt_number',
-      render: (num: string) => <b style={{ whiteSpace: 'nowrap', color: '#1E40AF', fontFamily: 'monospace' }}>{num}</b>,
+      render: (num: string) => <b style={{ whiteSpace: 'nowrap', color: '#3B82F6', fontFamily: 'monospace' }}>{num}</b>,
     },
     {
       title: 'Date',
       dataIndex: 'receipt_date',
       key: 'receipt_date',
-      render: (d: string) => <span style={{ whiteSpace: 'nowrap', fontWeight: 600, color: '#475569' }}>{d ? dayjs(d).format('DD-MM-YYYY') : ''}</span>,
+      render: (d: string) => <span style={{ whiteSpace: 'nowrap', fontWeight: 600, color: 'var(--color-text-secondary)' }}>{d ? dayjs(d).format('DD-MM-YYYY') : ''}</span>,
     },
     {
       title: 'Donor',
@@ -354,7 +354,7 @@ const ReceiptsPage: React.FC = () => {
           <Avatar style={{ backgroundColor: '#2563EB', fontWeight: 800 }} size="small">
             {donor?.full_name?.charAt(0)?.toUpperCase() || 'D'}
           </Avatar>
-          <span style={{ fontWeight: 700, color: '#0F172A' }}>{donor?.full_name || 'Anonymous'}</span>
+          <span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>{donor?.full_name || 'Anonymous'}</span>
         </Space>
       ),
     },
@@ -363,7 +363,7 @@ const ReceiptsPage: React.FC = () => {
       dataIndex: 'amount',
       key: 'amount',
       render: (val: number) => (
-        <span style={{ fontWeight: 800, color: '#059669', fontSize: 14, whiteSpace: 'nowrap' }}>
+        <span style={{ fontWeight: 800, color: '#10B981', fontSize: 14, whiteSpace: 'nowrap' }}>
           ₹ {Number(val).toLocaleString('en-IN')}
         </span>
       ),
@@ -429,7 +429,7 @@ const ReceiptsPage: React.FC = () => {
               size="small"
               loading={actionLoadingKey === `download-${record.id}`}
               disabled={Boolean(actionLoadingKey) && actionLoadingKey !== `download-${record.id}`}
-              style={{ color: '#059669', borderColor: '#A7F3D0', background: '#ECFDF5' }}
+              style={{ color: '#10B981', borderColor: 'rgba(16,185,129,0.3)', background: 'rgba(16,185,129,0.15)' }}
               onClick={() => handleDownloadImage(record)}
             />
           </Tooltip>
@@ -438,7 +438,7 @@ const ReceiptsPage: React.FC = () => {
               icon={<PrinterOutlined />}
               size="small"
               type="primary"
-              style={{ background: '#0B2347', borderColor: '#0B2347' }}
+              style={{ background: '#2563EB', borderColor: '#2563EB' }}
               onClick={() => printReceiptWindow(record, myOrg?.name || 'Hisob ERP', myOrg)}
             />
           </Tooltip>
@@ -502,7 +502,7 @@ const ReceiptsPage: React.FC = () => {
       {/* ── Responsive Header ── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
         <div>
-          <Title level={3} style={{ margin: 0, color: '#0B2347', fontWeight: 900, letterSpacing: '-0.3px' }}>
+          <Title level={3} style={{ margin: 0, color: 'var(--color-text-primary)', fontWeight: 900, letterSpacing: '-0.3px' }}>
             🧾 Donation Receipts & Vouchers
           </Title>
           <Text type="secondary" style={{ fontSize: 13 }}>
@@ -548,17 +548,17 @@ const ReceiptsPage: React.FC = () => {
       {/* ── Quick Overview Metric Cards ── */}
       <div className="hissob-stat-row" style={{ marginBottom: 20 }}>
         <div className="hissob-stat-col">
-          <Card className="hissob-stat-card" style={{ borderTop: '4px solid #1E40AF', borderRadius: 12 }}>
+          <Card className="hissob-stat-card" style={{ borderTop: '4px solid #3B82F6', borderRadius: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
               <Text type="secondary" style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.2, whiteSpace: 'nowrap' }}>
                 TOTAL COLLECTION
               </Text>
-              <Avatar style={{ backgroundColor: '#DBEAFE', color: '#1E40AF', flexShrink: 0 }} icon={<DollarOutlined />} size="small" />
+              <Avatar style={{ backgroundColor: 'rgba(59,130,246,0.15)', color: '#3B82F6', flexShrink: 0 }} icon={<DollarOutlined />} size="small" />
             </div>
             {isLoading ? (
               <Skeleton.Button active size="small" style={{ width: 100, height: 22, marginTop: 6 }} />
             ) : (
-              <Title level={4} style={{ margin: '4px 0 0 0', color: '#0F172A', fontWeight: 900, whiteSpace: 'nowrap' }}>
+              <Title level={4} style={{ margin: '4px 0 0 0', color: 'var(--color-text-primary)', fontWeight: 900, whiteSpace: 'nowrap' }}>
                 ₹ {totalCollected.toLocaleString('en-IN')}
               </Title>
             )}
@@ -567,17 +567,17 @@ const ReceiptsPage: React.FC = () => {
         </div>
 
         <div className="hissob-stat-col">
-          <Card className="hissob-stat-card" style={{ borderTop: '4px solid #059669', borderRadius: 12 }}>
+          <Card className="hissob-stat-card" style={{ borderTop: '4px solid #10B981', borderRadius: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
               <Text type="secondary" style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.2, whiteSpace: 'nowrap' }}>
                 TOTAL SETTLED
               </Text>
-              <Avatar style={{ backgroundColor: '#D1FAE5', color: '#059669', flexShrink: 0 }} icon={<CheckCircleOutlined />} size="small" />
+              <Avatar style={{ backgroundColor: 'rgba(16,185,129,0.15)', color: '#10B981', flexShrink: 0 }} icon={<CheckCircleOutlined />} size="small" />
             </div>
             {isLoading ? (
               <Skeleton.Button active size="small" style={{ width: 100, height: 22, marginTop: 6 }} />
             ) : (
-              <Title level={4} style={{ margin: '4px 0 0 0', color: '#059669', fontWeight: 900, whiteSpace: 'nowrap' }}>
+              <Title level={4} style={{ margin: '4px 0 0 0', color: '#10B981', fontWeight: 900, whiteSpace: 'nowrap' }}>
                 ₹ {totalSettled.toLocaleString('en-IN')}
               </Title>
             )}
@@ -712,17 +712,18 @@ const ReceiptsPage: React.FC = () => {
                     hoverable
                     style={{
                       borderRadius: 14,
-                      border: '1px solid #E2E8F0',
+                      border: '1px solid var(--color-border)',
+                      background: 'var(--color-bg-card)',
                       boxShadow: '0 4px 14px rgba(11,35,71,0.05)',
                     }}
                     styles={{ body: { padding: 16 } }}
                   >
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 10 }}>
                       <div>
-                        <span style={{ fontWeight: 900, color: '#1E40AF', fontFamily: 'monospace', fontSize: 14 }}>
+                        <span style={{ fontWeight: 900, color: '#3B82F6', fontFamily: 'monospace', fontSize: 14 }}>
                           {record.receipt_number}
                         </span>
-                        <div style={{ fontSize: 11, color: '#64748B', marginTop: 2 }}>
+                        <div style={{ fontSize: 11, color: 'var(--color-text-secondary)', marginTop: 2 }}>
                           📅 {record.receipt_date ? dayjs(record.receipt_date).format('DD-MM-YYYY') : ''}
                         </div>
                       </div>
@@ -736,19 +737,19 @@ const ReceiptsPage: React.FC = () => {
                         {record.donor?.full_name?.charAt(0)?.toUpperCase() || 'D'}
                       </Avatar>
                       <div>
-                        <div style={{ fontWeight: 800, fontSize: 14, color: '#0F172A' }}>
+                        <div style={{ fontWeight: 800, fontSize: 14, color: 'var(--color-text-primary)' }}>
                           {record.donor?.full_name || 'Anonymous Donor'}
                         </div>
                         {record.donor?.phone && (
-                          <div style={{ fontSize: 11, color: '#64748B' }}>📞 +91 {record.donor.phone}</div>
+                          <div style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>📞 +91 {record.donor.phone}</div>
                         )}
                       </div>
                     </div>
 
-                    <div style={{ padding: '10px 12px', background: '#F8FAFC', borderRadius: 10, marginBottom: 12, border: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ padding: '10px 12px', background: 'var(--color-bg)', borderRadius: 10, marginBottom: 12, border: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
                         <Text type="secondary" style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase' }}>Amount</Text>
-                        <div style={{ fontWeight: 900, fontSize: 18, color: '#059669' }}>
+                        <div style={{ fontWeight: 900, fontSize: 18, color: '#10B981' }}>
                           ₹ {Number(record.amount || 0).toLocaleString('en-IN')}
                         </div>
                       </div>
@@ -758,7 +759,7 @@ const ReceiptsPage: React.FC = () => {
                     </div>
 
                     {record.purpose && (
-                      <div style={{ fontSize: 11, color: '#475569', marginBottom: 12 }}>
+                      <div style={{ fontSize: 11, color: 'var(--color-text-secondary)', marginBottom: 12 }}>
                         🎯 <b>Cause:</b> {record.purpose}
                       </div>
                     )}
@@ -895,11 +896,11 @@ const ReceiptsPage: React.FC = () => {
         width={480}
         styles={{ body: { padding: 0 } }}
       >
-        <div style={{ padding: '20px 24px', background: '#FEF2F2', borderBottom: '1px solid #FEE2E2' }}>
-          <Title level={4} style={{ margin: 0, color: '#DC2626', fontWeight: 900 }}>
+        <div style={{ padding: '20px 24px', background: 'rgba(239, 68, 68, 0.15)', borderBottom: '1px solid rgba(239, 68, 68, 0.3)' }}>
+          <span style={{ fontSize: 18, fontWeight: 900, color: '#EF4444', display: 'block', marginBottom: 4 }}>
             Cancel Receipt #{cancelModalReceipt?.receipt_number}?
-          </Title>
-          <Text type="secondary" style={{ fontSize: 12, color: '#991B1B' }}>
+          </span>
+          <Text type="secondary" style={{ fontSize: 12, color: 'var(--color-text-primary)' }}>
             This will void receipt credit ₹{Number(cancelModalReceipt?.amount || 0).toLocaleString('en-IN')} and adjust donor balance.
           </Text>
         </div>
@@ -911,7 +912,7 @@ const ReceiptsPage: React.FC = () => {
           >
             <Form.Item
               name="reason"
-              label={<span style={{ fontWeight: 700, color: '#0F172A' }}>Cancellation Reason</span>}
+              label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Cancellation Reason</span>}
               rules={[{ required: true, message: 'Please enter a cancellation reason' }]}
             >
               <Input.TextArea
@@ -920,7 +921,7 @@ const ReceiptsPage: React.FC = () => {
                 style={{ borderRadius: 8 }}
               />
             </Form.Item>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, paddingTop: 12, borderTop: '1px solid #F1F5F9' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, paddingTop: 12, borderTop: '1px solid var(--color-border)' }}>
               <Button onClick={() => setCancelModalReceipt(null)} style={{ borderRadius: 8, fontWeight: 600 }}>
                 Keep Active
               </Button>
@@ -929,7 +930,7 @@ const ReceiptsPage: React.FC = () => {
                 danger
                 htmlType="submit"
                 loading={cancelMutation.isPending}
-                style={{ fontWeight: 800, borderRadius: 8, background: '#DC2626', borderColor: '#DC2626' }}
+                style={{ fontWeight: 800, borderRadius: 8, background: '#EF4444', borderColor: '#EF4444' }}
               >
                 Confirm Cancellation
               </Button>

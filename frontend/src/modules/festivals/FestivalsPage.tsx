@@ -348,18 +348,18 @@ const FestivalsPage: React.FC = () => {
               width: '100%',
               height: '100%',
               borderRadius: 16,
-              background: 'linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%)',
-              border: '1px solid #E2E8F0',
-              boxShadow: '0 4px 14px rgba(0,0,0,0.03)',
+              background: 'var(--color-bg-card)',
+              border: '1px solid var(--color-border)',
+              boxShadow: '0 4px 14px rgba(0,0,0,0.1)',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between'
             }}
           >
-            <Text type="secondary" style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.05em', color: '#64748B' }}>TOTAL FESTIVALS</Text>
+            <Text type="secondary" style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.05em', color: 'var(--color-text-secondary)' }}>TOTAL FESTIVALS</Text>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
-              <Title level={2} style={{ margin: 0, color: '#0B2347', fontWeight: 900 }}>{totalFestivalsCount}</Title>
-              <div style={{ width: 48, height: 48, borderRadius: 14, background: '#EFF6FF', color: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, boxShadow: '0 4px 10px rgba(37,99,235,0.12)' }}>
+              <Title level={2} style={{ margin: 0, color: 'var(--color-text-primary)', fontWeight: 900 }}>{totalFestivalsCount}</Title>
+              <div style={{ width: 48, height: 48, borderRadius: 14, background: 'rgba(37,99,235,0.15)', color: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, boxShadow: '0 4px 10px rgba(37,99,235,0.12)' }}>
                 🎪
               </div>
             </div>
@@ -373,9 +373,9 @@ const FestivalsPage: React.FC = () => {
               width: '100%',
               height: '100%',
               borderRadius: 16,
-              background: 'linear-gradient(135deg, #FFFFFF 0%, #F0FDF4 100%)',
-              border: '1px solid #DCFCE7',
-              boxShadow: '0 4px 14px rgba(0,0,0,0.03)',
+              background: 'var(--color-bg-card)',
+              border: '1px solid rgba(16, 185, 129, 0.3)',
+              boxShadow: '0 4px 14px rgba(0,0,0,0.1)',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between'
@@ -383,9 +383,9 @@ const FestivalsPage: React.FC = () => {
           >
             <Text type="secondary" style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.05em', color: '#166534' }}>ACTIVE CAMPAIGNS</Text>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
-              <Title level={2} style={{ margin: 0, color: '#15803D', fontWeight: 900 }}>{activeFestivalsCount}</Title>
-              <div style={{ width: 48, height: 48, borderRadius: 14, background: '#DCFCE7', color: '#166534', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, boxShadow: '0 4px 10px rgba(22,101,52,0.12)' }}>
-                <Badge status="processing" text={<span style={{ color: '#15803D', fontWeight: 900, fontSize: 11 }}>LIVE</span>} />
+              <Title level={2} style={{ margin: 0, color: '#22C55E', fontWeight: 900 }}>{activeFestivalsCount}</Title>
+              <div style={{ width: 48, height: 48, borderRadius: 14, background: 'rgba(34,197,94,0.15)', color: '#22C55E', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, boxShadow: '0 4px 10px rgba(22,101,52,0.12)' }}>
+                <Badge status="processing" text={<span style={{ color: '#22C55E', fontWeight: 900, fontSize: 11 }}>LIVE</span>} />
               </div>
             </div>
           </Card>
@@ -398,18 +398,18 @@ const FestivalsPage: React.FC = () => {
               width: '100%',
               height: '100%',
               borderRadius: 16,
-              background: 'linear-gradient(135deg, #FFFFFF 0%, #FFF7ED 100%)',
-              border: '1px solid #FFEDD5',
-              boxShadow: '0 4px 14px rgba(0,0,0,0.03)',
+              background: 'var(--color-bg-card)',
+              border: '1px solid rgba(249, 115, 22, 0.3)',
+              boxShadow: '0 4px 14px rgba(0,0,0,0.1)',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between'
             }}
           >
-            <Text type="secondary" style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.05em', color: '#9A3412' }}>TARGET BUDGET</Text>
+            <Text type="secondary" style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.05em', color: '#EA580C' }}>TARGET BUDGET</Text>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
               <Title level={2} style={{ margin: 0, color: '#EA580C', fontWeight: 900, fontSize: 22 }}>₹ {totalCombinedBudget.toLocaleString('en-IN')}</Title>
-              <div style={{ width: 48, height: 48, borderRadius: 14, background: '#FFF7ED', color: '#EA580C', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, boxShadow: '0 4px 10px rgba(234,88,12,0.12)' }}>
+              <div style={{ width: 48, height: 48, borderRadius: 14, background: 'rgba(249, 115, 22, 0.15)', color: '#EA580C', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, boxShadow: '0 4px 10px rgba(234,88,12,0.12)' }}>
                 💰
               </div>
             </div>
@@ -423,18 +423,18 @@ const FestivalsPage: React.FC = () => {
               width: '100%',
               height: '100%',
               borderRadius: 16,
-              background: 'linear-gradient(135deg, #FFFFFF 0%, #F3E8FF 100%)',
-              border: '1px solid #E9D5FF',
-              boxShadow: '0 4px 14px rgba(0,0,0,0.03)',
+              background: 'var(--color-bg-card)',
+              border: '1px solid rgba(168, 85, 247, 0.3)',
+              boxShadow: '0 4px 14px rgba(0,0,0,0.1)',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between'
             }}
           >
-            <Text type="secondary" style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.05em', color: '#6B21A8' }}>AVG EVENT BUDGET</Text>
+            <Text type="secondary" style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.05em', color: '#A855F7' }}>AVG EVENT BUDGET</Text>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
-              <Title level={2} style={{ margin: 0, color: '#7C3AED', fontWeight: 900, fontSize: 22 }}>₹ {avgBudget.toLocaleString('en-IN')}</Title>
-              <div style={{ width: 48, height: 48, borderRadius: 14, background: '#F3E8FF', color: '#7C3AED', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, boxShadow: '0 4px 10px rgba(124,58,237,0.12)' }}>
+              <Title level={2} style={{ margin: 0, color: '#A855F7', fontWeight: 900, fontSize: 22 }}>₹ {avgBudget.toLocaleString('en-IN')}</Title>
+              <div style={{ width: 48, height: 48, borderRadius: 14, background: 'rgba(168, 85, 247, 0.15)', color: '#A855F7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, boxShadow: '0 4px 10px rgba(124,58,237,0.12)' }}>
                 📊
               </div>
             </div>
@@ -571,7 +571,7 @@ const FestivalsPage: React.FC = () => {
                             {dInfo.icon}
                           </div>
                           <div>
-                            <Title level={5} style={{ margin: 0, color: '#0B2347', fontWeight: 900, fontSize: 16 }}>
+                            <Title level={5} style={{ margin: 0, color: 'var(--color-text-primary)', fontWeight: 900, fontSize: 16 }}>
                               {fest.name}
                             </Title>
                             {fest.deity && (
@@ -587,7 +587,7 @@ const FestivalsPage: React.FC = () => {
                       </div>
 
                       {/* Info lines */}
-                      <div style={{ fontSize: 12, color: '#475569', display: 'flex', flexDirection: 'column', gap: 8, margin: '14px 0' }}>
+                      <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', display: 'flex', flexDirection: 'column', gap: 8, margin: '14px 0' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           <CalendarOutlined style={{ color: '#2563EB', fontSize: 14 }} />
                           <span><b>Duration:</b> {fest.start_date} to {fest.end_date}</span>
@@ -597,29 +597,29 @@ const FestivalsPage: React.FC = () => {
                           <span><b>Venue:</b> {fest.location || 'Main Mandap'}</span>
                         </div>
                         {fest.description && (
-                          <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4, color: '#64748B' }}>
+                          <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
                             {fest.description.length > 70 ? `${fest.description.substring(0, 70)}...` : fest.description}
                           </Text>
                         )}
                       </div>
 
                       {/* Progress & Target Budget Box */}
-                      <div style={{ margin: '16px 0 8px 0', padding: 14, background: '#F8FAFC', borderRadius: 12, border: '1px solid #F1F5F9' }}>
+                      <div style={{ margin: '16px 0 8px 0', padding: 14, background: 'var(--color-bg)', borderRadius: 12, border: '1px solid var(--color-border)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 6 }}>
-                          <span><TrophyOutlined style={{ color: '#F59E0B' }} /> Target Budget:</span>
+                          <span style={{ color: 'var(--color-text-primary)' }}><TrophyOutlined style={{ color: '#F59E0B' }} /> Target Budget:</span>
                           <span style={{ fontWeight: 800, color: '#EA580C' }}>₹ {targetBudget.toLocaleString('en-IN')}</span>
                         </div>
                         <Progress percent={pct} strokeColor={{ '0%': '#F97316', '100%': '#EA580C' }} size="small" style={{ margin: 0 }} />
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 20px', background: '#FAFAFA', borderTop: '1px solid #F1F5F9' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 20px', background: 'var(--color-bg)', borderTop: '1px solid var(--color-border)' }}>
                       <Button
                         type="primary"
                         icon={<UnorderedListOutlined />}
                         size="small"
                         className="animated-btn"
-                        style={{ background: '#0B2347', borderColor: '#0B2347', borderRadius: 8, fontWeight: 700 }}
+                        style={{ background: '#F97316', borderColor: '#F97316', borderRadius: 8, fontWeight: 700 }}
                         onClick={() => setSelectedTasksFestival(fest)}
                       >
                         Plan Tasks & Volunteers

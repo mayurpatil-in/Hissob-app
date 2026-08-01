@@ -137,7 +137,7 @@ const DonorsPage: React.FC = () => {
       dataIndex: 'donor_number',
       key: 'donor_number',
       render: (t: string) => (
-        <span style={{ fontWeight: 800, color: '#1E40AF', fontFamily: 'monospace', fontSize: 13, whiteSpace: 'nowrap' }}>
+        <span style={{ fontWeight: 800, color: '#3B82F6', fontFamily: 'monospace', fontSize: 13, whiteSpace: 'nowrap' }}>
           {t || 'N/A'}
         </span>
       ),
@@ -162,7 +162,7 @@ const DonorsPage: React.FC = () => {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <a
-                style={{ fontWeight: 800, color: '#0F172A', fontSize: 14 }}
+                style={{ fontWeight: 800, color: 'var(--color-text-primary)', fontSize: 14 }}
                 onClick={(e) => {
                   e.preventDefault();
                   setSelectedDonorId(record.id);
@@ -182,7 +182,7 @@ const DonorsPage: React.FC = () => {
               )}
             </div>
             {record.email && (
-              <div style={{ fontSize: 11, color: '#64748B' }}>{record.email}</div>
+              <div style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>{record.email}</div>
             )}
           </div>
         </Space>
@@ -193,7 +193,7 @@ const DonorsPage: React.FC = () => {
       dataIndex: 'phone',
       key: 'phone',
       render: (p: string) => (
-        <span style={{ whiteSpace: 'nowrap', fontWeight: 600, color: '#334155' }}>
+        <span style={{ whiteSpace: 'nowrap', fontWeight: 600, color: 'var(--color-text-primary)' }}>
           {p ? `+91 ${p}` : 'N/A'}
         </span>
       ),
@@ -203,7 +203,7 @@ const DonorsPage: React.FC = () => {
       dataIndex: 'city',
       key: 'city',
       render: (c: string) => (
-        <span style={{ color: '#475569', fontWeight: 500 }}>
+        <span style={{ color: 'var(--color-text-secondary)', fontWeight: 500 }}>
           {c ? `📍 ${c}` : 'N/A'}
         </span>
       ),
@@ -213,7 +213,7 @@ const DonorsPage: React.FC = () => {
       dataIndex: 'this_year_donations',
       key: 'this_year_donations',
       render: (val: number) => (
-        <span style={{ fontWeight: 800, color: '#2563EB', fontSize: 14, whiteSpace: 'nowrap' }}>
+        <span style={{ fontWeight: 800, color: '#3B82F6', fontSize: 14, whiteSpace: 'nowrap' }}>
           ₹ {Number(val || 0).toLocaleString('en-IN')}
         </span>
       ),
@@ -223,7 +223,7 @@ const DonorsPage: React.FC = () => {
       dataIndex: 'total_donations',
       key: 'total_donations',
       render: (val: number) => (
-        <span style={{ fontWeight: 800, color: '#059669', fontSize: 14, whiteSpace: 'nowrap' }}>
+        <span style={{ fontWeight: 800, color: '#10B981', fontSize: 14, whiteSpace: 'nowrap' }}>
           ₹ {Number(val || 0).toLocaleString('en-IN')}
         </span>
       ),
@@ -236,9 +236,9 @@ const DonorsPage: React.FC = () => {
           <Tooltip title="Create Receipt for this Donor">
             <Button
               type="text"
-              icon={<FileAddOutlined style={{ color: '#EA580C' }} />}
+              icon={<FileAddOutlined style={{ color: '#F97316' }} />}
               size="small"
-              style={{ fontWeight: 700, color: '#EA580C', background: '#FFF7ED', borderRadius: 6, borderColor: '#FFEDD5' }}
+              style={{ fontWeight: 700, color: '#F97316', background: 'rgba(249, 115, 22, 0.15)', borderRadius: 6, borderColor: 'rgba(249, 115, 22, 0.3)' }}
               onClick={() => navigate('/receipts', { state: { preselectedDonorId: record.id, preselectedDonorName: record.full_name } })}
             >
               + Receipt
@@ -247,9 +247,9 @@ const DonorsPage: React.FC = () => {
           <Tooltip title="View Comprehensive Donation History">
             <Button
               type="default"
-              icon={<HistoryOutlined style={{ color: '#2563EB' }} />}
+              icon={<HistoryOutlined style={{ color: '#3B82F6' }} />}
               size="small"
-              style={{ fontWeight: 600, borderRadius: 6, borderColor: '#CBD5E1' }}
+              style={{ fontWeight: 600, borderRadius: 6 }}
               onClick={() => setSelectedDonorId(record.id)}
             >
               History
@@ -314,7 +314,7 @@ const DonorsPage: React.FC = () => {
       {/* ── Page Header ── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
         <div>
-          <Title level={3} style={{ margin: 0, color: '#0B2347', fontWeight: 900, letterSpacing: '-0.3px' }}>
+          <Title level={3} style={{ margin: 0, color: 'var(--color-text-primary)', fontWeight: 900, letterSpacing: '-0.3px' }}>
             🤝 Donor Directory & Profiles
           </Title>
           <Text type="secondary" style={{ fontSize: 13 }}>
@@ -341,14 +341,14 @@ const DonorsPage: React.FC = () => {
       {/* ── Quick Overview Metric Cards ── */}
       <div className="hissob-stat-row" style={{ marginBottom: 20 }}>
         <div className="hissob-stat-col">
-          <Card className="hissob-stat-card" style={{ borderTop: '4px solid #1E40AF', borderRadius: 12 }}>
+          <Card className="hissob-stat-card" style={{ borderTop: '4px solid #3B82F6', borderRadius: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
               <Text type="secondary" style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.2, whiteSpace: 'nowrap' }}>
                 TOTAL DONORS
               </Text>
-              <Avatar style={{ backgroundColor: '#DBEAFE', color: '#1E40AF', flexShrink: 0 }} icon={<TeamOutlined />} size="small" />
+              <Avatar style={{ backgroundColor: 'rgba(59,130,246,0.15)', color: '#3B82F6', flexShrink: 0 }} icon={<TeamOutlined />} size="small" />
             </div>
-            <Title level={4} style={{ margin: '4px 0 0 0', color: '#0F172A', fontWeight: 900 }}>
+            <Title level={4} style={{ margin: '4px 0 0 0', color: 'var(--color-text-primary)', fontWeight: 900 }}>
               {totalDonors}
             </Title>
             <Text type="secondary" style={{ fontSize: 10, whiteSpace: 'nowrap' }}>Active Profiles</Text>
@@ -356,14 +356,14 @@ const DonorsPage: React.FC = () => {
         </div>
 
         <div className="hissob-stat-col">
-          <Card className="hissob-stat-card" style={{ borderTop: '4px solid #D97706', borderRadius: 12 }}>
+          <Card className="hissob-stat-card" style={{ borderTop: '4px solid #F59E0B', borderRadius: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
               <Text type="secondary" style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.2, whiteSpace: 'nowrap' }}>
                 VIP DONORS
               </Text>
-              <Avatar style={{ backgroundColor: '#FEF3C7', color: '#D97706', flexShrink: 0 }} icon={<CrownOutlined />} size="small" />
+              <Avatar style={{ backgroundColor: 'rgba(245,158,11,0.15)', color: '#F59E0B', flexShrink: 0 }} icon={<CrownOutlined />} size="small" />
             </div>
-            <Title level={4} style={{ margin: '4px 0 0 0', color: '#D97706', fontWeight: 900 }}>
+            <Title level={4} style={{ margin: '4px 0 0 0', color: '#F59E0B', fontWeight: 900 }}>
               {vipDonorsCount}
             </Title>
             <Text type="secondary" style={{ fontSize: 10, whiteSpace: 'nowrap' }}>VIP Patrons</Text>
@@ -371,14 +371,14 @@ const DonorsPage: React.FC = () => {
         </div>
 
         <div className="hissob-stat-col">
-          <Card className="hissob-stat-card" style={{ borderTop: '4px solid #059669', borderRadius: 12 }}>
+          <Card className="hissob-stat-card" style={{ borderTop: '4px solid #10B981', borderRadius: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
               <Text type="secondary" style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.2, whiteSpace: 'nowrap' }}>
                 80G CERTIFIED
               </Text>
-              <Avatar style={{ backgroundColor: '#D1FAE5', color: '#059669', flexShrink: 0 }} icon={<SafetyOutlined />} size="small" />
+              <Avatar style={{ backgroundColor: 'rgba(16,185,129,0.15)', color: '#10B981', flexShrink: 0 }} icon={<SafetyOutlined />} size="small" />
             </div>
-            <Title level={4} style={{ margin: '4px 0 0 0', color: '#059669', fontWeight: 900 }}>
+            <Title level={4} style={{ margin: '4px 0 0 0', color: '#10B981', fontWeight: 900 }}>
               {tax80gCount}
             </Title>
             <Text type="secondary" style={{ fontSize: 10, whiteSpace: 'nowrap' }}>Tax Exemption</Text>
@@ -386,14 +386,14 @@ const DonorsPage: React.FC = () => {
         </div>
 
         <div className="hissob-stat-col">
-          <Card className="hissob-stat-card" style={{ borderTop: '4px solid #7C3AED', borderRadius: 12 }}>
+          <Card className="hissob-stat-card" style={{ borderTop: '4px solid #A855F7', borderRadius: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
               <Text type="secondary" style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.2, whiteSpace: 'nowrap' }}>
                 CONTRIBUTIONS
               </Text>
-              <Avatar style={{ backgroundColor: '#EDE9FE', color: '#7C3AED', flexShrink: 0 }} icon={<DollarOutlined />} size="small" />
+              <Avatar style={{ backgroundColor: 'rgba(168,85,247,0.15)', color: '#A855F7', flexShrink: 0 }} icon={<DollarOutlined />} size="small" />
             </div>
-            <Title level={4} style={{ margin: '4px 0 0 0', color: '#7C3AED', fontWeight: 900, whiteSpace: 'nowrap' }}>
+            <Title level={4} style={{ margin: '4px 0 0 0', color: '#A855F7', fontWeight: 900, whiteSpace: 'nowrap' }}>
               ₹ {totalLifetimeContribution.toLocaleString('en-IN')}
             </Title>
             <Text type="secondary" style={{ fontSize: 10, whiteSpace: 'nowrap' }}>Avg ₹{avgContribution.toLocaleString('en-IN')}</Text>
@@ -454,8 +454,8 @@ const DonorsPage: React.FC = () => {
                   hoverable
                   style={{
                     borderRadius: 14,
-                    border: record.is_vip ? '2px solid #FCD34D' : '1px solid #E2E8F0',
-                    background: record.is_vip ? 'linear-gradient(180deg, #FFFDF5 0%, #FFFFFF 100%)' : '#FFFFFF',
+                    border: record.is_vip ? '2px solid #FCD34D' : '1px solid var(--color-border)',
+                    background: 'var(--color-bg-card)',
                     boxShadow: '0 4px 14px rgba(11,35,71,0.05)',
                   }}
                   styles={{ body: { padding: 16 } }}
@@ -484,28 +484,28 @@ const DonorsPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <div style={{ fontWeight: 800, fontSize: 16, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--color-text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     <a onClick={(e) => { e.preventDefault(); setSelectedDonorId(record.id); }}>
                       {record.full_name}
                     </a>
                   </div>
 
-                  <div style={{ fontSize: 12, color: '#64748B', margin: '6px 0 12px 0', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', margin: '6px 0 12px 0', display: 'flex', flexDirection: 'column', gap: 4 }}>
                     <div>📞 {record.phone ? `+91 ${record.phone}` : 'No phone provided'}</div>
                     {record.email && <div>✉️ {record.email}</div>}
                     <div>📍 {record.city || 'City Not Specified'}</div>
                   </div>
 
-                  <div style={{ padding: '10px 12px', background: '#F8FAFC', borderRadius: 10, marginBottom: 12, border: '1px solid #F1F5F9' }}>
+                  <div style={{ padding: '10px 12px', background: 'var(--color-bg)', borderRadius: 10, marginBottom: 12, border: '1px solid var(--color-border)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                       <Text type="secondary" style={{ fontSize: 11, fontWeight: 700 }}>This Year (2025-26):</Text>
-                      <span style={{ fontWeight: 900, fontSize: 14, color: '#2563EB' }}>
+                      <span style={{ fontWeight: 900, fontSize: 14, color: '#3B82F6' }}>
                         ₹ {Number(record.this_year_donations || 0).toLocaleString('en-IN')}
                       </span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <Text type="secondary" style={{ fontSize: 11, fontWeight: 700 }}>Lifetime Total:</Text>
-                      <span style={{ fontWeight: 900, fontSize: 14, color: '#059669' }}>
+                      <span style={{ fontWeight: 900, fontSize: 14, color: '#10B981' }}>
                         ₹ {Number(record.total_donations || 0).toLocaleString('en-IN')}
                       </span>
                     </div>
@@ -516,8 +516,8 @@ const DonorsPage: React.FC = () => {
                     <div style={{ display: 'flex', gap: 6 }}>
                       <Button
                         size="small"
-                        icon={<FileAddOutlined style={{ color: '#EA580C' }} />}
-                        style={{ flex: 1, fontWeight: 700, fontSize: 11, background: '#FFF7ED', borderColor: '#FFEDD5', color: '#EA580C' }}
+                        icon={<FileAddOutlined style={{ color: '#F97316' }} />}
+                        style={{ flex: 1, fontWeight: 700, fontSize: 11, background: 'rgba(249, 115, 22, 0.15)', borderColor: 'rgba(249, 115, 22, 0.3)', color: '#F97316' }}
                         onClick={() => navigate('/receipts', { state: { preselectedDonorId: record.id, preselectedDonorName: record.full_name } })}
                       >
                         + Receipt

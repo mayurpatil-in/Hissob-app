@@ -39,7 +39,7 @@ const AIInsightsWidget: React.FC = () => {
       title={
         <Space>
           <RobotOutlined style={{ color: '#F97316', fontSize: 18 }} />
-          <span style={{ fontWeight: 700, color: '#0B2347' }}>Smart AI Financial Insights</span>
+          <span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Smart AI Financial Insights</span>
         </Space>
       }
     >
@@ -52,7 +52,7 @@ const AIInsightsWidget: React.FC = () => {
             icon={<BulbOutlined style={{ color: '#F97316' }} />}
             title={
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <b style={{ color: '#0B2347' }}>{insight.title}</b>
+                <b style={{ color: 'var(--color-text-primary)' }}>{insight.title}</b>
                 <Tag color={IMPACT_COLORS[insight.impact_level] || 'default'}>
                   {insight.impact_level.toUpperCase()}
                 </Tag>

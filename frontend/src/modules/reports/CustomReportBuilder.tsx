@@ -133,7 +133,7 @@ export const CustomReportBuilder: React.FC = () => {
       title: entity === 'expenses' ? 'Requested By' : entity === 'donors' ? 'Donor Name' : 'Collector Name',
       dataIndex: 'collector',
       key: 'collector',
-      render: (val: string) => <span style={{ fontWeight: 700, color: '#0F172A' }}>👤 {val || 'System Admin'}</span>,
+      render: (val: string) => <span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>👤 {val || 'System Admin'}</span>,
     },
     {
       title: 'Festival Event',
@@ -156,7 +156,7 @@ export const CustomReportBuilder: React.FC = () => {
       key: 'total_amount',
       sorter: (a: any, b: any) => a.total_amount - b.total_amount,
       render: (val: number) => (
-        <span style={{ fontSize: 14, fontWeight: 900, color: entity === 'expenses' ? '#DC2626' : '#16A34A' }}>
+        <span style={{ fontSize: 14, fontWeight: 900, color: entity === 'expenses' ? '#EF4444' : '#10B981' }}>
           ₹ {val.toLocaleString('en-IN')}
         </span>
       ),
@@ -166,7 +166,7 @@ export const CustomReportBuilder: React.FC = () => {
       dataIndex: 'count',
       key: 'count',
       sorter: (a: any, b: any) => a.count - b.count,
-      render: (val: number) => <Tag color="purple" style={{ fontWeight: 700 }}>{val} entries</Tag>,
+      render: (val: number) => <Tag color="geekblue" style={{ fontWeight: 700 }}>{val} entries</Tag>,
     },
     {
       title: 'Avg Amount (₹)',
@@ -181,7 +181,7 @@ export const CustomReportBuilder: React.FC = () => {
       {/* ── 1-CLICK PRESET TEMPLATES ── */}
       <Card
         className="hissob-card"
-        style={{ borderRadius: 16, border: '1px solid #E2E8F0', background: '#F8FAFC' }}
+        style={{ borderRadius: 16, border: '1px solid var(--color-border)', background: 'var(--color-bg-card)' }}
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <ThunderboltOutlined style={{ color: '#F97316', fontSize: 18 }} />
@@ -240,7 +240,7 @@ export const CustomReportBuilder: React.FC = () => {
       {/* ── REPORT BUILDER CONTROLS ── */}
       <Card
         className="hissob-card"
-        style={{ borderRadius: 16, border: '1px solid #E2E8F0' }}
+        style={{ borderRadius: 16, border: '1px solid var(--color-border)', background: 'var(--color-bg-card)' }}
         title={
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -269,7 +269,7 @@ export const CustomReportBuilder: React.FC = () => {
                 type="dashed"
                 icon={<MailOutlined />}
                 onClick={() => setEmailModalOpen(true)}
-                style={{ borderColor: '#2563EB', color: '#2563EB', fontWeight: 700, borderRadius: 10 }}
+                style={{ borderColor: '#3B82F6', color: '#3B82F6', fontWeight: 700, borderRadius: 10 }}
               >
                 Email Report
               </Button>
@@ -292,7 +292,7 @@ export const CustomReportBuilder: React.FC = () => {
                 { label: '👤 Donors', value: 'donors' },
               ]}
               block
-              style={{ border: '1px solid #CBD5E1', padding: 2 }}
+              style={{ border: '1px solid var(--color-border)', padding: 2 }}
             />
           </Col>
 
@@ -333,7 +333,7 @@ export const CustomReportBuilder: React.FC = () => {
 
           {/* Filters Row */}
           <Col xs={24}>
-            <div style={{ background: '#F8FAFC', padding: 14, borderRadius: 12, border: '1px solid #E2E8F0' }}>
+            <div style={{ background: 'var(--color-bg)', padding: 14, borderRadius: 12, border: '1px solid var(--color-border)' }}>
               <Text type="secondary" style={{ fontSize: 12, fontWeight: 800, textTransform: 'uppercase', display: 'block', marginBottom: 8 }}>
                 🔍 Query Filters
               </Text>

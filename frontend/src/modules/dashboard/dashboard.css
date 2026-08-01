@@ -276,21 +276,21 @@
 .card-title-heading {
   font-size: 18px;
   font-weight: 800;
-  color: #0B2347;
+  color: var(--color-text-primary);
   margin: 0;
   letter-spacing: -0.3px;
 }
 
 .card-subtitle-text {
   font-size: 12px;
-  color: #64748B;
+  color: var(--color-text-secondary);
   display: block;
   margin-top: 2px;
 }
 
 .card-divider {
   height: 1px;
-  background: #E2E8F0;
+  background: var(--color-border);
   margin: 20px 0;
 }
 
@@ -310,12 +310,12 @@
 
 .campaign-name {
   font-weight: 700;
-  color: #1E293B;
+  color: var(--color-text-primary);
 }
 
 .campaign-stats {
   font-weight: 600;
-  color: #64748B;
+  color: var(--color-text-secondary);
 }
 
 /* Settlement Breakdown */
@@ -426,3 +426,40 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Dark Mode Sub-Card & Box Overrides ── */
+[data-theme="dark"] div[style*="background: #FAFAFA"],
+[data-theme="dark"] div[style*="background: #FAFAFA"],
+[data-theme="dark"] div[style*="backgroundColor: #FAFAFA"],
+[data-theme="dark"] div[style*="background: #F8FAFC"],
+[data-theme="dark"] div[style*="backgroundColor: #F8FAFC"],
+[data-theme="dark"] div[style*="background: #ffffff"],
+[data-theme="dark"] div[style*="background: #FFF"],
+[data-theme="dark"] div[style*="backgroundColor: #FFFFFF"] {
+  background: #1A2842 !important;
+  border-color: #243656 !important;
+  color: #E8EEF8 !important;
+}
+
+[data-theme="dark"] .ant-typography,
+[data-theme="dark"] .ant-typography-secondary,
+[data-theme="dark"] .dashboard-container h1,
+[data-theme="dark"] .dashboard-container h2,
+[data-theme="dark"] .dashboard-container h3,
+[data-theme="dark"] .dashboard-container h4 {
+  color: #E8EEF8 !important;
+}
+
+[data-theme="dark"] .dashboard-container .ant-typography-secondary {
+  color: #8097BB !important;
+}
+
+[data-theme="dark"] .dashboard-container div[style*="color: #0B2347"],
+[data-theme="dark"] .dashboard-container span[style*="color: #0B2347"],
+[data-theme="dark"] .dashboard-container h1[style*="color: #0B2347"],
+[data-theme="dark"] .dashboard-container h2[style*="color: #0B2347"],
+[data-theme="dark"] .dashboard-container h3[style*="color: #0B2347"],
+[data-theme="dark"] .dashboard-container h4[style*="color: #0B2347"] {
+  color: #E8EEF8 !important;
+}
+

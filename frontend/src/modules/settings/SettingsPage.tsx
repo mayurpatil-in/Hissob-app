@@ -224,7 +224,7 @@ const SettingsPage: React.FC = () => {
                   )}
                 </div>
 
-                <Title level={4} style={{ margin: '4px 0', color: '#0F172A', fontWeight: 900 }}>
+                <Title level={4} style={{ margin: '4px 0', color: 'var(--color-text-primary)', fontWeight: 900 }}>
                   {user?.full_name || 'User Profile'}
                 </Title>
                 <Text type="secondary" style={{ fontSize: 13 }}>
@@ -255,9 +255,9 @@ const SettingsPage: React.FC = () => {
                   <Divider style={{ margin: '16px 0' }} />
 
                   <Text type="secondary" style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5 }}>TENANT CONTEXT</Text>
-                  <div style={{ fontSize: 12, marginTop: 6, background: '#F8FAFC', padding: '10px 12px', borderRadius: 10, border: '1px solid #E2E8F0', wordBreak: 'break-all' }}>
+                  <div style={{ fontSize: 12, marginTop: 6, background: 'var(--color-bg)', padding: '10px 12px', borderRadius: 10, border: '1px solid var(--color-border)', wordBreak: 'break-all' }}>
                     <BankOutlined style={{ color: '#F97316', marginRight: 6 }} />
-                    <b>Org Tenant ID:</b> <code style={{ color: '#0F172A', fontWeight: 600 }}>{user?.tenant_id || 'System Global'}</code>
+                    <span style={{ color: 'var(--color-text-secondary)' }}>Org Tenant ID:</span> <code style={{ color: 'var(--color-text-primary)', fontWeight: 600 }}>{user?.tenant_id || 'System Global'}</code>
                   </div>
                 </div>
               </div>
@@ -265,12 +265,12 @@ const SettingsPage: React.FC = () => {
           </Col>
 
           <Col xs={24} md={14}>
-            <Card className="hissob-card" style={{ borderRadius: 16, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }} title={<span><UserOutlined style={{ color: '#F97316' }} /> Edit Personal Details</span>}>
+            <Card className="hissob-card" style={{ borderRadius: 16, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }} title={<span style={{ color: 'var(--color-text-primary)' }}><UserOutlined style={{ color: '#F97316' }} /> Edit Personal Details</span>}>
               <Form form={profileForm} layout="vertical" onFinish={handleProfileSave} initialValues={{ full_name: user?.full_name, email: user?.email }}>
-                <Form.Item label="Full Name" name="full_name" rules={[{ required: true, message: 'Enter full name' }]}>
+                <Form.Item label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Full Name</span>} name="full_name" rules={[{ required: true, message: 'Enter full name' }]}>
                   <Input prefix={<UserOutlined />} placeholder="Full Name" />
                 </Form.Item>
-                <Form.Item label="Email Address" name="email">
+                <Form.Item label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Email Address</span>} name="email">
                   <Input prefix={<MailOutlined />} disabled readOnly />
                 </Form.Item>
                 <Form.Item style={{ textAlign: 'right', marginBottom: 0 }}>
@@ -281,19 +281,19 @@ const SettingsPage: React.FC = () => {
               </Form>
             </Card>
 
-            <Card className="hissob-card" style={{ marginTop: 16, borderRadius: 16, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }} title={<span><KeyOutlined style={{ color: '#0EA5E9' }} /> Change Security Password</span>}>
+            <Card className="hissob-card" style={{ marginTop: 16, borderRadius: 16, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }} title={<span style={{ color: 'var(--color-text-primary)' }}><KeyOutlined style={{ color: '#0EA5E9' }} /> Change Security Password</span>}>
               <Form form={passwordForm} layout="vertical" onFinish={handlePasswordSave}>
-                <Form.Item label="Current Password" name="current_password" rules={[{ required: true, message: 'Enter your current password' }]}>
+                <Form.Item label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Current Password</span>} name="current_password" rules={[{ required: true, message: 'Enter your current password' }]}>
                   <Input.Password prefix={<LockOutlined />} placeholder="Current Password" />
                 </Form.Item>
                 <Row gutter={16}>
                   <Col xs={24} sm={12}>
-                    <Form.Item label="New Password" name="new_password" rules={[{ required: true, min: 6, message: 'Minimum 6 characters' }]}>
+                    <Form.Item label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>New Password</span>} name="new_password" rules={[{ required: true, min: 6, message: 'Minimum 6 characters' }]}>
                       <Input.Password prefix={<LockOutlined />} placeholder="New Password (min 6 chars)" />
                     </Form.Item>
                   </Col>
                   <Col xs={24} sm={12}>
-                    <Form.Item label="Confirm Password" name="confirm_password" rules={[{ required: true, message: 'Confirm new password' }]}>
+                    <Form.Item label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Confirm Password</span>} name="confirm_password" rules={[{ required: true, message: 'Confirm new password' }]}>
                       <Input.Password prefix={<LockOutlined />} placeholder="Confirm New Password" />
                     </Form.Item>
                   </Col>
@@ -306,7 +306,7 @@ const SettingsPage: React.FC = () => {
               </Form>
             </Card>
 
-            <Card className="hissob-card" style={{ marginTop: 16, borderRadius: 16, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }} title={<span><SafetyCertificateOutlined style={{ color: totpEnabled ? '#16A34A' : '#E11D48' }} /> Two-Factor Authentication (2FA TOTP)</span>}>
+            <Card className="hissob-card" style={{ marginTop: 16, borderRadius: 16, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }} title={<span style={{ color: 'var(--color-text-primary)' }}><SafetyCertificateOutlined style={{ color: totpEnabled ? '#16A34A' : '#E11D48' }} /> Two-Factor Authentication (2FA TOTP)</span>}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
@@ -350,10 +350,10 @@ const SettingsPage: React.FC = () => {
 
   return (
     <div className="settings-module animate-fadeIn" style={{ paddingBottom: 32 }}>
-      <div className="page-header" style={{ marginBottom: 24, background: '#FFFFFF', padding: '20px 24px', borderRadius: 16, border: '1px solid #E2E8F0', boxShadow: '0 4px 16px rgba(0,0,0,0.03)' }}>
+      <div className="page-header" style={{ marginBottom: 24, background: 'var(--color-bg-card)', padding: '20px 24px', borderRadius: 16, border: '1px solid var(--color-border)', boxShadow: '0 4px 16px rgba(0,0,0,0.03)' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-            <Title level={3} style={{ margin: 0, color: '#0F172A', fontWeight: 900 }}>User Profile & Settings</Title>
+            <Title level={3} style={{ margin: 0, color: 'var(--color-text-primary)', fontWeight: 900 }}>User Profile & Settings</Title>
             <Tag color="orange" icon={<SettingOutlined />} style={{ borderRadius: 12, fontWeight: 700 }}>SYSTEM CONTROL CENTER</Tag>
           </div>
           <Text type="secondary" style={{ fontSize: 13 }}>Manage your account security, assigned roles, organization profile, branding, and email preferences.</Text>
