@@ -167,3 +167,27 @@ Before uploading, build the React frontend for production:
   - Ensure `.htaccess` file is present in `public_html` with `RewriteEngine On` rules.
 - **CORS Error in Browser**:
   - Double-check `ALLOWED_ORIGINS` in `backend/.env` matches your frontend domain `https://yourdomain.com`.
+
+---
+
+## ⚡ Automated CI/CD Pipeline (GitHub Actions)
+
+Hisob ERP includes a pre-configured GitHub Actions workflow in [`.github/workflows/deploy.yml`](file:///d:/2026/Hissob%20FastAPI/Hissob-app/.github/workflows/deploy.yml). Every `git push` to `main` automatically builds the React frontend, uploads static assets to `public_html`, updates backend code, runs Alembic migrations, and triggers a live Passenger application restart!
+
+### Required GitHub Repository Secrets
+
+To activate automatic deployment, go to **GitHub Repository** $\rightarrow$ **Settings** $\rightarrow$ **Secrets and variables** $\rightarrow$ **Actions** and add:
+
+| Secret Name | Description / Example Value |
+| :--- | :--- |
+| `FTP_SERVER` | `ftp.hisob.in` or server IP address |
+| `FTP_USERNAME` | Your cPanel / FTP username |
+| `FTP_PASSWORD` | Your cPanel / FTP password |
+| `SSH_HOST` | `hisob.in` or server IP address |
+| `SSH_USER` | Your cPanel username |
+| `SSH_PASSWORD` | Your cPanel password (or use `SSH_KEY`) |
+| `CPANEL_USER` | Your cPanel account username (e.g. `hisobin`) |
+| `VITE_API_BASE_URL` | `https://api.hisob.in/api/v1` |
+
+> **Passenger Auto-Restart Trick:** Passenger automatically restarts the FastAPI app whenever `tmp/restart.txt` is updated inside the application root directory. The CI/CD workflow handles this automatically!
+
