@@ -70,7 +70,7 @@ jobs:
           protocol: sftp
           port: ${{ secrets.SFTP_PORT || 22 }}
           local-dir: ./backend/
-          server-dir: ./hissob_backend/backend/
+          server-dir: ./domains/api.hisob.in/Hissob-app/backend/backend/
           exclude: |
             **/.venv/**
             **/uploads/**
@@ -86,7 +86,7 @@ jobs:
           protocol: sftp
           port: ${{ secrets.SFTP_PORT || 22 }}
           local-dir: ./
-          server-dir: ./hissob_backend/
+          server-dir: ./domains/api.hisob.in/Hissob-app/backend/
           exclude: |
             **/*
             !passenger_wsgi.py
@@ -102,8 +102,8 @@ jobs:
           port: ${{ secrets.SSH_PORT || 22 }}
           script: |
             echo "Activating virtualenv and upgrading Python packages..."
-            source /home/${{ secrets.CPANEL_USER }}/virtualenv/hissob_backend/3.12/bin/activate
-            cd /home/${{ secrets.CPANEL_USER }}/hissob_backend
+            source /home/qhmwlequ/virtualenv/domains/api.hisob.in/Hissob-app/backend/3.12/bin/activate
+            cd /home/qhmwlequ/domains/api.hisob.in/Hissob-app/backend
             pip install --upgrade pip
             pip install -r backend/requirements.txt
 
@@ -112,7 +112,7 @@ jobs:
             alembic upgrade head
 
             echo "Triggering Phusion Passenger restart..."
-            cd /home/${{ secrets.CPANEL_USER }}/hissob_backend
+            cd /home/qhmwlequ/domains/api.hisob.in/Hissob-app/backend
             mkdir -p tmp
             touch tmp/restart.txt
             echo "Deployment completed successfully!"
