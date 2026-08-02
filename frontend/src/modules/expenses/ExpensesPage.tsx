@@ -13,7 +13,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getExpenses, createExpense, updateExpense, deleteExpense, approveExpense, getFinancialYears,
-  uploadExpenseBill, attachExpenseBill, scanVendorBillOCR
+  uploadExpenseBill, attachExpenseBill, scanVendorBillOCR, formatErrorMessage
 } from '../../api/services';
 import { useAuthStore } from '../../store/authStore';
 import { exportToCSV, exportToExcel } from '../../utils/exportTable';
@@ -76,7 +76,7 @@ const ExpensesPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
     },
     onError: (err: any) => {
-      message.error(err?.response?.data?.detail || 'Failed to create expense');
+      message.error(formatErrorMessage(err?.response?.data?.detail, 'Failed to create expense'));
     },
   });
 
@@ -90,7 +90,7 @@ const ExpensesPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
     },
     onError: (err: any) => {
-      message.error(err?.response?.data?.detail || 'Failed to update expense');
+      message.error(formatErrorMessage(err?.response?.data?.detail, 'Failed to update expense'));
     },
   });
 
@@ -102,7 +102,7 @@ const ExpensesPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
     },
     onError: (err: any) => {
-      message.error(err?.response?.data?.detail || 'Failed to delete expense');
+      message.error(formatErrorMessage(err?.response?.data?.detail, 'Failed to delete expense'));
     },
   });
 
@@ -113,7 +113,7 @@ const ExpensesPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
     },
     onError: (err: any) => {
-      message.error(err?.response?.data?.detail || 'Action failed');
+      message.error(formatErrorMessage(err?.response?.data?.detail, 'Action failed'));
     },
   });
 
@@ -127,7 +127,7 @@ const ExpensesPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
     },
     onError: (err: any) => {
-      message.error(err?.response?.data?.detail || 'Failed to attach bill');
+      message.error(formatErrorMessage(err?.response?.data?.detail, 'Failed to attach bill'));
     },
   });
 
@@ -231,11 +231,17 @@ const ExpensesPage: React.FC = () => {
   };
 
   const handleSubmit = (values: any) => {
+    const activeFy = fiscalYears.find((fy: any) => fy.is_current) || fiscalYears[0];
     const payload = {
       ...values,
+      financial_year_id: values.financial_year_id || activeFy?.id,
       bill_url: uploadedBillUrl || values.bill_url,
       expense_date: values.expense_date ? values.expense_date.format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD'),
     };
+    if (!payload.financial_year_id) {
+      message.error('Please select an active Financial Year before submitting an expense.');
+      return;
+    }
     if (editingExpense) {
       updateMutation.mutate({ id: editingExpense.id, values: payload });
     } else {
