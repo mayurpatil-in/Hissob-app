@@ -17,15 +17,36 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Deploy Backend Files to WebHostMost via SCP/SFTP
-        uses: appleboy/scp-action@v0.1.7
+      - name: Deploy Backend Files to WebHostMost via FTPS
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          password: ${{ secrets.SSH_PASSWORD }}
-          port: ${{ secrets.SSH_PORT || 22 }}
-          source: "backend/*,passenger_wsgi.py,alembic.ini"
-          target: "/home/qhmwlequ/domains/api.hisob.in/Hissob-app/backend"
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          port: ${{ secrets.FTP_PORT || 21 }}
+          local-dir: ./backend/
+          server-dir: ./domains/api.hisob.in/Hissob-app/backend/backend/
+          exclude: |
+            **/.venv/**
+            **/uploads/**
+            **/.env
+            **/__pycache__/**
+
+      - name: Deploy passenger_wsgi.py & alembic.ini via FTPS
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          port: ${{ secrets.FTP_PORT || 21 }}
+          local-dir: ./
+          server-dir: ./domains/api.hisob.in/Hissob-app/backend/
+          exclude: |
+            **/*
+            !passenger_wsgi.py
+            !alembic.ini
 
       - name: Run Remote SSH Commands (Dependencies, Migrations & Passenger Restart)
         uses: appleboy/ssh-action@v1.0.3
@@ -84,13 +105,14 @@ jobs:
           cd frontend
           npm run build
 
-      - name: Deploy Frontend Static Build via SCP/SFTP
-        uses: appleboy/scp-action@v0.1.7
+      - name: Deploy Frontend Static Build via FTPS
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          password: ${{ secrets.SSH_PASSWORD }}
-          port: ${{ secrets.SSH_PORT || 22 }}
-          source: "frontend/dist/*"
-          target: "/home/qhmwlequ/public_html"
-          strip_prefix: "frontend/dist"
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          port: ${{ secrets.FTP_PORT || 21 }}
+          local-dir: ./frontend/dist/
+          server-dir: ./public_html/
+          dangerous-clean-slate: false
