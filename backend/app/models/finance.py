@@ -60,6 +60,7 @@ class Expense(Base, UUIDMixin, TimestampMixin, TenantMixin):
     __tablename__ = "expenses"
     __table_args__ = (
         Index("idx_expenses_tenant_status", "tenant_id", "status"),
+        Index("idx_expenses_tenant_status_date", "tenant_id", "status", "expense_date"),
     )
 
     financial_year_id: Mapped[uuid.UUID] = mapped_column(

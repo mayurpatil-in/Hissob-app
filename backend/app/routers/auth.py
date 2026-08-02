@@ -20,16 +20,20 @@ from app.permissions.rbac import get_user_permissions
 from app.models.user import User
 from app.services.email_service import send_password_reset_email
 from jose import jwt
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 import uuid
 import pyotp
 import qrcode
 import io
 import base64
 
+limiter = Limiter(key_func=get_remote_address)
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
 @router.post("/login", response_model=LoginResponse, summary="User Login")
+@limiter.limit("5/minute")
 async def login(
     request: Request,
     payload: LoginRequest,

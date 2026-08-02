@@ -222,9 +222,11 @@ __marimo__/
 backups/
 *.sql
 *.sqlite
+deploy_key*
 
 # User Uploads & Media
 uploads/
 backend/uploads/
 !backend/uploads/.gitkeep
+
 

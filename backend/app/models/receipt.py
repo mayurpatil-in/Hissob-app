@@ -34,6 +34,8 @@ class Receipt(Base, UUIDMixin, TimestampMixin, TenantMixin):
     __table_args__ = (
         Index("idx_receipts_tenant_status", "tenant_id", "status"),
         Index("idx_receipts_tenant_date", "tenant_id", "receipt_date"),
+        Index("idx_receipts_tenant_status_date", "tenant_id", "status", "receipt_date"),
+        Index("idx_receipts_tenant_mode_status", "tenant_id", "payment_mode", "status"),
     )
 
     # References

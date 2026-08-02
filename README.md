@@ -17,7 +17,7 @@
 
 ## 🎨 Brand Design & Color Palette
 
-Hissob ERP features a high-contrast, modern Navy & Orange visual identity tailored for trust, enterprise reliability, and vibrant festival aesthetics:
+Hisob ERP features a high-contrast, modern Navy & Orange visual identity tailored for trust, enterprise reliability, and vibrant festival aesthetics:
 
 | Token Name         | Hex Code  | Purpose / Usage                                                      |
 | :----------------- | :-------- | :------------------------------------------------------------------- |
@@ -245,7 +245,7 @@ EMAILS_FROM_NAME="Hissob ERP Notifications"
 
 ```ini
 VITE_API_BASE_URL="http://localhost:8000/api/v1"
-VITE_APP_TITLE="Hissob ERP"
+VITE_APP_TITLE="Hisob ERP"
 ```
 
 ---
