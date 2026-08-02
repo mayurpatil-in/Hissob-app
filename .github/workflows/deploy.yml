@@ -95,4 +95,4 @@ jobs:
           port: ${{ secrets.SSH_PORT || 2323 }}
           source: "frontend/dist/*"
           target: "/home/qhmwlequ/public_html/"
-          strip_prefix: "frontend/dist"
+          strip_components: 2
