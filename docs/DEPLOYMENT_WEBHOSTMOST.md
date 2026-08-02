@@ -172,7 +172,9 @@ Before uploading, build the React frontend for production:
 
 ## ⚡ Automated CI/CD Pipeline (GitHub Actions)
 
-Hisob ERP includes a pre-configured GitHub Actions workflow in [`.github/workflows/deploy.yml`](file:///d:/2026/Hissob%20FastAPI/Hissob-app/.github/workflows/deploy.yml). Every `git push` to `main` automatically builds the React frontend, uploads static assets to `public_html`, updates backend code, runs Alembic migrations, and triggers a live Passenger application restart!
+Hisob ERP includes a fully automated GitHub Actions CI/CD deployment pipeline in [`.github/workflows/deploy.yml`](file:///d:/2026/Hissob%20FastAPI/Hissob-app/.github/workflows/deploy.yml). Every `git push` to `main` automatically builds the React frontend, uploads static assets to `public_html` via sFTP on port `2323`, updates backend code, runs Alembic migrations, and triggers a live Passenger application restart!
+
+For the complete step-by-step CI/CD setup guide and GitHub Secrets reference matrix, see [`docs/CICD_DEPLOYMENT_GUIDE.md`](file:///d:/2026/Hissob%20FastAPI/Hissob-app/docs/CICD_DEPLOYMENT_GUIDE.md).
 
 ### Required GitHub Repository Secrets
 
