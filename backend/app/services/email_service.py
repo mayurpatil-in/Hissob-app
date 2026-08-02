@@ -642,7 +642,7 @@ def send_tenant_daily_digest(db, tenant_id) -> Dict[str, Any]:
     from datetime import date as dt_date
     from app.models.tenant import Tenant
     from app.models.receipt import Receipt, ReceiptStatus, PaymentMode
-    from app.models.expense import Expense, ExpenseStatus
+    from app.models.finance import Expense, ExpenseStatus
     from app.models.user import User
 
     tenant = db.get(Tenant, tenant_id)
@@ -685,7 +685,7 @@ def send_tenant_daily_digest(db, tenant_id) -> Dict[str, Any]:
 
     pending_expenses = db.query(Expense).filter(
         Expense.tenant_id == tenant.id,
-        Expense.status == ExpenseStatus.PENDING_APPROVAL,
+        Expense.status == ExpenseStatus.PENDING,
     ).count()
 
     # Collect recipient emails: check custom digest_recipients setting first
