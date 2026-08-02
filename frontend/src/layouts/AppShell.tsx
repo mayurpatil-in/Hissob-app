@@ -586,20 +586,20 @@ const AppShell: React.FC<Props> = ({ children }) => {
       {/* ── Mobile Navigation Drawer ── */}
       <Drawer
         title={
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }} onClick={() => { setMobileOpen(false); navigate('/dashboard'); }}>
-            <div className="sidebar-logo-icon">H</div>
-            <span style={{ color: '#0B2347', fontWeight: 800, fontSize: 17 }}>Hisob ERP</span>
-            <Tag color="orange" style={{ fontSize: 9, padding: '0 4px', lineHeight: '14px', borderRadius: 4, fontWeight: 800, margin: 0 }}>PRO</Tag>
-            <Tag color="blue" style={{ fontSize: 9, padding: '0 4px', lineHeight: '14px', borderRadius: 4, fontWeight: 800, margin: 0 }}>v{APP_VERSION}</Tag>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap', cursor: 'pointer' }} onClick={() => { setMobileOpen(false); navigate('/dashboard'); }}>
+            <div className="sidebar-logo-icon" style={{ flexShrink: 0 }}>H</div>
+            <span style={{ color: '#0B2347', fontWeight: 800, fontSize: 15, whiteSpace: 'nowrap', flexShrink: 0 }}>Hisob ERP</span>
+            <Tag color="orange" style={{ fontSize: 9, padding: '0 4px', lineHeight: '14px', borderRadius: 4, fontWeight: 800, margin: 0, flexShrink: 0 }}>PRO</Tag>
+            <Tag color="blue" style={{ fontSize: 9, padding: '0 4px', lineHeight: '14px', borderRadius: 4, fontWeight: 800, margin: 0, flexShrink: 0 }}>v{APP_VERSION}</Tag>
           </div>
         }
         placement="left"
         onClose={() => setMobileOpen(false)}
         open={mobileOpen}
         styles={{
-          wrapper: { width: '280px' },
+          wrapper: { width: '300px' },
           body: { padding: 0, background: '#0B2347' },
-          header: { background: '#FFF' },
+          header: { background: '#FFF', padding: '12px 16px' },
         }}
       >
         <div style={{ padding: '12px 12px 4px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
