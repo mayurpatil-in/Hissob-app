@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = False
     ENVIRONMENT: str = "development"
+    ENABLE_DOCS: bool = True
     SECRET_KEY: str = "change-me"
 
     # Database

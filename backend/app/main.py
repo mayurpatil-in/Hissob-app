@@ -58,13 +58,14 @@ def create_app() -> FastAPI:
     except Exception as e:
         logging.getLogger("hisob.db").warning("Auto table creation check: %s", str(e))
 
+    hide_docs = (settings.ENVIRONMENT == "production" or not settings.ENABLE_DOCS) and not settings.DEBUG
     app = FastAPI(
         title=settings.APP_NAME,
         version=settings.APP_VERSION,
         description="Production ERP for Festival Collection & Financial Management",
-        docs_url="/docs",
-        redoc_url="/redoc",
-        openapi_url="/openapi.json",
+        docs_url=None if hide_docs else "/docs",
+        redoc_url=None if hide_docs else "/redoc",
+        openapi_url=None if hide_docs else "/openapi.json",
     )
 
     # Rate limiter
