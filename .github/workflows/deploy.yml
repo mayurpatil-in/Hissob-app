@@ -17,35 +17,15 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Deploy Backend Files to WebHostMost via SFTP
-        uses: wlixing/sftp-deploy-action@v2
+      - name: Deploy Backend Files to WebHostMost via SCP/SFTP
+        uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.FTP_SERVER || 'server3.webhostmost.com' }}
-          username: ${{ secrets.FTP_USERNAME || 'qhmwlequ' }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          port: ${{ secrets.SFTP_PORT || 22 }}
-          local_path: './backend/*'
-          remote_path: '/home/qhmwlequ/domains/api.hisob.in/Hissob-app/backend/backend/'
-
-      - name: Deploy passenger_wsgi.py & alembic.ini via SFTP
-        uses: wlixing/sftp-deploy-action@v2
-        with:
-          host: ${{ secrets.FTP_SERVER || 'server3.webhostmost.com' }}
-          username: ${{ secrets.FTP_USERNAME || 'qhmwlequ' }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          port: ${{ secrets.SFTP_PORT || 22 }}
-          local_path: './passenger_wsgi.py'
-          remote_path: '/home/qhmwlequ/domains/api.hisob.in/Hissob-app/backend/'
-
-      - name: Deploy alembic.ini via SFTP
-        uses: wlixing/sftp-deploy-action@v2
-        with:
-          host: ${{ secrets.FTP_SERVER || 'server3.webhostmost.com' }}
-          username: ${{ secrets.FTP_USERNAME || 'qhmwlequ' }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          port: ${{ secrets.SFTP_PORT || 22 }}
-          local_path: './alembic.ini'
-          remote_path: '/home/qhmwlequ/domains/api.hisob.in/Hissob-app/backend/'
+          host: ${{ secrets.SSH_HOST || 'server3.webhostmost.com' }}
+          username: ${{ secrets.SSH_USER || 'qhmwlequ' }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          source: "backend/*,passenger_wsgi.py,alembic.ini"
+          target: "/home/qhmwlequ/domains/api.hisob.in/Hissob-app/backend/"
 
       - name: Run Remote SSH Commands (Dependencies, Migrations & Passenger Restart)
         uses: appleboy/ssh-action@v1.0.3
@@ -104,12 +84,13 @@ jobs:
           cd frontend
           npm run build
 
-      - name: Deploy Frontend Static Build via SFTP
-        uses: wlixing/sftp-deploy-action@v2
+      - name: Deploy Frontend Static Build via SCP/SFTP
+        uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.FTP_SERVER || 'server3.webhostmost.com' }}
-          username: ${{ secrets.FTP_USERNAME || 'qhmwlequ' }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          port: ${{ secrets.SFTP_PORT || 22 }}
-          local_path: './frontend/dist/*'
-          remote_path: '/home/qhmwlequ/public_html/'
+          host: ${{ secrets.SSH_HOST || 'server3.webhostmost.com' }}
+          username: ${{ secrets.SSH_USER || 'qhmwlequ' }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          source: "frontend/dist/*"
+          target: "/home/qhmwlequ/public_html/"
+          strip_prefix: "frontend/dist"
