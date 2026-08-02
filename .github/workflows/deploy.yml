@@ -23,6 +23,7 @@ jobs:
           host: ${{ secrets.SSH_HOST || 'server3.webhostmost.com' }}
           username: ${{ secrets.SSH_USER || 'qhmwlequ' }}
           password: ${{ secrets.SSH_PASSWORD }}
+          key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT || 2222 }}
           source: "backend/*,passenger_wsgi.py,alembic.ini"
           target: "/home/qhmwlequ/domains/api.hisob.in/Hissob-app/backend/"
@@ -90,6 +91,7 @@ jobs:
           host: ${{ secrets.SSH_HOST || 'server3.webhostmost.com' }}
           username: ${{ secrets.SSH_USER || 'qhmwlequ' }}
           password: ${{ secrets.SSH_PASSWORD }}
+          key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT || 2222 }}
           source: "frontend/dist/*"
           target: "/home/qhmwlequ/public_html/"
