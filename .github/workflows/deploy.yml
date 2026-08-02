@@ -94,5 +94,5 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT || 2323 }}
           source: "frontend/dist/*"
-          target: "/home/qhmwlequ/public_html/"
+          target: "/home/qhmwlequ/domains/hisob.in/public_html/"
           strip_components: 2
