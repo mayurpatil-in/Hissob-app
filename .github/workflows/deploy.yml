@@ -27,6 +27,7 @@ jobs:
           port: ${{ secrets.SSH_PORT || 2323 }}
           source: "backend/*,passenger_wsgi.py,alembic.ini"
           target: "/home/qhmwlequ/domains/api.hisob.in/Hissob-app/backend/"
+          strip_components: 1
 
       - name: Run Remote SSH Commands (Dependencies, Migrations & Passenger Restart)
         uses: appleboy/ssh-action@v1.0.3
@@ -41,14 +42,15 @@ jobs:
             source /home/qhmwlequ/virtualenv/domains/api.hisob.in/Hissob-app/backend/3.12/bin/activate
             cd /home/qhmwlequ/domains/api.hisob.in/Hissob-app/backend
             pip install --upgrade pip
-            pip install -r backend/requirements.txt
+            pip install -r requirements.txt
+
+            echo "Cleaning up redundant nested backend folder if present..."
+            rm -rf backend
 
             echo "Running database migrations..."
-            cd backend
             alembic upgrade head
 
             echo "Triggering Phusion Passenger restart..."
-            cd /home/qhmwlequ/domains/api.hisob.in/Hissob-app/backend
             mkdir -p tmp
             touch tmp/restart.txt
             echo "Backend deployment completed successfully!"
