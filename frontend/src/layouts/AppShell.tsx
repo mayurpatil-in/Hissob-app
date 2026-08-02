@@ -586,9 +586,11 @@ const AppShell: React.FC<Props> = ({ children }) => {
       {/* ── Mobile Navigation Drawer ── */}
       <Drawer
         title={
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => { setMobileOpen(false); navigate('/dashboard'); }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }} onClick={() => { setMobileOpen(false); navigate('/dashboard'); }}>
             <div className="sidebar-logo-icon">H</div>
-            <span style={{ color: '#0B2347', fontWeight: 800, fontSize: 18 }}>Hisob ERP</span>
+            <span style={{ color: '#0B2347', fontWeight: 800, fontSize: 17 }}>Hisob ERP</span>
+            <Tag color="orange" style={{ fontSize: 9, padding: '0 4px', lineHeight: '14px', borderRadius: 4, fontWeight: 800, margin: 0 }}>PRO</Tag>
+            <Tag color="blue" style={{ fontSize: 9, padding: '0 4px', lineHeight: '14px', borderRadius: 4, fontWeight: 800, margin: 0 }}>v{APP_VERSION}</Tag>
           </div>
         }
         placement="left"
