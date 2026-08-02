@@ -79,15 +79,17 @@ jobs:
           cd frontend
           npm ci
 
-      - name: Build Frontend Production Bundle
+      - name: Build & Compress Frontend Production Bundle
         env:
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL || 'https://api.hisob.in/api/v1' }}
           VITE_APP_TITLE: "Hisob ERP"
         run: |
           cd frontend
           npm run build
+          cd dist
+          tar -czf ../../frontend.tar.gz .
 
-      - name: Deploy Frontend Static Build via SCP/SFTP
+      - name: Fast Upload Frontend Archive via SCP/SFTP
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST || 'server3.webhostmost.com' }}
@@ -95,6 +97,20 @@ jobs:
           password: ${{ secrets.SSH_PASSWORD }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT || 2323 }}
-          source: "frontend/dist/*"
+          source: "frontend.tar.gz"
           target: "/home/qhmwlequ/domains/hisob.in/public_html/"
-          strip_components: 2
+
+      - name: Extract Frontend Build & Cleanup
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST || 'server3.webhostmost.com' }}
+          username: ${{ secrets.SSH_USER || 'qhmwlequ' }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 2323 }}
+          script: |
+            echo "Extracting frontend static assets directly in public_html..."
+            cd /home/qhmwlequ/domains/hisob.in/public_html
+            tar -xzf frontend.tar.gz
+            rm -f frontend.tar.gz
+            echo "Frontend deployment completed in seconds!"

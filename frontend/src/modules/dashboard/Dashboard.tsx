@@ -165,44 +165,52 @@ const Dashboard: React.FC = () => {
     },
   ];
 
-  // Dynamic time greeting
+  // Dynamic time greeting & period theme
   const getTimeBasedTheme = () => {
     const hour = new Date().getHours();
     if (hour >= 5 && hour < 12) {
       return {
+        key: 'morning',
         greeting: 'Good Morning',
         icon: '☀️',
-        subText: 'Ready to manage today\'s collections & trust finances.',
+        subText: 'Morning briefing of receipts, cash flow & active campaigns.',
+        themeClass: 'banner-theme-morning',
         badgeColor: '#F59E0B',
-        glow1: 'rgba(245, 158, 11, 0.15)',
-        glow2: 'rgba(249, 115, 22, 0.12)',
+        glow1: 'rgba(245, 158, 11, 0.25)',
+        glow2: 'rgba(249, 115, 22, 0.2)',
       };
     } else if (hour >= 12 && hour < 17) {
       return {
+        key: 'afternoon',
         greeting: 'Good Afternoon',
         icon: '🌤️',
         subText: 'Mid-day overview of receipts, cash flow & active campaigns.',
+        themeClass: 'banner-theme-afternoon',
         badgeColor: '#3B82F6',
-        glow1: 'rgba(59, 130, 246, 0.15)',
-        glow2: 'rgba(99, 102, 241, 0.12)',
+        glow1: 'rgba(59, 130, 246, 0.25)',
+        glow2: 'rgba(99, 102, 241, 0.2)',
       };
     } else if (hour >= 17 && hour < 21) {
       return {
+        key: 'evening',
         greeting: 'Good Evening',
         icon: '🌇',
-        subText: 'Review evening collection totals & treasury settlements.',
+        subText: 'Evening summary of receipts, cash flow & active campaigns.',
+        themeClass: 'banner-theme-evening',
         badgeColor: '#8B5CF6',
-        glow1: 'rgba(139, 92, 246, 0.15)',
-        glow2: 'rgba(236, 72, 153, 0.12)',
+        glow1: 'rgba(139, 92, 246, 0.25)',
+        glow2: 'rgba(236, 72, 153, 0.2)',
       };
     } else {
       return {
+        key: 'night',
         greeting: 'Good Night',
         icon: '🌙',
-        subText: 'End of day financial summary & audit logs.',
+        subText: 'End-of-day summary & overnight financial reconciliation.',
+        themeClass: 'banner-theme-night',
         badgeColor: '#6366F1',
-        glow1: 'rgba(99, 102, 241, 0.15)',
-        glow2: 'rgba(15, 23, 42, 0.25)',
+        glow1: 'rgba(99, 102, 241, 0.25)',
+        glow2: 'rgba(15, 23, 42, 0.35)',
       };
     }
   };
@@ -298,7 +306,9 @@ const Dashboard: React.FC = () => {
   return (
     <div className="dashboard-container" style={{ paddingBottom: 40 }}>
       {/* ── Single Unified Time-Aware & Role-Tailored Greeting Header ── */}
-      <div className="hissob-card dashboard-hero-banner">
+      <div className={`hissob-card dashboard-hero-banner ${timeTheme.themeClass}`}>
+        <div className="hero-animated-bg-orb orb-1" />
+        <div className="hero-animated-bg-orb orb-2" />
         <div className="hero-content-flex">
           <div className="hero-greeting-block">
             <div className="greeting-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
