@@ -38,7 +38,7 @@ jobs:
           npm run build
 
       - name: Deploy Frontend to WebHostMost via SFTP
-        uses: SamKirsch/FTP-Deploy-Action@v4.3.5
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
@@ -62,7 +62,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Deploy Backend Files to WebHostMost via SFTP
-        uses: SamKirsch/FTP-Deploy-Action@v4.3.5
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
@@ -78,7 +78,7 @@ jobs:
             **/__pycache__/**
 
       - name: Deploy passenger_wsgi.py & alembic.ini via SFTP
-        uses: SamKirsch/FTP-Deploy-Action@v4.3.5
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
