@@ -12,7 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { getReceipts, createReceipt, updateReceipt, cancelReceipt, deleteReceipt, settleReceipt, getDonors, getFinancialYears, getFestivals, getMyOrganization } from '../../api/services';
 import { useAuthStore } from '../../store/authStore';
 import { generateWhatsAppReceiptLink } from '../../utils/whatsapp';
-import { printReceiptWindow, shareReceiptViaWhatsApp, downloadReceiptImage, preGenerateReceiptBlob, isReceiptBlobCached, preloadReceiptFonts } from '../../utils/printReceipt';
+import { printReceiptWindow, shareReceiptViaWhatsApp, downloadReceiptImage, isReceiptBlobCached, preloadReceiptFonts } from '../../utils/printReceipt';
 import { exportToCSV, exportToExcel } from '../../utils/exportTable';
 import AIVoiceAssistantModal from '../ai/AIVoiceAssistantModal';
 import CollectorDailySummaryModal from '../settlements/CollectorDailySummaryModal';
@@ -153,7 +153,7 @@ const ReceiptsPage: React.FC = () => {
   );
 
   // Queries
-  const { data: receipts = [], isLoading } = useQuery({
+  const { data: receipts = [], isLoading, isFetching } = useQuery({
     queryKey: ['receipts', filterStatus],
     queryFn: () => getReceipts({ status: filterStatus || undefined }),
   });
@@ -177,42 +177,10 @@ const ReceiptsPage: React.FC = () => {
 
   const canPermanentlyDelete = isOrgAdmin && (user?.is_super_admin || myOrg?.allow_permanent_deletion !== false);
 
-  // Pre-generate receipt image blobs lazily in background using requestIdleCallback.
-  // Does NOT block page render — receipts page loads instantly.
-  // Uses AbortController so navigation away cancels pending renders.
+  // Preload receipt fonts on page load (non-blocking)
   useEffect(() => {
-    if (!receipts?.length || !myOrg) return;
-    const orgName = myOrg?.name || 'Hisob ERP';
-    const abortCtrl = new AbortController();
-
-    // Preload receipt fonts on first visit (non-blocking)
     preloadReceiptFonts();
-
-    const runBackgroundPrep = async () => {
-      // Only pre-gen the first 3 visible receipts (reduced from 5)
-      const topReceipts = receipts.slice(0, 3);
-      for (let i = 0; i < topReceipts.length; i++) {
-        if (abortCtrl.signal.aborted) break;
-        try {
-          await preGenerateReceiptBlob(topReceipts[i], orgName, myOrg, abortCtrl.signal);
-        } catch (_) {}
-      }
-    };
-
-    // Use requestIdleCallback to start pre-gen only when browser is idle
-    const idleId = typeof requestIdleCallback === 'function'
-      ? requestIdleCallback(() => { if (!abortCtrl.signal.aborted) runBackgroundPrep(); }, { timeout: 3000 })
-      : setTimeout(() => { if (!abortCtrl.signal.aborted) runBackgroundPrep(); }, 500) as any;
-
-    return () => {
-      abortCtrl.abort();
-      if (typeof cancelIdleCallback === 'function') {
-        cancelIdleCallback(idleId);
-      } else {
-        clearTimeout(idleId);
-      }
-    };
-  }, [receipts, myOrg]);
+  }, []);
 
   // Mutations
   const createMutation = useMutation({
@@ -703,12 +671,13 @@ const ReceiptsPage: React.FC = () => {
             dataSource={filteredReceipts}
             columns={columns}
             rowKey="id"
-            loading={isLoading}
+            loading={isLoading || isFetching}
             pagination={{ pageSize: 10, showSizeChanger: true }}
             scroll={{ x: 700 }}
           />
         ) : (
-          <Row gutter={[16, 16]}>
+          <Skeleton loading={isLoading || isFetching} active paragraph={{ rows: 6 }}>
+            <Row gutter={[16, 16]}>
             {filteredReceipts.map((record: any) => {
               const tag = STATUS_TAGS[record.status] || { color: 'default', label: (record.status || '').toUpperCase() };
               return (
@@ -876,6 +845,7 @@ const ReceiptsPage: React.FC = () => {
               );
             })}
           </Row>
+        </Skeleton>
         )}
       </Card>
 
