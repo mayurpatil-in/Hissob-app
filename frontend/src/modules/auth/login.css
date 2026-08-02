@@ -1,0 +1,760 @@
+/* ══════════════════════════════════════════════════════════
+   HISSOB ERP — Premium Dark SaaS Login v3
+   Linear · Vercel · Supabase design language
+══════════════════════════════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=Noto+Sans+Devanagari:wght@400;600;700;800;900&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── Root ── */
+.lp-root {
+  display: flex;
+  min-height: 100vh;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #090d18;
+  overflow: hidden;
+}
+
+/* ══════════════════════════════════════════════════════════
+   STAGGERED FADE-IN UTILITY
+══════════════════════════════════════════════════════════ */
+.lp-fade-in {
+  opacity: 0;
+  transform: translateY(16px);
+  animation: lp-fade-in-anim 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: var(--delay, 0ms);
+}
+@keyframes lp-fade-in-anim {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ══════════════════════════════════════════════════════════
+   LEFT BRANDING PANEL
+══════════════════════════════════════════════════════════ */
+.lp-left {
+  flex: 1.2;
+  background: linear-gradient(145deg, #060915 0%, #0b1325 45%, #0f1c3a 100%);
+  padding: 52px 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  border-right: 1px solid rgba(255,255,255,0.05);
+}
+
+/* Dot-grid overlay */
+.lp-grid-overlay {
+  position: absolute; inset: 0;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.032) 1px, transparent 1px);
+  background-size: 30px 30px;
+  z-index: 0; pointer-events: none;
+  mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%);
+}
+
+/* Floating particles */
+.lp-particles {
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+}
+.lp-particle {
+  position: absolute;
+  border-radius: 50%;
+  background: #F97316;
+  animation: lp-float linear infinite;
+}
+@keyframes lp-float {
+  0%   { transform: translateY(0px)   scale(1);   }
+  33%  { transform: translateY(-18px) scale(1.2); }
+  66%  { transform: translateY(8px)   scale(0.9); }
+  100% { transform: translateY(0px)   scale(1);   }
+}
+
+/* Ambient blobs with drift */
+.lp-blob {
+  position: absolute; border-radius: 50%;
+  filter: blur(110px); pointer-events: none; z-index: 1;
+}
+.lp-blob-1 {
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(249,115,22,0.15) 0%, transparent 70%);
+  top: -180px; left: -120px;
+  animation: lp-drift-1 14s ease-in-out infinite;
+}
+.lp-blob-2 {
+  width: 540px; height: 540px;
+  background: radial-gradient(circle, rgba(99,102,241,0.13) 0%, transparent 70%);
+  bottom: -200px; right: -140px;
+  animation: lp-drift-2 18s ease-in-out infinite;
+}
+.lp-blob-3 {
+  width: 320px; height: 320px;
+  background: radial-gradient(circle, rgba(167,139,250,0.1) 0%, transparent 70%);
+  top: 38%; left: 45%;
+  animation: lp-drift-3 22s ease-in-out infinite;
+}
+@keyframes lp-drift-1 {
+  0%,100% { transform: translate(0, 0); }
+  50%     { transform: translate(40px, 30px); }
+}
+@keyframes lp-drift-2 {
+  0%,100% { transform: translate(0, 0); }
+  50%     { transform: translate(-30px, -40px); }
+}
+@keyframes lp-drift-3 {
+  0%,100% { transform: translate(0, 0); }
+  33%     { transform: translate(20px, -20px); }
+  66%     { transform: translate(-20px, 10px); }
+}
+
+.lp-left-inner {
+  position: relative; z-index: 2;
+  max-width: 520px; width: 100%;
+  display: flex; flex-direction: column; gap: 24px;
+}
+
+/* ── Logo ── */
+.lp-logo {
+  display: flex; align-items: center; gap: 14px;
+}
+.lp-logo-icon {
+  width: 60px; height: 60px;
+  background: transparent;
+  border: none;
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  box-shadow: none;
+  animation: lp-logo-glow 3s ease-in-out infinite;
+}
+@keyframes lp-logo-glow {
+  0%,100% { filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3)); }
+  50%     { filter: drop-shadow(0 6px 20px rgba(249,115,22,0.35)); }
+}
+
+/* Logo image — fills icon container; image has its own baked-in rounded corners */
+.lp-logo-img {
+  width: 100%; height: 100%;
+  object-fit: contain;
+  object-position: center;
+  display: block;
+  border-radius: 0;
+  /* let the PNG's own rounded corners show */
+}
+.lp-logo-name {
+  font-size: 24px; font-weight: 900;
+  font-family: 'Noto Sans Devanagari', 'Inter', sans-serif;
+  letter-spacing: 0; line-height: 1.2;
+  background: linear-gradient(110deg, #F97316 0%, #FBBF24 55%, #F59E0B 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: flex; align-items: center; gap: 7px;
+}
+
+/* ERP superscript badge next to Devanagari name */
+.lp-logo-erp {
+  font-size: 10px; font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  background: rgba(249,115,22,0.15);
+  border: 1px solid rgba(249,115,22,0.3);
+  border-radius: 5px; padding: 2px 5px;
+  color: #F97316;
+  -webkit-text-fill-color: #F97316;
+  letter-spacing: 0.5px;
+  align-self: center; margin-top: 2px;
+}
+.lp-logo-tag {
+  font-size: 10.5px; font-weight: 500;
+  color: rgba(248,250,252,0.38); letter-spacing: 0.5px; margin-top: 2px;
+}
+
+/* Live status badge */
+.lp-live-badge {
+  display: flex; align-items: center; gap: 5px;
+  background: rgba(52,211,153,0.08);
+  border: 1px solid rgba(52,211,153,0.2);
+  border-radius: 100px; padding: 4px 10px;
+  font-size: 11px; font-weight: 600; color: #34D399;
+  width: fit-content;
+}
+.lp-live-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #34D399;
+  animation: lp-dot-pulse 1.8s ease-in-out infinite;
+}
+@keyframes lp-dot-pulse {
+  0%,100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(52,211,153,0.5); }
+  50%     { opacity: 0.8; transform: scale(1.2); box-shadow: 0 0 0 4px rgba(52,211,153,0); }
+}
+
+/* ── Hero text ── */
+.lp-hero-text { display: flex; flex-direction: column; gap: 12px; }
+
+.lp-status-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(52,211,153,0.08);
+  border: 1px solid rgba(52,211,153,0.18);
+  border-radius: 100px; padding: 5px 12px;
+  font-size: 11.5px; font-weight: 600; color: #34D399;
+  width: fit-content; letter-spacing: 0.3px;
+}
+
+.lp-headline {
+  font-size: 46px; font-weight: 900;
+  color: #F8FAFC; line-height: 1.07; letter-spacing: -2.2px;
+}
+.lp-headline-grad {
+  background: linear-gradient(110deg, #F97316 0%, #FBBF24 55%, #F59E0B 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  animation: lp-grad-shift 5s ease-in-out infinite;
+  background-size: 200% 200%;
+}
+@keyframes lp-grad-shift {
+  0%,100% { background-position: 0% 50%; }
+  50%     { background-position: 100% 50%; }
+}
+
+.lp-subline {
+  font-size: 14.5px; color: rgba(248,250,252,0.48);
+  line-height: 1.78; max-width: 430px;
+}
+
+/* ── Stats ── */
+.lp-stats {
+  display: flex; gap: 0;
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 14px; overflow: hidden;
+}
+.lp-stat {
+  flex: 1; padding: 14px 10px; text-align: center;
+  border-right: 1px solid rgba(255,255,255,0.07);
+  transition: background 0.3s, box-shadow 0.3s;
+  cursor: default;
+}
+.lp-stat:last-child { border-right: none; }
+.lp-stat--active {
+  background: rgba(249,115,22,0.08);
+  box-shadow: inset 0 -2px 0 #F97316;
+}
+.lp-stat-icon { font-size: 16px; color: #F97316; margin-bottom: 5px; }
+.lp-stat-value {
+  font-size: 17px; font-weight: 900; color: #F8FAFC; line-height: 1; margin-bottom: 3px;
+}
+.lp-stat-label {
+  font-size: 10px; color: rgba(248,250,252,0.38); font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.7px;
+}
+
+/* ── Features grid ── */
+.lp-features { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.lp-feature {
+  display: flex; align-items: flex-start; gap: 11px;
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px; padding: 13px;
+  transition: all 0.22s ease; cursor: default;
+  backdrop-filter: blur(8px);
+}
+.lp-feature:hover {
+  background: rgba(255,255,255,0.055);
+  border-color: rgba(255,255,255,0.11);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+}
+.lp-feature-icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; flex-shrink: 0;
+}
+.lp-feature-title { font-size: 12.5px; font-weight: 700; color: #E2E8F0; margin-bottom: 3px; }
+.lp-feature-desc  { font-size: 11px;   color: rgba(248,250,252,0.38); line-height: 1.5; }
+
+/* ── Testimonial ── */
+.lp-testimonial {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 14px; padding: 16px 18px;
+  position: relative;
+}
+.lp-testimonial::before {
+  content: '"';
+  position: absolute; top: -8px; left: 16px;
+  font-size: 56px; font-weight: 900; line-height: 1;
+  color: rgba(249,115,22,0.25);
+  font-family: Georgia, serif;
+}
+.lp-testimonial-quote {
+  font-size: 13px; line-height: 1.65;
+  color: rgba(248,250,252,0.6);
+  font-style: italic; margin-bottom: 12px;
+}
+.lp-testimonial-author {
+  display: flex; align-items: center; gap: 10px;
+}
+.lp-testimonial-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 800; flex-shrink: 0;
+}
+.lp-testimonial-name {
+  font-size: 12.5px; font-weight: 700; color: #E2E8F0;
+}
+.lp-testimonial-role {
+  font-size: 11px; color: rgba(248,250,252,0.38); margin-top: 1px;
+}
+
+/* ── Demo box ── */
+.lp-demo-box {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(249,115,22,0.16);
+  border-radius: 14px; padding: 15px;
+}
+.lp-demo-label {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 10px; font-weight: 700;
+  color: rgba(249,115,22,0.75);
+  text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 11px;
+}
+.lp-demo-chips { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.lp-chip {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 12px; border-radius: 9px;
+  font-size: 12px; font-weight: 600; color: #E2E8F0;
+  background: var(--chip-bg); border: 1px solid var(--chip-border);
+  cursor: pointer; transition: all 0.17s ease;
+  font-family: inherit; user-select: none;
+}
+.lp-chip:hover {
+  transform: translateY(-2px) scale(1.025);
+  filter: brightness(1.3);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+}
+.lp-chip:active { transform: translateY(0) scale(0.98); }
+
+/* ══════════════════════════════════════════════════════════
+   RIGHT FORM PANEL
+══════════════════════════════════════════════════════════ */
+.lp-right {
+  width: 500px;
+  background: #0c1017;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 48px 40px;
+  position: relative; gap: 20px;
+}
+
+/* Animated rainbow-border strip at top */
+.lp-right::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    #F97316 25%,
+    #A78BFA 50%,
+    #60A5FA 75%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: lp-border-sweep 4s linear infinite;
+}
+@keyframes lp-border-sweep {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Mobile bar (hidden on desktop) */
+.lp-mobile-bar {
+  display: none;
+  align-items: center; gap: 10px;
+  margin-bottom: 8px;
+}
+.lp-mobile-logo-icon {
+  width: 44px; height: 44px;
+  background: transparent;
+  border: none;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+  box-shadow: none;
+}
+.lp-mobile-logo-name {
+  font-size: 20px; font-weight: 900;
+  font-family: 'Noto Sans Devanagari', 'Inter', sans-serif;
+  letter-spacing: 0; line-height: 1.2;
+  background: linear-gradient(110deg, #F97316 0%, #FBBF24 55%, #F59E0B 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: flex; align-items: center; gap: 6px;
+}
+.lp-mobile-logo-tag {
+  font-size: 10px; font-weight: 500;
+  color: rgba(248,250,252,0.38); letter-spacing: 0.4px; margin-top: 2px;
+}
+
+/* ── Card ── */
+.lp-card {
+  width: 100%; max-width: 400px;
+  background: rgba(255,255,255,0.028);
+  border: 1px solid rgba(255,255,255,0.085);
+  border-radius: 22px;
+  padding: 36px 36px 30px;
+  backdrop-filter: blur(20px);
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,0.4),
+    0 24px 64px rgba(0,0,0,0.55),
+    inset 0 1px 0 rgba(255,255,255,0.07);
+  animation: lp-card-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  position: relative; overflow: hidden;
+}
+@keyframes lp-card-in {
+  from { opacity: 0; transform: translateY(28px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Shimmer sweep on card */
+.lp-card-border {
+  position: absolute; inset: 0;
+  border-radius: 22px; pointer-events: none;
+  background: linear-gradient(
+    130deg,
+    transparent 35%,
+    rgba(249,115,22,0.06) 50%,
+    transparent 65%
+  );
+  background-size: 300% 300%;
+  animation: lp-shimmer 6s linear infinite;
+}
+@keyframes lp-shimmer {
+  0%   { background-position: 200% 200%; }
+  100% { background-position: -200% -200%; }
+}
+
+/* Card top */
+.lp-card-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 6px;
+  position: relative; z-index: 1;
+}
+
+.lp-card-icon {
+  width: 76px; height: 76px;
+  background: transparent;
+  border: none;
+  border-radius: 20px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: none;
+  position: relative; z-index: 1;
+  animation: lp-logo-glow 3s ease-in-out infinite;
+}
+
+.lp-card-brand-title {
+  font-size: 30px;
+  font-weight: 900;
+  font-family: 'Noto Sans Devanagari', 'Inter', sans-serif;
+  letter-spacing: 0;
+  line-height: 1.2;
+  background: linear-gradient(110deg, #F97316 0%, #FBBF24 55%, #F59E0B 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Marathi Tagline Top (above logo in left panel) */
+.lp-marathi-tagline-top {
+  font-family: 'Noto Sans Devanagari', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #F8FAFC;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 100px;
+  padding: 6px 16px;
+  width: fit-content;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  backdrop-filter: blur(8px);
+  margin-bottom: 2px;
+}
+
+/* Mobile bar wrapper & tagline */
+.lp-mobile-bar-wrapper {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  width: 100%;
+}
+.lp-marathi-tagline-mobile {
+  font-family: 'Noto Sans Devanagari', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: #F8FAFC;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 100px;
+  padding: 5px 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Card heading */
+.lp-card-heading { text-align: center; margin-bottom: 26px; position: relative; z-index: 1; }
+
+.lp-marathi-tagline {
+  font-family: 'Noto Sans Devanagari', sans-serif;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #F8FAFC;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 100px;
+  padding: 5px 14px;
+  margin: 2px auto 10px;
+  width: fit-content;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.lp-tagline-sep {
+  color: #10B981;
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.lp-card-heading h2 {
+  font-size: 23px; font-weight: 800; color: #F8FAFC;
+  letter-spacing: -0.5px; margin-bottom: 6px;
+}
+.lp-card-heading p { font-size: 13px; color: rgba(248,250,252,0.42); }
+
+/* ── Form overrides (Ant Design v5 dark theme) ── */
+.lp-form { position: relative; z-index: 1; }
+.lp-form .ant-form-item { margin-bottom: 14px; }
+.lp-form .ant-form-item-label > label {
+  font-size: 12px; font-weight: 600; color: rgba(248,250,252,0.6);
+}
+
+/* Target EVERY Ant Design v5 wrapper variant */
+.lp-form .ant-input-affix-wrapper,
+.lp-form .ant-input-affix-wrapper-lg,
+.lp-form .ant-input-outlined,
+.lp-form .ant-input-affix-wrapper-outlined {
+  background: rgba(18, 24, 42, 0.85) !important;
+  background-color: rgba(18, 24, 42, 0.85) !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  border-radius: 11px !important;
+  padding: 11px 14px !important;
+  transition: all 0.2s ease !important;
+  font-size: 14px !important;
+  color: #F8FAFC !important;
+  box-shadow: none !important;
+}
+.lp-form .ant-input-affix-wrapper:hover,
+.lp-form .ant-input-affix-wrapper-outlined:hover {
+  border-color: rgba(255,255,255,0.2) !important;
+  background: rgba(22, 30, 55, 0.9) !important;
+  background-color: rgba(22, 30, 55, 0.9) !important;
+}
+.lp-form .ant-input-affix-wrapper:focus-within,
+.lp-form .ant-input-affix-wrapper-outlined:focus-within {
+  border-color: rgba(249,115,22,0.55) !important;
+  background: rgba(30, 20, 10, 0.9) !important;
+  background-color: rgba(30, 20, 10, 0.9) !important;
+  box-shadow: 0 0 0 3px rgba(249,115,22,0.12) !important;
+}
+/* Error state */
+.lp-form .ant-form-item-has-error .ant-input-affix-wrapper,
+.lp-form .ant-form-item-has-error .ant-input-affix-wrapper-outlined {
+  border-color: rgba(239,68,68,0.6) !important;
+  background: rgba(30, 10, 10, 0.9) !important;
+  background-color: rgba(30, 10, 10, 0.9) !important;
+  box-shadow: 0 0 0 3px rgba(239,68,68,0.1) !important;
+}
+.lp-form .ant-form-item-explain-error {
+  font-size: 11.5px !important; color: #F87171 !important; margin-top: 4px;
+}
+
+/* ── Native <input> element — highest specificity ── */
+/* Ant Design v5 CSS-in-JS injects white background on the raw input,
+   so we must target the actual element directly */
+.lp-form .ant-input-affix-wrapper input,
+.lp-form .ant-input-affix-wrapper input.ant-input,
+.lp-form input.ant-input,
+.lp-form input.ant-input-lg,
+.lp-form input[type="text"],
+.lp-form input[type="email"],
+.lp-form input[type="password"],
+.lp-form input[type="search"] {
+  background: transparent !important;
+  background-color: transparent !important;
+  color: #F8FAFC !important;
+  font-size: 14px !important;
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
+  /* Override browser autofill yellow/white */
+  -webkit-text-fill-color: #F8FAFC !important;
+  caret-color: #F97316;
+}
+
+/* Kill autofill white background (Chrome/Safari) */
+.lp-form input:-webkit-autofill,
+.lp-form input:-webkit-autofill:hover,
+.lp-form input:-webkit-autofill:focus,
+.lp-form input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px rgba(18, 24, 42, 0.95) inset !important;
+  -webkit-text-fill-color: #F8FAFC !important;
+  caret-color: #F97316 !important;
+  transition: background-color 9999s ease-in-out 0s !important;
+}
+
+.lp-form .ant-input::placeholder,
+.lp-form input::placeholder { color: rgba(248,250,252,0.25) !important; }
+
+/* Password reveal icon */
+.lp-form .ant-input-suffix .anticon,
+.lp-form .ant-input-password-icon,
+.lp-form .ant-input-password-icon.anticon {
+  color: rgba(248,250,252,0.3) !important; transition: color 0.2s;
+}
+.lp-form .ant-input-suffix .anticon:hover,
+.lp-form .ant-input-password-icon:hover {
+  color: rgba(248,250,252,0.7) !important;
+}
+.lp-input-icon { color: rgba(248,250,252,0.28) !important; font-size: 14px !important; }
+
+/* Options row */
+.lp-options {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 4px;
+}
+.lp-remember { font-size: 12.5px !important; color: rgba(248,250,252,0.48) !important; }
+.lp-remember .ant-checkbox-inner {
+  background: rgba(255,255,255,0.05) !important;
+  border-color: rgba(255,255,255,0.14) !important;
+  border-radius: 4px !important;
+}
+.lp-remember .ant-checkbox-checked .ant-checkbox-inner {
+  background: #F97316 !important; border-color: #F97316 !important;
+}
+.lp-forgot {
+  font-size: 12px; font-weight: 600; color: rgba(249,115,22,0.75);
+  text-decoration: none; transition: color 0.15s;
+}
+.lp-forgot:hover { color: #F97316; text-decoration: underline; }
+
+/* Submit button + shimmer */
+.lp-submit-btn {
+  height: 48px !important;
+  border-radius: 12px !important;
+  font-size: 14.5px !important; font-weight: 700 !important;
+  background: linear-gradient(135deg, #F97316 0%, #EA580C 100%) !important;
+  border: none !important;
+  box-shadow: 0 6px 24px rgba(249,115,22,0.38), inset 0 1px 0 rgba(255,255,255,0.15) !important;
+  transition: all 0.2s ease !important;
+  letter-spacing: 0.25px !important; color: #fff !important;
+  position: relative !important; overflow: hidden !important;
+}
+.lp-submit-btn::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(255,255,255,0.18) 50%,
+    transparent 60%
+  );
+  background-size: 200% 100%;
+  background-position: 200% 0;
+  transition: background-position 0.4s ease;
+}
+.lp-submit-btn:hover::after { background-position: -200% 0; }
+.lp-submit-btn:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 12px 36px rgba(249,115,22,0.52), inset 0 1px 0 rgba(255,255,255,0.2) !important;
+  background: linear-gradient(135deg, #FB923C 0%, #F97316 100%) !important;
+}
+.lp-submit-btn:active { transform: translateY(0) scale(0.99) !important; }
+
+/* Divider */
+.lp-divider {
+  display: flex; align-items: center; gap: 12px;
+  margin: 18px 0 13px; position: relative; z-index: 1;
+}
+.lp-divider span { flex: 1; height: 1px; background: rgba(255,255,255,0.065); }
+.lp-divider small {
+  font-size: 10.5px; color: rgba(248,250,252,0.22);
+  white-space: nowrap; font-weight: 500;
+}
+
+/* Security badges */
+.lp-badges {
+  display: flex; justify-content: center; gap: 14px;
+  position: relative; z-index: 1;
+}
+.lp-badge-item {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 10.5px; color: rgba(248,250,252,0.32); font-weight: 500;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 100px; padding: 4px 10px;
+}
+
+/* Footer */
+.lp-footer {
+  font-size: 12px; font-weight: 500;
+  color: rgba(248,250,252,0.55); text-align: center; letter-spacing: 0.2px;
+}
+.lp-footer-link {
+  font-weight: 700; color: #F97316;
+  text-decoration: none; transition: color 0.2s;
+}
+.lp-footer-link:hover { color: #FBBF24; text-decoration: underline; }
+
+/* ══════════════════════════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════════════════════════ */
+
+/* Large desktop — slightly compress */
+@media (max-width: 1200px) {
+  .lp-left  { flex: 1; padding: 40px 40px; }
+  .lp-right { width: 420px; padding: 40px 28px; }
+  .lp-headline { font-size: 40px; letter-spacing: -1.8px; }
+}
+
+/* Medium desktop / large tablet — compact both panels, keep split layout */
+@media (max-width: 960px) {
+  .lp-left  { flex: 1; padding: 32px 28px; }
+  .lp-right { width: 380px; padding: 32px 20px; }
+  .lp-headline { font-size: 34px; letter-spacing: -1.5px; }
+  .lp-features { grid-template-columns: 1fr; }
+  .lp-left-inner { gap: 18px; }
+  .lp-card { padding: 28px 24px 22px; }
+  .lp-demo-chips { grid-template-columns: 1fr 1fr; }
+}
+
+/* Mobile — collapse to single column, show mobile top bar */
+@media (max-width: 720px) {
+  .lp-left { display: none; }
+  .lp-mobile-bar-wrapper { display: flex; }
+  .lp-mobile-bar { display: flex; }
+  .lp-right {
+    width: 100%; min-height: 100vh; padding: 32px 20px;
+    background: linear-gradient(145deg, #060915 0%, #0b1325 100%);
+  }
+  .lp-right::before { animation: none; }
+  .lp-card { padding: 28px 20px 22px; }
+}
