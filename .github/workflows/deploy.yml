@@ -17,42 +17,41 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Deploy Backend Files to WebHostMost via FTPS
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      - name: Deploy Backend Files to WebHostMost via SFTP
+        uses: wlixing/sftp-deploy-action@v2
         with:
-          server: ${{ secrets.FTP_SERVER || 'server3.webhostmost.com' }}
-          username: ${{ secrets.FTP_USERNAME }}
+          host: ${{ secrets.FTP_SERVER || 'server3.webhostmost.com' }}
+          username: ${{ secrets.FTP_USERNAME || 'qhmwlequ' }}
           password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftps
-          port: ${{ secrets.FTP_PORT || 21 }}
-          local-dir: ./backend/
-          server-dir: ./domains/api.hisob.in/Hissob-app/backend/backend/
-          exclude: |
-            **/.venv/**
-            **/uploads/**
-            **/.env
-            **/__pycache__/**
+          port: ${{ secrets.SFTP_PORT || 22 }}
+          local_path: './backend/*'
+          remote_path: '/home/qhmwlequ/domains/api.hisob.in/Hissob-app/backend/backend/'
 
-      - name: Deploy passenger_wsgi.py & alembic.ini via FTPS
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      - name: Deploy passenger_wsgi.py & alembic.ini via SFTP
+        uses: wlixing/sftp-deploy-action@v2
         with:
-          server: ${{ secrets.FTP_SERVER || 'server3.webhostmost.com' }}
-          username: ${{ secrets.FTP_USERNAME }}
+          host: ${{ secrets.FTP_SERVER || 'server3.webhostmost.com' }}
+          username: ${{ secrets.FTP_USERNAME || 'qhmwlequ' }}
           password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftps
-          port: ${{ secrets.FTP_PORT || 21 }}
-          local-dir: ./
-          server-dir: ./domains/api.hisob.in/Hissob-app/backend/
-          exclude: |
-            **/*
-            !passenger_wsgi.py
-            !alembic.ini
+          port: ${{ secrets.SFTP_PORT || 22 }}
+          local_path: './passenger_wsgi.py'
+          remote_path: '/home/qhmwlequ/domains/api.hisob.in/Hissob-app/backend/'
+
+      - name: Deploy alembic.ini via SFTP
+        uses: wlixing/sftp-deploy-action@v2
+        with:
+          host: ${{ secrets.FTP_SERVER || 'server3.webhostmost.com' }}
+          username: ${{ secrets.FTP_USERNAME || 'qhmwlequ' }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          port: ${{ secrets.SFTP_PORT || 22 }}
+          local_path: './alembic.ini'
+          remote_path: '/home/qhmwlequ/domains/api.hisob.in/Hissob-app/backend/'
 
       - name: Run Remote SSH Commands (Dependencies, Migrations & Passenger Restart)
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST || 'server3.webhostmost.com' }}
-          username: ${{ secrets.SSH_USER }}
+          username: ${{ secrets.SSH_USER || 'qhmwlequ' }}
           password: ${{ secrets.SSH_PASSWORD }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
@@ -105,14 +104,12 @@ jobs:
           cd frontend
           npm run build
 
-      - name: Deploy Frontend Static Build via FTPS
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      - name: Deploy Frontend Static Build via SFTP
+        uses: wlixing/sftp-deploy-action@v2
         with:
-          server: ${{ secrets.FTP_SERVER || 'server3.webhostmost.com' }}
-          username: ${{ secrets.FTP_USERNAME }}
+          host: ${{ secrets.FTP_SERVER || 'server3.webhostmost.com' }}
+          username: ${{ secrets.FTP_USERNAME || 'qhmwlequ' }}
           password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftps
-          port: ${{ secrets.FTP_PORT || 21 }}
-          local-dir: ./frontend/dist/
-          server-dir: ./public_html/
-          dangerous-clean-slate: false
+          port: ${{ secrets.SFTP_PORT || 22 }}
+          local_path: './frontend/dist/*'
+          remote_path: '/home/qhmwlequ/public_html/'
