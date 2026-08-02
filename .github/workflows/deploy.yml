@@ -24,7 +24,7 @@ jobs:
           username: ${{ secrets.SSH_USER || 'qhmwlequ' }}
           password: ${{ secrets.SSH_PASSWORD }}
           key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT || 2222 }}
+          port: ${{ secrets.SSH_PORT || 2323 }}
           source: "backend/*,passenger_wsgi.py,alembic.ini"
           target: "/home/qhmwlequ/domains/api.hisob.in/Hissob-app/backend/"
 
@@ -35,7 +35,7 @@ jobs:
           username: ${{ secrets.SSH_USER || 'qhmwlequ' }}
           password: ${{ secrets.SSH_PASSWORD }}
           key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT || 2222 }}
+          port: ${{ secrets.SSH_PORT || 2323 }}
           script: |
             echo "Activating virtualenv and upgrading Python packages..."
             source /home/qhmwlequ/virtualenv/domains/api.hisob.in/Hissob-app/backend/3.12/bin/activate
@@ -92,7 +92,7 @@ jobs:
           username: ${{ secrets.SSH_USER || 'qhmwlequ' }}
           password: ${{ secrets.SSH_PASSWORD }}
           key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT || 2222 }}
+          port: ${{ secrets.SSH_PORT || 2323 }}
           source: "frontend/dist/*"
           target: "/home/qhmwlequ/public_html/"
           strip_prefix: "frontend/dist"
