@@ -182,21 +182,22 @@ const UpiPaymentPage: React.FC = () => {
       <div style={{ maxWidth: 840, margin: '0 auto' }}>
         <Card style={{
           borderRadius: 20,
-          background: '#FFFFFF',
-          boxShadow: '0 20px 50px rgba(0, 0, 0, 0.3)',
-          border: 'none',
-          overflow: 'hidden'
+          background: '#1E293B',
+          boxShadow: '0 20px 50px rgba(0, 0, 0, 0.45)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          overflow: 'hidden',
+          color: '#F8FAFC',
         }}>
           <Row gutter={[24, 24]}>
             {/* ── LEFT COL: Amount & QR Code ── */}
-            <Col xs={24} md={11} style={{ textAlign: 'center', borderRight: '1px solid #F1F5F9', paddingRight: 20 }}>
-              <div style={{ background: '#FFF7ED', borderRadius: 16, padding: '16px 12px', marginBottom: 16, border: '1px solid #FFEDD5' }}>
-                <Text type="secondary" style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+            <Col xs={24} md={11} style={{ textAlign: 'center', borderRight: '1px solid #334155', paddingRight: 20 }}>
+              <div style={{ background: '#0F172A', borderRadius: 16, padding: '16px 12px', marginBottom: 16, border: '1px solid #334155' }}>
+                <Text style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5, color: '#F97316' }}>
                   Scan to Pay via Any UPI App
                 </Text>
                 
                 {/* Live Scannable QR Code */}
-                <div style={{ margin: '12px auto', width: 210, height: 210, padding: 8, background: '#FFF', borderRadius: 14, boxShadow: '0 4px 14px rgba(0,0,0,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ margin: '12px auto', width: 210, height: 210, padding: 8, background: '#FFF', borderRadius: 14, boxShadow: '0 4px 14px rgba(0,0,0,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {qrCodeImgUrl ? (
                     <img
                       src={qrCodeImgUrl}
@@ -208,30 +209,30 @@ const UpiPaymentPage: React.FC = () => {
                   )}
                 </div>
 
-                <Title level={3} style={{ margin: '4px 0', color: '#EA580C', fontWeight: 900 }}>
+                <Title level={3} style={{ margin: '4px 0', color: '#F97316', fontWeight: 900 }}>
                   ₹ {effectiveAmount.toLocaleString('en-IN')}
                 </Title>
-                <Text style={{ fontSize: 12, color: '#64748B' }}>Purpose: <b>{purpose}</b></Text>
+                <Text style={{ fontSize: 12, color: '#94A3B8' }}>Purpose: <b style={{ color: '#F8FAFC' }}>{purpose}</b></Text>
               </div>
 
               {/* UPI ID & Copy Button */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: '#F8FAFC', padding: '8px 12px', borderRadius: 10, border: '1px solid #E2E8F0', marginBottom: 16 }}>
-                <Text style={{ fontSize: 12, fontWeight: 700, color: '#334155' }}>
-                  UPI ID: <b>{upiId}</b>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: '#0F172A', padding: '8px 12px', borderRadius: 10, border: '1px solid #334155', marginBottom: 16 }}>
+                <Text style={{ fontSize: 12, fontWeight: 700, color: '#E2E8F0' }}>
+                  UPI ID: <b style={{ color: '#38BDF8' }}>{upiId}</b>
                 </Text>
                 <Button
                   size="small"
                   type={copiedUpi ? 'primary' : 'default'}
                   icon={copiedUpi ? <CheckCircleOutlined /> : <CopyOutlined />}
                   onClick={handleCopyUpi}
-                  style={{ fontSize: 11 }}
+                  style={{ fontSize: 11, fontWeight: 700 }}
                 >
                   {copiedUpi ? 'Copied' : 'Copy'}
                 </Button>
               </div>
 
               {/* Mobile Quick Intent Buttons */}
-              <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 8, fontWeight: 700 }}>
+              <Text style={{ fontSize: 11, display: 'block', marginBottom: 8, fontWeight: 700, color: '#94A3B8' }}>
                 📱 Tap to Open Direct UPI App (Mobile Only)
               </Text>
               <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -258,7 +259,7 @@ const UpiPaymentPage: React.FC = () => {
                 </Button>
                 <Button
                   onClick={() => handleOpenUpiApp()}
-                  style={{ background: '#0F172A', color: '#FFF', borderRadius: 8, fontWeight: 700, fontSize: 12 }}
+                  style={{ background: '#334155', color: '#FFF', borderColor: '#475569', borderRadius: 8, fontWeight: 700, fontSize: 12 }}
                 >
                   BHIM UPI
                 </Button>
@@ -269,27 +270,31 @@ const UpiPaymentPage: React.FC = () => {
             <Col xs={24} md={13}>
               <Form form={form} layout="vertical" onFinish={handleFormFinish} initialValues={{ purpose: 'General Donation' }}>
                 {/* 1. Select Donation Amount */}
-                <Text style={{ fontWeight: 800, color: '#0F172A', fontSize: 13, display: 'block', marginBottom: 8 }}>
+                <Text style={{ fontWeight: 800, color: '#F8FAFC', fontSize: 13, display: 'block', marginBottom: 8 }}>
                   1. Select Donation Amount (₹)
                 </Text>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 12 }}>
-                  {AMOUNT_PRESETS.map((amt) => (
-                    <Button
-                      key={amt}
-                      type={selectedAmount === amt && !customAmount ? 'primary' : 'default'}
-                      onClick={() => { setSelectedAmount(amt); setCustomAmount(''); }}
-                      style={{
-                        height: 38,
-                        fontWeight: 800,
-                        fontSize: 13,
-                        borderRadius: 8,
-                        background: selectedAmount === amt && !customAmount ? '#F97316' : '#FFFFFF',
-                        borderColor: selectedAmount === amt && !customAmount ? '#F97316' : '#CBD5E1'
-                      }}
-                    >
-                      ₹ {amt}
-                    </Button>
-                  ))}
+                  {AMOUNT_PRESETS.map((amt) => {
+                    const isSelected = selectedAmount === amt && !customAmount;
+                    return (
+                      <Button
+                        key={amt}
+                        type={isSelected ? 'primary' : 'default'}
+                        onClick={() => { setSelectedAmount(amt); setCustomAmount(''); }}
+                        style={{
+                          height: 38,
+                          fontWeight: 800,
+                          fontSize: 13,
+                          borderRadius: 8,
+                          background: isSelected ? '#F97316' : '#0F172A',
+                          color: isSelected ? '#FFFFFF' : '#F8FAFC',
+                          borderColor: isSelected ? '#F97316' : '#334155'
+                        }}
+                      >
+                        ₹ {amt}
+                      </Button>
+                    );
+                  })}
                 </div>
 
                 <Input
@@ -297,11 +302,11 @@ const UpiPaymentPage: React.FC = () => {
                   placeholder="Or enter custom amount in ₹"
                   value={customAmount}
                   onChange={(e) => setCustomAmount(e.target.value)}
-                  style={{ borderRadius: 8, marginBottom: 16 }}
+                  style={{ borderRadius: 8, marginBottom: 16, background: '#0F172A', color: '#F8FAFC', borderColor: '#334155' }}
                 />
 
                 {/* 2. Select Purpose */}
-                <Text style={{ fontWeight: 800, color: '#0F172A', fontSize: 13, display: 'block', marginBottom: 8 }}>
+                <Text style={{ fontWeight: 800, color: '#F8FAFC', fontSize: 13, display: 'block', marginBottom: 8 }}>
                   2. Select Purpose / Seva
                 </Text>
                 <Segmented
@@ -309,22 +314,22 @@ const UpiPaymentPage: React.FC = () => {
                   value={purpose}
                   onChange={(val) => setPurpose(val as string)}
                   block
-                  style={{ marginBottom: 16, border: '1px solid #E2E8F0' }}
+                  style={{ marginBottom: 16, background: '#0F172A', color: '#F8FAFC', border: '1px solid #334155' }}
                 />
 
                 {/* 3. Donor Details */}
-                <Text style={{ fontWeight: 800, color: '#0F172A', fontSize: 13, display: 'block', marginBottom: 8 }}>
+                <Text style={{ fontWeight: 800, color: '#F8FAFC', fontSize: 13, display: 'block', marginBottom: 8 }}>
                   3. Donor Information (For Official Receipt)
                 </Text>
 
                 {existingDonorInfo && (
-                  <div style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', padding: '8px 12px', borderRadius: 8, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <CheckCircleOutlined style={{ color: '#16A34A', fontSize: 16 }} />
+                  <div style={{ background: '#064E3B', border: '1px solid #059669', padding: '8px 12px', borderRadius: 8, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <CheckCircleOutlined style={{ color: '#4ADE80', fontSize: 16 }} />
                     <div>
-                      <Text style={{ fontSize: 12, fontWeight: 700, color: '#15803D', display: 'block' }}>
+                      <Text style={{ fontSize: 12, fontWeight: 700, color: '#4ADE80', display: 'block' }}>
                         Welcome back, {existingDonorInfo.full_name}! ({existingDonorInfo.donor_number})
                       </Text>
-                      <Text style={{ fontSize: 11, color: '#166534' }}>
+                      <Text style={{ fontSize: 11, color: '#86EFAC' }}>
                         Verified Existing Donor • Total Lifetime Donations: ₹{existingDonorInfo.total_donations?.toLocaleString('en-IN')}
                       </Text>
                     </div>
@@ -334,13 +339,14 @@ const UpiPaymentPage: React.FC = () => {
                 <Row gutter={12}>
                   <Col span={12}>
                     <Form.Item name="full_name" rules={[{ required: true, message: 'Donor name required' }]} style={{ marginBottom: 10 }}>
-                      <Input placeholder="Full Name *" />
+                      <Input placeholder="Full Name *" style={{ background: '#0F172A', color: '#F8FAFC', borderColor: '#334155' }} />
                     </Form.Item>
                   </Col>
                   <Col span={12}>
                     <Form.Item name="phone" rules={[{ required: true, message: 'Mobile required for WhatsApp receipt' }]} style={{ marginBottom: 10 }}>
                       <Input
                         placeholder="Mobile Number *"
+                        style={{ background: '#0F172A', color: '#F8FAFC', borderColor: '#334155' }}
                         onBlur={(e) => handlePhoneBlur(e.target.value)}
                         onChange={(e) => {
                           if (e.target.value.trim().length >= 10) {
@@ -355,18 +361,18 @@ const UpiPaymentPage: React.FC = () => {
                 <Row gutter={12}>
                   <Col span={12}>
                     <Form.Item name="pan_number" style={{ marginBottom: 10 }}>
-                      <Input placeholder="PAN Number (For 80G Tax)" />
+                      <Input placeholder="PAN Number (For 80G Tax)" style={{ background: '#0F172A', color: '#F8FAFC', borderColor: '#334155' }} />
                     </Form.Item>
                   </Col>
                   <Col span={12}>
                     <Form.Item name="city" style={{ marginBottom: 10 }}>
-                      <Input placeholder="City / Area" />
+                      <Input placeholder="City / Area" style={{ background: '#0F172A', color: '#F8FAFC', borderColor: '#334155' }} />
                     </Form.Item>
                   </Col>
                 </Row>
 
-                <Form.Item name="upi_reference" label={<span style={{ fontSize: 12, fontWeight: 700 }}>UPI Reference / UTR Number (Post Payment)</span>} style={{ marginBottom: 16 }}>
-                  <Input placeholder="e.g. 123456789012 (12-digit UTR)" prefix={<LockOutlined style={{ color: '#22C55E' }} />} />
+                <Form.Item name="upi_reference" label={<span style={{ fontSize: 12, fontWeight: 700, color: '#CBD5E1' }}>UPI Reference / UTR Number (Post Payment)</span>} style={{ marginBottom: 16 }}>
+                  <Input placeholder="e.g. 123456789012 (12-digit UTR)" prefix={<LockOutlined style={{ color: '#22C55E' }} />} style={{ background: '#0F172A', color: '#F8FAFC', borderColor: '#334155' }} />
                 </Form.Item>
 
                 <Button

@@ -757,6 +757,9 @@ export async function downloadReceiptImage(receipt: PrintReceiptData, fallbackOr
     const wrapper = root.querySelector('.receipt-wrapper') as HTMLElement;
     if (!wrapper) throw new Error('Receipt wrapper not found in DOM');
 
+    // Ensure all images (logo, QR codes) are fully loaded and painted
+    await waitForImagesToLoad(wrapper);
+
     // Yield to main thread so the loading spinner renders before html2canvas blocks
     await yieldToMain();
 
@@ -829,6 +832,30 @@ function ensureReceiptFontLink(): void {
     link.href = 'https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800;900&family=Yatra+One&display=swap';
     document.head.appendChild(link);
   }
+}
+
+/** Ensure all <img> elements inside container are fully loaded & decoded before html2canvas capture */
+async function waitForImagesToLoad(container: HTMLElement): Promise<void> {
+  const images = Array.from(container.querySelectorAll('img'));
+  const promises = images.map((img) => {
+    if (img.complete && img.naturalWidth !== 0) return Promise.resolve();
+    return new Promise<void>((resolve) => {
+      let resolved = false;
+      const done = () => {
+        if (!resolved) {
+          resolved = true;
+          resolve();
+        }
+      };
+      img.onload = done;
+      img.onerror = done;
+      if (img.decode) {
+        img.decode().then(done).catch(done);
+      }
+      setTimeout(done, 1500);
+    });
+  });
+  await Promise.all(promises);
 }
 
 /** Preload receipt fonts eagerly at app startup.
@@ -951,6 +978,9 @@ export async function preGenerateReceiptBlob(receipt: PrintReceiptData, fallback
     const wrapper = root.querySelector('.receipt-wrapper') as HTMLElement;
     if (!wrapper) return;
 
+    // Ensure all images (logo, QR codes) are fully loaded and painted
+    await waitForImagesToLoad(wrapper);
+
     // Yield so the browser can paint frames between receipts
     await yieldToMain();
     if (signal?.aborted) { root.remove(); document.getElementById(STYLE_ID)?.remove(); return; }
@@ -1057,6 +1087,9 @@ export async function shareReceiptViaWhatsApp(receipt: PrintReceiptData, fallbac
     // 6. Capture receipt canvas
     const wrapper = root.querySelector('.receipt-wrapper') as HTMLElement;
     if (!wrapper) throw new Error('Receipt wrapper not found in DOM');
+
+    // Ensure all images (logo, QR codes) are fully loaded and painted
+    await waitForImagesToLoad(wrapper);
 
     // 7. Yield to main thread so loading spinner renders before html2canvas blocks
     await yieldToMain();
