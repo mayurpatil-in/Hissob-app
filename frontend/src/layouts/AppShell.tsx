@@ -15,8 +15,10 @@ import type { NotificationItem } from '../api/services';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
 import { authService } from '../auth/authService';
+import packageJson from '../../package.json';
 import './AppShell.css';
 
+const APP_VERSION = packageJson.version || '1.0.0';
 const { Sider, Header, Content, Footer } = Layout;
 
 const RupeeIcon: React.FC<{ style?: React.CSSProperties }> = ({ style }) => (
@@ -652,6 +654,7 @@ const AppShell: React.FC<Props> = ({ children }) => {
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}>
               <span className="sidebar-logo-text">Hisob ERP</span>
               <Tag color="orange" style={{ fontSize: 9, padding: '0 4px', lineHeight: '14px', borderRadius: 4, fontWeight: 800, margin: 0 }}>PRO</Tag>
+              <Tag color="blue" style={{ fontSize: 9, padding: '0 4px', lineHeight: '14px', borderRadius: 4, fontWeight: 800, margin: 0 }}>v{APP_VERSION}</Tag>
             </div>
           )}
         </div>
@@ -718,7 +721,7 @@ const AppShell: React.FC<Props> = ({ children }) => {
             </Avatar>
             <div className="sidebar-user-info">
               <span className="sidebar-user-name">{user?.full_name || 'User'}</span>
-              <span className="sidebar-user-role">{primaryRoleName}</span>
+              <span className="sidebar-user-role">{primaryRoleName} • v{APP_VERSION}</span>
             </div>
             <SettingOutlined className="sidebar-user-cog" />
           </div>
