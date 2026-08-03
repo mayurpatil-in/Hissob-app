@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Input, Button, Avatar, Spin, App, Tooltip } from 'antd';
+import { Input, Button, Spin, App, Tooltip } from 'antd';
+
 import {
   CloseOutlined, PlusOutlined, ArrowRightOutlined,
   AudioOutlined, CopyOutlined, CheckOutlined, ReloadOutlined,

@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { Card, Row, Col, Typography, Button, Tag, Progress, Alert, Space, Spin, Table, message, Tooltip, Avatar } from 'antd';
+import { Card, Row, Col, Typography, Button, Tag, Progress, Alert, Space, Spin, Table, message, Tooltip } from 'antd';
+
 import {
   SafetyCertificateOutlined,
 
