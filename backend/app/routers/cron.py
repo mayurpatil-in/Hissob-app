@@ -37,6 +37,7 @@ import os
 async def trigger_daily_digest(
     key: Optional[str] = Query(None),
     x_cron_secret: Optional[str] = Header(None),
+    force: bool = Query(False, description="Set force=true to bypass daily deduplication guard"),
     db: Session = Depends(get_db),
 ):
     """
@@ -53,7 +54,7 @@ async def trigger_daily_digest(
 
     for tenant in active_tenants:
         try:
-            res = send_tenant_daily_digest(db, tenant.id)
+            res = send_tenant_daily_digest(db, tenant.id, force=force)
             results.append(res)
         except Exception as e:
             logger.error("Failed to run daily digest for tenant %s: %s", tenant.name, str(e))
@@ -71,8 +72,10 @@ async def trigger_tenant_digest(
     tenant_id: UUID,
     key: Optional[str] = Query(None),
     x_cron_secret: Optional[str] = Header(None),
+    force: bool = Query(False, description="Set force=true to bypass daily deduplication guard"),
     db: Session = Depends(get_db),
 ):
     """Triggers daily financial digest for a single organization."""
     verify_cron_key(key=key, x_cron_secret=x_cron_secret)
-    return send_tenant_daily_digest(db, tenant_id)
+    return send_tenant_daily_digest(db, tenant_id, force=force)
+

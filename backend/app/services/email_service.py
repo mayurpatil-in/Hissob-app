@@ -634,16 +634,18 @@ def build_daily_digest_html(
 """
 
 
-def send_tenant_daily_digest(db, tenant_id) -> Dict[str, Any]:
+def send_tenant_daily_digest(db, tenant_id, force: bool = False) -> Dict[str, Any]:
     """
     Computes today's financial metrics for a tenant and dispatches daily digest email
     to all active Organization Admins and Committee members.
+    Includes daily deduplication guard to prevent duplicate email spamming.
     """
     from datetime import date as dt_date
     from app.models.tenant import Tenant
     from app.models.receipt import Receipt, ReceiptStatus, PaymentMode
     from app.models.finance import Expense, ExpenseStatus
     from app.models.user import User
+    from app.models.email_log import EmailLog
 
     tenant = db.get(Tenant, tenant_id)
     if not tenant or not tenant.is_active:
@@ -654,6 +656,25 @@ def send_tenant_daily_digest(db, tenant_id) -> Dict[str, Any]:
 
     today = dt_date.today()
     today_str = today.strftime("%d-%m-%Y")
+    subject = f"📊 Daily Financial Digest ({today_str}) — {tenant.name}"
+
+    # Deduplication Guard: If Daily Digest was ALREADY sent to this tenant today, skip duplicate send
+    if not force:
+        already_sent = db.query(EmailLog).filter(
+            EmailLog.tenant_id == tenant.id,
+            EmailLog.email_type == "DAILY_DIGEST",
+            EmailLog.subject == subject,
+            EmailLog.status == "SENT",
+        ).first()
+
+        if already_sent:
+            logger.info("Daily Financial Digest already sent today for tenant %s (%s). Skipping duplicate.", tenant.name, today_str)
+            return {
+                "status": "skipped",
+                "tenant_name": tenant.name,
+                "reason": f"Daily digest already sent on {today_str} (Deduplication Guard active)",
+            }
+
 
     # Fetch today's receipts
     today_receipts = db.query(Receipt).filter(
@@ -737,9 +758,13 @@ def send_tenant_daily_digest(db, tenant_id) -> Dict[str, Any]:
             subject=subject,
             html_content=html_content,
             text_content=f"Daily Financial Digest for {tenant.name} on {today_str}. Total Collected: ₹{total_collected:,.2f}.",
+            db=db,
+            tenant_id=tenant.id,
+            email_type="DAILY_DIGEST",
         )
         if success:
             sent_count += 1
+
 
     return {
         "status": "success",
