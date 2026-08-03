@@ -33,10 +33,10 @@ class AIService:
     def __init__(self, db: Session):
         self.db = db
 
-    def _call_gemini_api(self, prompt: str, system_instruction: str = "") -> Optional[str]:
+    def _call_gemini_api(self, prompt: str, system_instruction: str = "", history: Optional[List[Dict[str, str]]] = None) -> Optional[str]:
         """
         Calls Google Gemini REST API (gemini-2.0-flash).
-        Returns raw text response or None if API key is missing or call fails.
+        Supports multi-turn conversation history.
         """
         api_key = settings.GEMINI_API_KEY
         if not api_key:
@@ -45,12 +45,18 @@ class AIService:
 
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{settings.GEMINI_MODEL_NAME}:generateContent?key={api_key}"
         
+        contents = []
+        if history:
+            for item in history:
+                role = "model" if item.get("role") in ["assistant", "ai", "model"] else "user"
+                content_text = item.get("content") or item.get("text") or ""
+                if content_text.strip():
+                    contents.append({"role": role, "parts": [{"text": content_text}]})
+
+        contents.append({"role": "user", "parts": [{"text": prompt}]})
+
         payload: Dict[str, Any] = {
-            "contents": [
-                {
-                    "parts": [{"text": prompt}]
-                }
-            ]
+            "contents": contents
         }
         if system_instruction:
             payload["systemInstruction"] = {
@@ -58,7 +64,7 @@ class AIService:
             }
 
         try:
-            with httpx.Client(timeout=12.0) as client:
+            with httpx.Client(timeout=15.0) as client:
                 response = client.post(url, json=payload)
                 if response.status_code == 200:
                     data = response.json()
@@ -74,10 +80,10 @@ class AIService:
 
         return None
 
-    def _call_openai_api(self, prompt: str, system_instruction: str = "") -> Optional[str]:
+    def _call_openai_api(self, prompt: str, system_instruction: str = "", history: Optional[List[Dict[str, str]]] = None) -> Optional[str]:
         """
         Calls OpenAI REST API (gpt-4o-mini).
-        Returns raw text response or None if API key is missing or call fails.
+        Supports multi-turn conversation history.
         """
         api_key = settings.OPENAI_API_KEY
         if not api_key:
@@ -92,6 +98,14 @@ class AIService:
         messages = []
         if system_instruction:
             messages.append({"role": "system", "content": system_instruction})
+        
+        if history:
+            for item in history:
+                role = "assistant" if item.get("role") in ["assistant", "ai", "model"] else "user"
+                content_text = item.get("content") or item.get("text") or ""
+                if content_text.strip():
+                    messages.append({"role": role, "content": content_text})
+
         messages.append({"role": "user", "content": prompt})
 
         payload = {
@@ -101,7 +115,7 @@ class AIService:
         }
 
         try:
-            with httpx.Client(timeout=12.0) as client:
+            with httpx.Client(timeout=15.0) as client:
                 response = client.post(url, headers=headers, json=payload)
                 if response.status_code == 200:
                     data = response.json()
@@ -115,7 +129,7 @@ class AIService:
 
         return None
 
-    def _call_llm(self, prompt: str, system_instruction: str = "", tenant_id: Optional[UUID] = None) -> Optional[str]:
+    def _call_llm(self, prompt: str, system_instruction: str = "", tenant_id: Optional[UUID] = None, history: Optional[List[Dict[str, str]]] = None) -> Optional[str]:
         """
         Dispatches LLM calls to OpenAI or Gemini depending on the tenant's configured ai_provider setting.
         """
@@ -126,17 +140,18 @@ class AIService:
                 provider = tenant.ai_provider.lower()
 
         if provider == "openai":
-            res = self._call_openai_api(prompt, system_instruction)
+            res = self._call_openai_api(prompt, system_instruction, history=history)
             if res:
                 return res
             # Fallback to Gemini if OpenAI call fails
-            return self._call_gemini_api(prompt, system_instruction)
+            return self._call_gemini_api(prompt, system_instruction, history=history)
         else:
-            res = self._call_gemini_api(prompt, system_instruction)
+            res = self._call_gemini_api(prompt, system_instruction, history=history)
             if res:
                 return res
             # Fallback to OpenAI if Gemini call fails
-            return self._call_openai_api(prompt, system_instruction)
+            return self._call_openai_api(prompt, system_instruction, history=history)
+
 
     def _build_tenant_financial_context(self, tenant_id: Optional[UUID]) -> Dict[str, Any]:
         """
@@ -148,10 +163,10 @@ class AIService:
             if tenant:
                 tenant_name = tenant.name
 
-        tenant_filter = (Receipt.tenant_id == tenant_id) if tenant_id else (Receipt.id.isnot(None))
-        expense_tenant_filter = (Expense.tenant_id == tenant_id) if tenant_id else (Expense.id.isnot(None))
-        donor_tenant_filter = (Donor.tenant_id == tenant_id) if tenant_id else (Donor.id.isnot(None))
-        fest_tenant_filter = (Festival.tenant_id == tenant_id) if tenant_id else (Festival.id.isnot(None))
+        tenant_filter = (Receipt.tenant_id == tenant_id)
+        expense_tenant_filter = (Expense.tenant_id == tenant_id)
+        donor_tenant_filter = (Donor.tenant_id == tenant_id)
+        fest_tenant_filter = (Festival.tenant_id == tenant_id)
 
         # 1. Total Collections & Receipt Stats
         tot_coll = float(self.db.execute(
@@ -275,22 +290,22 @@ class AIService:
             "festivals": festivals,
         }
 
-    def chat_with_ai(self, question: str, tenant_id: Optional[UUID]) -> AIChatResponse:
+    def chat_with_ai(self, question: str, tenant_id: Optional[UUID], history: Optional[List[Dict[str, str]]] = None) -> AIChatResponse:
         """
-        Context-aware financial Q&A chatbot using Gemini LLM.
+        Context-aware financial Q&A chatbot using Gemini/OpenAI LLM with multi-turn conversation history.
         """
         ctx = self._build_tenant_financial_context(tenant_id)
         context_str = json.dumps(ctx, indent=2)
 
         system_instruction = (
             f"You are Hisob AI, an intelligent financial audit and analytics assistant for '{ctx.get('tenant_name')}'. "
-            "You have access to real-time database totals. Answer user questions accurately based ONLY on this data context. "
-            "Format currency as INR (₹ X,XX,XXX). Keep answers clear, polite, and well-structured using bullet points where appropriate."
+            "You have access to real-time database totals. Answer user questions accurately based ONLY on this data context and previous conversation history. "
+            "Format currency as INR (₹ X,XX,XXX). Keep answers clear, polite, well-structured, and use markdown tables or bullet points where appropriate."
         )
 
         prompt = f"ORGANIZATION FINANCIAL DATA CONTEXT:\n{context_str}\n\nUSER QUESTION:\n{question}"
 
-        llm_response = self._call_llm(prompt, system_instruction, tenant_id)
+        llm_response = self._call_llm(prompt, system_instruction, tenant_id, history=history)
         is_llm = bool(llm_response)
 
         if not llm_response:
@@ -342,11 +357,11 @@ class AIService:
             "How much cash is currently pending settlement?"
         ]
 
-        provider_name = "Gemini 2.0 Flash"
+        provider_name = "Google Gemini"
         if tenant_id:
             tenant = self.db.get(Tenant, tenant_id)
             if tenant and getattr(tenant, "ai_provider", None) == "openai":
-                provider_name = "GPT-4o-Mini"
+                provider_name = "ChatGPT"
 
         return AIChatResponse(
             question=question,
@@ -835,11 +850,11 @@ class AIService:
         is_llm = bool(llm_response)
 
         # Determine active provider name
-        provider_name = "Gemini 2.0 Flash"
+        provider_name = "Google Gemini"
         if tenant_id:
             tenant = self.db.get(Tenant, tenant_id)
             if tenant and getattr(tenant, "ai_provider", None) == "openai":
-                provider_name = "GPT-4o-Mini"
+                provider_name = "ChatGPT"
 
         if not llm_response:
             # Deterministic fallback report

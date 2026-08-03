@@ -352,8 +352,13 @@ export interface AIChatResponse {
 }
 
 
-export const chatWithAI = async (question: string): Promise<AIChatResponse> =>
-  (await apiClient.post<AIChatResponse>('/ai/chat', { question })).data;
+export interface AIChatMessageItem {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export const chatWithAI = async (question: string, history: AIChatMessageItem[] = []): Promise<AIChatResponse> =>
+  (await apiClient.post<AIChatResponse>('/ai/chat', { question, history })).data;
 
 // ── AI Audit & Report Services ──
 export interface AuditFinding {

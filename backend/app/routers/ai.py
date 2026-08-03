@@ -25,7 +25,8 @@ async def chat_with_ai(
     db: Session = Depends(get_db),
 ):
     service = AIService(db)
-    return service.chat_with_ai(payload.question, current_user.tenant_id)
+    history_dicts = [h.model_dump() for h in payload.history] if payload.history else None
+    return service.chat_with_ai(payload.question, current_user.tenant_id, history=history_dicts)
 
 
 @router.post("/parse-receipt", response_model=ParsedReceiptOutput, summary="AI Voice / Text Receipt Parser")

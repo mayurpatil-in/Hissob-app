@@ -45,8 +45,14 @@ class AIInsightsResponse(BaseModel):
     insights: List[AIInsight]
 
 
+class AIChatMessageItem(BaseModel):
+    role: str = Field(..., description="Role of the sender: 'user' or 'assistant'")
+    content: str = Field(..., description="Content of the message")
+
+
 class AIChatInput(BaseModel):
     question: str = Field(..., min_length=2, description="Natural language question e.g. How much did we collect last Ganesh Chaturthi?")
+    history: Optional[List[AIChatMessageItem]] = Field(default=[], description="Previous conversation turns for context memory")
 
 
 class AIChatResponse(BaseModel):
