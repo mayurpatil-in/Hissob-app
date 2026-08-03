@@ -33,7 +33,7 @@ class ReceiptRepository(BaseRepository[Receipt]):
         stmt = (
             select(Receipt)
             .options(joinedload(Receipt.donor))
-            .where(Receipt.tenant_id == tenant_id)
+            .where(Receipt.tenant_id == tenant_id, Receipt.is_deleted == False)
         )
         if collector_id:
             stmt = stmt.where(Receipt.collector_id == collector_id)
@@ -55,6 +55,7 @@ class ReceiptRepository(BaseRepository[Receipt]):
                 Receipt.collector_id == collector_id,
                 Receipt.payment_mode == PaymentMode.CASH,
                 Receipt.status.in_([ReceiptStatus.ISSUED, ReceiptStatus.PENDING_SETTLEMENT]),
+                Receipt.is_deleted == False,
             )
             .order_by(Receipt.receipt_date.asc())
         )
@@ -66,8 +67,13 @@ class CashSettlementRepository(BaseRepository[CashSettlement]):
         super().__init__(CashSettlement, db)
 
     def generate_settlement_number(self, tenant_id: UUID) -> str:
-        count = self.count_by_tenant(tenant_id) + 1
-        return f"SETTL-{count:06d}"
+        total_count = self.db.query(func.count(CashSettlement.id)).scalar() or 0
+        num = total_count + 1
+        candidate = f"SETTL-{num:06d}"
+        while self.db.query(CashSettlement.id).filter(CashSettlement.settlement_number == candidate).first():
+            num += 1
+            candidate = f"SETTL-{num:06d}"
+        return candidate
 
     def get_by_tenant(
         self,

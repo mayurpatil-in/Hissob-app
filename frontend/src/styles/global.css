@@ -415,6 +415,33 @@ body {
   .hide-mobile { display: none !important; }
   .show-mobile { display: block !important; }
 
+  /* Modal Responsive Overrides for Mobile */
+  .ant-modal {
+    max-width: 95vw !important;
+    margin: 8px auto !important;
+    top: 10px !important;
+    padding-bottom: 10px !important;
+  }
+  .ant-modal-content {
+    padding: 14px 12px !important;
+    border-radius: 14px !important;
+  }
+  .ant-modal-header {
+    margin-bottom: 12px !important;
+  }
+  .ant-modal-body {
+    max-height: 75vh !important;
+    overflow-y: auto !important;
+    padding: 4px 0 !important;
+  }
+  .ant-modal-footer {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: flex-end !important;
+    gap: 8px !important;
+    margin-top: 12px !important;
+  }
+
   /* Drawer & Card Padding Optimizations for Mobile */
   .ant-drawer-body {
     padding: 12px 8px !important;
@@ -431,12 +458,16 @@ body {
     width: 100% !important;
     overflow-x: auto !important;
   }
+  .ant-table {
+    font-size: 12px !important;
+  }
+  .ant-table-content {
+    overflow-x: auto !important;
+  }
   .ant-table-cell {
-    white-space: nowrap !important;
     padding: 8px 10px !important;
   }
   .ant-table-thead > tr > th {
-    white-space: nowrap !important;
     padding: 8px 10px !important;
     font-size: 11px !important;
   }
@@ -475,3 +506,146 @@ body {
 .animate-fadeIn     { animation: fadeIn var(--transition-base) forwards; }
 .animate-slideIn    { animation: slideInLeft var(--transition-base) forwards; }
 .animate-pulse      { animation: pulse 2s infinite; }
+
+/* =========================================================
+   Sleek Custom Pill Tab Styling System
+   ========================================================= */
+.ant-tabs {
+  overflow: visible;
+}
+
+/* Nav container bar */
+.ant-tabs-nav {
+  margin-bottom: 20px !important;
+  background: var(--color-bg-card) !important;
+  padding: 6px !important;
+  border-radius: 16px !important;
+  border: 1px solid var(--color-border) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+.ant-tabs-nav::before {
+  display: none !important;
+}
+
+.ant-tabs-nav-wrap {
+  overflow-x: auto !important;
+  scrollbar-width: none;
+}
+
+.ant-tabs-nav-wrap::-webkit-scrollbar {
+  display: none;
+}
+
+.ant-tabs-nav-list {
+  gap: 6px !important;
+}
+
+/* Hide default underline ink bar */
+.ant-tabs-ink-bar {
+  display: none !important;
+}
+
+/* Individual tab button */
+.ant-tabs-tab {
+  padding: 8px 18px !important;
+  margin: 0 !important;
+  border-radius: 12px !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  font-weight: 600 !important;
+  color: var(--color-text-secondary) !important;
+  border: 1px solid transparent !important;
+}
+
+.ant-tabs-tab:hover {
+  color: var(--color-orange) !important;
+  background: rgba(249, 115, 22, 0.08) !important;
+}
+
+/* Active tab button styling */
+.ant-tabs-tab.ant-tabs-tab-active {
+  background: linear-gradient(135deg, #F97316 0%, #EA580C 100%) !important;
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.35) !important;
+  border-color: rgba(249, 115, 22, 0.5) !important;
+}
+
+.ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: #FFFFFF !important;
+  font-weight: 800 !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.15);
+}
+
+.ant-tabs-tab.ant-tabs-tab-active .anticon {
+  color: #FFFFFF !important;
+}
+
+/* Mobile responsive tab bar */
+@media (max-width: 768px) {
+  .ant-tabs-nav {
+    padding: 4px !important;
+    border-radius: 12px !important;
+  }
+  .ant-tabs-nav-list {
+    width: 100% !important;
+    display: flex !important;
+  }
+  .ant-tabs-tab {
+    flex: 1 !important;
+    justify-content: center !important;
+    text-align: center !important;
+    padding: 8px 10px !important;
+    font-size: 13px !important;
+  }
+}
+
+/* =========================================================
+   Sleek Custom Segmented Control Styling
+   ========================================================= */
+.ant-segmented {
+  background: var(--color-bg) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 12px !important;
+  padding: 3px !important;
+}
+
+.ant-segmented-thumb {
+  background: var(--color-bg-card) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+  border-radius: 9px !important;
+}
+
+.ant-segmented-item {
+  border-radius: 9px !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+}
+
+.ant-segmented-item-selected {
+  color: var(--color-orange) !important;
+  font-weight: 800 !important;
+}
+
+@media (max-width: 640px) {
+  .ant-segmented {
+    width: 100% !important;
+    display: flex !important;
+  }
+  .ant-segmented-group {
+    width: 100% !important;
+    display: flex !important;
+  }
+  .ant-segmented-item {
+    flex: 1 !important;
+    text-align: center !important;
+    padding: 4px 2px !important;
+    font-size: 12px !important;
+  }
+  .ant-segmented-item-label {
+    padding: 0 2px !important;
+    white-space: nowrap !important;
+    text-overflow: ellipsis !important;
+    overflow: hidden !important;
+  }
+}
+
+

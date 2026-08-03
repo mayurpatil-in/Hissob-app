@@ -8,7 +8,7 @@ from sqlalchemy import String, ForeignKey, Date, Text, Numeric, Integer, DateTim
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID
 from app.core.database import Base
-from app.models.base import UUIDMixin, TimestampMixin, TenantMixin
+from app.models.base import UUIDMixin, TimestampMixin, TenantMixin, SoftDeleteMixin
 
 
 class SettlementStatus(str, enum.Enum):
@@ -56,7 +56,7 @@ class ExpenseStatus(str, enum.Enum):
     REJECTED = "rejected"
 
 
-class Expense(Base, UUIDMixin, TimestampMixin, TenantMixin):
+class Expense(Base, UUIDMixin, TimestampMixin, TenantMixin, SoftDeleteMixin):
     __tablename__ = "expenses"
     __table_args__ = (
         Index("idx_expenses_tenant_status", "tenant_id", "status"),

@@ -8,7 +8,7 @@ from sqlalchemy import String, Boolean, ForeignKey, Date, Text, Numeric, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID
 from app.core.database import Base
-from app.models.base import UUIDMixin, TimestampMixin, TenantMixin
+from app.models.base import UUIDMixin, TimestampMixin, TenantMixin, SoftDeleteMixin
 
 
 class PaymentMode(str, enum.Enum):
@@ -29,7 +29,7 @@ class ReceiptStatus(str, enum.Enum):
     CANCELLED = "cancelled"
 
 
-class Receipt(Base, UUIDMixin, TimestampMixin, TenantMixin):
+class Receipt(Base, UUIDMixin, TimestampMixin, TenantMixin, SoftDeleteMixin):
     __tablename__ = "receipts"
     __table_args__ = (
         UniqueConstraint("tenant_id", "receipt_number", name="uq_receipts_tenant_receipt_number"),

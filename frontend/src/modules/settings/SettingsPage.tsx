@@ -162,10 +162,17 @@ const SettingsPage: React.FC = () => {
       key: 'profile',
       label: <span><UserOutlined /> User Profile & Security</span>,
       children: (
-        <Row gutter={[20, 20]}>
-          <Col xs={24} md={10}>
-            <Card className="hissob-card" style={{ borderRadius: 16, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
-              <div style={{ textAlign: 'center', padding: '10px 0' }}>
+        <Row gutter={[16, 16]}>
+          <Col xs={24} lg={9}>
+            <Card
+              className="hissob-card"
+              style={{
+                borderRadius: 16,
+                boxShadow: 'var(--shadow-card)',
+                border: '1px solid var(--color-border)',
+              }}
+            >
+              <div style={{ textAlign: 'center', padding: '6px 0' }}>
                 <Avatar
                   size={88}
                   style={{
@@ -173,7 +180,7 @@ const SettingsPage: React.FC = () => {
                     fontSize: 32,
                     fontWeight: 900,
                     marginBottom: 12,
-                    boxShadow: '0 8px 24px rgba(249, 115, 22, 0.3)',
+                    boxShadow: '0 8px 24px rgba(249, 115, 22, 0.25)',
                     border: '3px solid #FFFFFF',
                     width: 88,
                     height: 88,
@@ -193,15 +200,15 @@ const SettingsPage: React.FC = () => {
                   onChange={handleLogoFileChange}
                 />
 
-                <div style={{ marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center' }}>
+                <div style={{ marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center', width: '100%' }}>
                   <Button
                     type="primary"
-                    size="small"
+                    size="middle"
                     icon={<UploadOutlined />}
                     onClick={() => logoInputRef.current?.click()}
-                    style={{ background: '#F97316', borderColor: '#F97316', borderRadius: 8, fontSize: 12, fontWeight: 700 }}
+                    style={{ background: '#F97316', borderColor: '#F97316', borderRadius: 8, fontSize: 13, fontWeight: 700, width: '100%', maxWidth: 220 }}
                   >
-                    Upload Profile Picture
+                    Upload Picture
                   </Button>
                   {(user as any)?.avatar_url && (
                     <Button
@@ -217,7 +224,7 @@ const SettingsPage: React.FC = () => {
                         }));
                         message.info('Profile picture removed');
                       }}
-                      style={{ fontSize: 11 }}
+                      style={{ fontSize: 12 }}
                     >
                       Remove Picture
                     </Button>
@@ -227,7 +234,7 @@ const SettingsPage: React.FC = () => {
                 <Title level={4} style={{ margin: '4px 0', color: 'var(--color-text-primary)', fontWeight: 900 }}>
                   {user?.full_name || 'User Profile'}
                 </Title>
-                <Text type="secondary" style={{ fontSize: 13 }}>
+                <Text type="secondary" style={{ fontSize: 13, display: 'inline-block', wordBreak: 'break-all' }}>
                   <MailOutlined /> {user?.email}
                 </Text>
 
@@ -257,59 +264,71 @@ const SettingsPage: React.FC = () => {
                   <Text type="secondary" style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5 }}>TENANT CONTEXT</Text>
                   <div style={{ fontSize: 12, marginTop: 6, background: 'var(--color-bg)', padding: '10px 12px', borderRadius: 10, border: '1px solid var(--color-border)', wordBreak: 'break-all' }}>
                     <BankOutlined style={{ color: '#F97316', marginRight: 6 }} />
-                    <span style={{ color: 'var(--color-text-secondary)' }}>Org Tenant ID:</span> <code style={{ color: 'var(--color-text-primary)', fontWeight: 600 }}>{user?.tenant_id || 'System Global'}</code>
+                    <span style={{ color: 'var(--color-text-secondary)' }}>Tenant ID:</span> <code style={{ color: 'var(--color-text-primary)', fontWeight: 600 }}>{user?.tenant_id || 'System Global'}</code>
                   </div>
                 </div>
               </div>
             </Card>
           </Col>
 
-          <Col xs={24} md={14}>
-            <Card className="hissob-card" style={{ borderRadius: 16, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }} title={<span style={{ color: 'var(--color-text-primary)' }}><UserOutlined style={{ color: '#F97316' }} /> Edit Personal Details</span>}>
+          <Col xs={24} lg={15}>
+            <Card
+              className="hissob-card"
+              style={{ borderRadius: 16, boxShadow: 'var(--shadow-card)', border: '1px solid var(--color-border)' }}
+              title={<span style={{ color: 'var(--color-text-primary)', fontWeight: 800 }}><UserOutlined style={{ color: '#F97316' }} /> Edit Personal Details</span>}
+            >
               <Form form={profileForm} layout="vertical" onFinish={handleProfileSave} initialValues={{ full_name: user?.full_name, email: user?.email }}>
                 <Form.Item label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Full Name</span>} name="full_name" rules={[{ required: true, message: 'Enter full name' }]}>
-                  <Input prefix={<UserOutlined />} placeholder="Full Name" />
+                  <Input size="large" prefix={<UserOutlined />} placeholder="Full Name" style={{ borderRadius: 10 }} />
                 </Form.Item>
                 <Form.Item label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Email Address</span>} name="email">
-                  <Input prefix={<MailOutlined />} disabled readOnly />
+                  <Input size="large" prefix={<MailOutlined />} disabled readOnly style={{ borderRadius: 10 }} />
                 </Form.Item>
                 <Form.Item style={{ textAlign: 'right', marginBottom: 0 }}>
-                  <Button type="primary" htmlType="submit" icon={<SaveOutlined />} block={window.innerWidth < 576} style={{ background: '#F97316', borderColor: '#F97316', borderRadius: 8, fontWeight: 700 }}>
+                  <Button type="primary" size="large" htmlType="submit" icon={<SaveOutlined />} style={{ background: '#F97316', borderColor: '#F97316', borderRadius: 10, fontWeight: 700, width: '100%', maxWidth: 200 }}>
                     Update Profile
                   </Button>
                 </Form.Item>
               </Form>
             </Card>
 
-            <Card className="hissob-card" style={{ marginTop: 16, borderRadius: 16, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }} title={<span style={{ color: 'var(--color-text-primary)' }}><KeyOutlined style={{ color: '#0EA5E9' }} /> Change Security Password</span>}>
+            <Card
+              className="hissob-card"
+              style={{ marginTop: 16, borderRadius: 16, boxShadow: 'var(--shadow-card)', border: '1px solid var(--color-border)' }}
+              title={<span style={{ color: 'var(--color-text-primary)', fontWeight: 800 }}><KeyOutlined style={{ color: '#0EA5E9' }} /> Change Security Password</span>}
+            >
               <Form form={passwordForm} layout="vertical" onFinish={handlePasswordSave}>
-                <Form.Item label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Current Password</span>} name="current_password" rules={[{ required: true, message: 'Enter your current password' }]}>
-                  <Input.Password prefix={<LockOutlined />} placeholder="Current Password" />
+                <Form.Item label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Current Password</span>} name="current_password" rules={[{ required: true, message: 'Enter current password' }]}>
+                  <Input.Password size="large" prefix={<LockOutlined />} placeholder="Current Password" style={{ borderRadius: 10 }} />
                 </Form.Item>
-                <Row gutter={16}>
+                <Row gutter={[12, 12]}>
                   <Col xs={24} sm={12}>
-                    <Form.Item label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>New Password</span>} name="new_password" rules={[{ required: true, min: 6, message: 'Minimum 6 characters' }]}>
-                      <Input.Password prefix={<LockOutlined />} placeholder="New Password (min 6 chars)" />
+                    <Form.Item label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>New Password</span>} name="new_password" rules={[{ required: true, min: 8, message: 'Min 8 chars with uppercase, lowercase, digit & special' }]}>
+                      <Input.Password size="large" prefix={<LockOutlined />} placeholder="New Password (min 8 chars)" style={{ borderRadius: 10 }} />
                     </Form.Item>
                   </Col>
                   <Col xs={24} sm={12}>
                     <Form.Item label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Confirm Password</span>} name="confirm_password" rules={[{ required: true, message: 'Confirm new password' }]}>
-                      <Input.Password prefix={<LockOutlined />} placeholder="Confirm New Password" />
+                      <Input.Password size="large" prefix={<LockOutlined />} placeholder="Confirm New Password" style={{ borderRadius: 10 }} />
                     </Form.Item>
                   </Col>
                 </Row>
                 <Form.Item style={{ textAlign: 'right', marginBottom: 0 }}>
-                  <Button type="primary" htmlType="submit" loading={passwordLoading} icon={<SafetyCertificateOutlined />} block={window.innerWidth < 576} style={{ background: '#0EA5E9', borderColor: '#0EA5E9', borderRadius: 8, fontWeight: 700 }}>
+                  <Button type="primary" size="large" htmlType="submit" loading={passwordLoading} icon={<SafetyCertificateOutlined />} style={{ background: '#0EA5E9', borderColor: '#0EA5E9', borderRadius: 10, fontWeight: 700, width: '100%', maxWidth: 220 }}>
                     Change Password
                   </Button>
                 </Form.Item>
               </Form>
             </Card>
 
-            <Card className="hissob-card" style={{ marginTop: 16, borderRadius: 16, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }} title={<span style={{ color: 'var(--color-text-primary)' }}><SafetyCertificateOutlined style={{ color: totpEnabled ? '#16A34A' : '#E11D48' }} /> Two-Factor Authentication (2FA TOTP)</span>}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+            <Card
+              className="hissob-card"
+              style={{ marginTop: 16, borderRadius: 16, boxShadow: 'var(--shadow-card)', border: '1px solid var(--color-border)' }}
+              title={<span style={{ color: 'var(--color-text-primary)', fontWeight: 800 }}><SafetyCertificateOutlined style={{ color: totpEnabled ? '#16A34A' : '#E11D48' }} /> Two-Factor Authentication (2FA TOTP)</span>}
+            >
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
                     {totpEnabled ? (
                       <Tag color="success" style={{ fontWeight: 800, padding: '4px 12px', borderRadius: 20, fontSize: 13 }}>
                         ✅ 2FA Active (Google Authenticator)
@@ -320,17 +339,17 @@ const SettingsPage: React.FC = () => {
                       </Tag>
                     )}
                   </div>
-                  <Text type="secondary" style={{ fontSize: 13, display: 'block', maxWidth: 460 }}>
+                  <Text type="secondary" style={{ fontSize: 13, display: 'block', lineHeight: 1.5 }}>
                     Protect your account with Google Authenticator or Authy. When enabled, signing in requires a 6-digit code generated on your phone.
                   </Text>
                 </div>
                 <div>
                   {totpEnabled ? (
-                    <Button danger icon={<DeleteOutlined />} onClick={handleDisable2FA} loading={totpLoading} style={{ borderRadius: 8, fontWeight: 700 }}>
+                    <Button danger size="large" icon={<DeleteOutlined />} onClick={handleDisable2FA} loading={totpLoading} style={{ borderRadius: 10, fontWeight: 700, width: '100%', maxWidth: 200 }}>
                       Disable 2FA
                     </Button>
                   ) : (
-                    <Button type="primary" icon={<SafetyOutlined />} onClick={handleStart2FASetup} loading={totpLoading} style={{ background: '#16A34A', borderColor: '#16A34A', borderRadius: 8, fontWeight: 700 }}>
+                    <Button type="primary" size="large" icon={<SafetyOutlined />} onClick={handleStart2FASetup} loading={totpLoading} style={{ background: '#16A34A', borderColor: '#16A34A', borderRadius: 10, fontWeight: 700, width: '100%', maxWidth: 200 }}>
                       Enable 2FA
                     </Button>
                   )}
@@ -350,17 +369,43 @@ const SettingsPage: React.FC = () => {
 
   return (
     <div className="settings-module animate-fadeIn" style={{ paddingBottom: 32 }}>
-      <div className="page-header" style={{ marginBottom: 24, background: 'var(--color-bg-card)', padding: '20px 24px', borderRadius: 16, border: '1px solid var(--color-border)', boxShadow: '0 4px 16px rgba(0,0,0,0.03)' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-            <Title level={3} style={{ margin: 0, color: 'var(--color-text-primary)', fontWeight: 900 }}>User Profile & Settings</Title>
-            <Tag color="orange" icon={<SettingOutlined />} style={{ borderRadius: 12, fontWeight: 700 }}>SYSTEM CONTROL CENTER</Tag>
+      {/* ── Page Header Banner ── */}
+      <div
+        className="page-header"
+        style={{
+          marginBottom: 20,
+          background: 'var(--color-bg-card)',
+          padding: '16px 20px',
+          borderRadius: 16,
+          border: '1px solid var(--color-border)',
+          boxShadow: 'var(--shadow-card)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 4 }}>
+              <Title level={3} style={{ margin: 0, color: 'var(--color-text-primary)', fontWeight: 900, fontSize: 'calc(1.1rem + 0.5vw)' }}>
+                User Profile & Settings
+              </Title>
+              <Tag color="orange" icon={<SettingOutlined />} style={{ borderRadius: 12, fontWeight: 700, margin: 0 }}>
+                CONTROL CENTER
+              </Tag>
+            </div>
+            <Text type="secondary" style={{ fontSize: 13, display: 'block' }}>
+              Manage account security, assigned roles, organization profile, branding, and printing preferences.
+            </Text>
           </div>
-          <Text type="secondary" style={{ fontSize: 13 }}>Manage your account security, assigned roles, organization profile, branding, and email preferences.</Text>
         </div>
       </div>
 
-      <Tabs defaultActiveKey="profile" items={tabItems} size="large" />
+      <Tabs
+        defaultActiveKey="profile"
+        items={tabItems}
+        size="large"
+        style={{
+          background: 'transparent',
+        }}
+      />
 
       <Modal
         title={<span><SafetyCertificateOutlined style={{ color: '#2563EB' }} /> Enable Two-Factor Authentication</span>}

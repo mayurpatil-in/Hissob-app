@@ -266,14 +266,15 @@ const ExpensesPage: React.FC = () => {
   });
 
   const columns = [
-    { title: 'Voucher #', dataIndex: 'expense_number', key: 'expense_number', render: (t: string) => <b>{t}</b> },
-    { title: 'Date', dataIndex: 'expense_date', key: 'expense_date' },
-    { title: 'Category', dataIndex: 'category', key: 'category', render: (cat: string) => <Tag color="geekblue">{cat}</Tag> },
-    { title: 'Vendor', dataIndex: 'vendor_name', key: 'vendor_name', render: (v: string) => v || 'N/A' },
+    { title: 'Voucher #', dataIndex: 'expense_number', key: 'expense_number', width: 130, render: (t: string) => <b>{t}</b> },
+    { title: 'Date', dataIndex: 'expense_date', key: 'expense_date', width: 120 },
+    { title: 'Category', dataIndex: 'category', key: 'category', width: 130, render: (cat: string) => <Tag color="geekblue">{cat}</Tag> },
+    { title: 'Vendor', dataIndex: 'vendor_name', key: 'vendor_name', width: 140, render: (v: string) => v || 'N/A' },
     {
       title: 'Requested By',
       dataIndex: 'requested_by_name',
       key: 'requested_by_name',
+      width: 150,
       render: (name: string) => (
         <Tag color="cyan" style={{ borderRadius: 10, fontWeight: 600 }}>
           👤 {name || 'Member'}
@@ -284,11 +285,13 @@ const ExpensesPage: React.FC = () => {
       title: 'Amount (₹)',
       dataIndex: 'amount',
       key: 'amount',
+      width: 130,
       render: (val: number) => <span style={{ fontWeight: 700, color: '#EF4444' }}>₹ {Number(val).toLocaleString('en-IN')}</span>,
     },
     {
       title: 'Bill / Voucher',
       key: 'bill_url',
+      width: 150,
       render: (_: any, record: any) => {
         if (record.bill_url) {
           const isPdf = record.bill_url.toLowerCase().endsWith('.pdf');
@@ -334,6 +337,7 @@ const ExpensesPage: React.FC = () => {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
+      width: 140,
       render: (st: string) => {
         const tag = STATUS_TAGS[st] || { color: 'default', label: st.toUpperCase() };
         return <Tag color={tag.color}>{tag.label}</Tag>;
@@ -342,6 +346,7 @@ const ExpensesPage: React.FC = () => {
     {
       title: 'Actions',
       key: 'actions',
+      width: 140,
       render: (_: any, record: any) => (
         <Space size={4}>
           {record.status === 'pending' && canApprove ? (
@@ -402,181 +407,234 @@ const ExpensesPage: React.FC = () => {
   ];
 
   return (
-    <div className="expenses-module animate-fadeIn">
-      <div className="page-header" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
-        <div style={{ flex: '1 1 280px', minWidth: '240px' }}>
-          <Title level={3} style={{ margin: 0, fontWeight: 900, color: '#0F172A' }}>Expense Management</Title>
-          <Text type="secondary" style={{ fontSize: 13, fontWeight: 600, display: 'block', marginTop: 4 }}>
-            Track expenditure vouchers, upload bill receipts, and manage payouts
+    <div className="expenses-module animate-fadeIn" style={{ paddingBottom: 32 }}>
+      {/* ── Page Header Banner ── */}
+      <div
+        className="page-header"
+        style={{
+          marginBottom: 20,
+          background: 'var(--color-bg-card)',
+          padding: '16px 20px',
+          borderRadius: 16,
+          border: '1px solid var(--color-border)',
+          boxShadow: 'var(--shadow-card)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 14,
+        }}
+      >
+        <div>
+          <Title level={3} style={{ margin: 0, color: 'var(--color-text-primary)', fontWeight: 900, fontSize: 'calc(1.1rem + 0.5vw)' }}>
+            💰 Expenditure & Voucher Management
+          </Title>
+          <Text type="secondary" style={{ fontSize: 13, display: 'block', marginTop: 2 }}>
+            Track expenditure vouchers, upload bill receipts, OCR vendor scanning, and manage payouts.
           </Text>
         </div>
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', flex: '0 0 auto' }}>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            size="large"
-            onClick={handleOpenModal}
-            style={{
-              background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
-              borderColor: '#F97316',
-              borderRadius: 8,
-              fontWeight: 800,
-              boxShadow: '0 4px 14px rgba(249, 115, 22, 0.3)',
-            }}
+
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          size="large"
+          onClick={handleOpenModal}
+          style={{
+            background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
+            borderColor: '#F97316',
+            borderRadius: 10,
+            fontWeight: 800,
+            boxShadow: '0 4px 14px rgba(249, 115, 22, 0.3)',
+            width: '100%',
+            maxWidth: 220,
+          }}
+        >
+          New Expense Request
+        </Button>
+      </div>
+
+      {/* ── Summary Statistics Cards ── */}
+      <Row gutter={[14, 14]} style={{ marginBottom: 20 }}>
+        <Col xs={24} sm={12} md={6}>
+          <Card
+            className="hissob-card"
+            style={{ borderRadius: 16, border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-card)' }}
           >
-            New Expense Request
-          </Button>
-        </div>
-      </div>
-
-      {/* ── Quick Overview Metric Cards ── */}
-      <div className="hissob-stat-row" style={{ marginBottom: 20 }}>
-        <div className="hissob-stat-col">
-          <Card className="hissob-stat-card" style={{ borderTop: '4px solid #1E40AF', borderRadius: 12 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-              <Text type="secondary" style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.2, whiteSpace: 'nowrap' }}>
-                TOTAL CLAIMED
-              </Text>
-              <Avatar style={{ backgroundColor: '#DBEAFE', color: '#1E40AF', flexShrink: 0 }} icon={<DollarOutlined />} size="small" />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <Text type="secondary" style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  Total Claimed
+                </Text>
+                <Title level={3} style={{ margin: '4px 0 0 0', color: 'var(--color-text-primary)', fontWeight: 900 }}>
+                  ₹ {totalExpense.toLocaleString('en-IN')}
+                </Title>
+              </div>
+              <div style={{ background: 'rgba(37, 99, 235, 0.12)', padding: 12, borderRadius: 12 }}>
+                <DollarOutlined style={{ fontSize: 24, color: '#2563EB' }} />
+              </div>
             </div>
-            <Title level={4} style={{ margin: '4px 0 0 0', color: '#0F172A', fontWeight: 900, whiteSpace: 'nowrap' }}>
-              ₹ {totalExpense.toLocaleString('en-IN')}
-            </Title>
-            <Text type="secondary" style={{ fontSize: 10, whiteSpace: 'nowrap' }}>Gross Expenditures</Text>
           </Card>
-        </div>
+        </Col>
 
-        <div className="hissob-stat-col">
-          <Card className="hissob-stat-card" style={{ borderTop: '4px solid #059669', borderRadius: 12 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-              <Text type="secondary" style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.2, whiteSpace: 'nowrap' }}>
-                TOTAL PAID
-              </Text>
-              <Avatar style={{ backgroundColor: '#D1FAE5', color: '#059669', flexShrink: 0 }} icon={<CheckCircleOutlined />} size="small" />
+        <Col xs={24} sm={12} md={6}>
+          <Card
+            className="hissob-card"
+            style={{ borderRadius: 16, border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-card)' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <Text type="secondary" style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  Settled Paid
+                </Text>
+                <Title level={3} style={{ margin: '4px 0 0 0', color: '#22C55E', fontWeight: 900 }}>
+                  ₹ {totalPaid.toLocaleString('en-IN')}
+                </Title>
+              </div>
+              <div style={{ background: 'rgba(34, 197, 94, 0.12)', padding: 12, borderRadius: 12 }}>
+                <CheckCircleOutlined style={{ fontSize: 24, color: '#22C55E' }} />
+              </div>
             </div>
-            <Title level={4} style={{ margin: '4px 0 0 0', color: '#059669', fontWeight: 900, whiteSpace: 'nowrap' }}>
-              ₹ {totalPaid.toLocaleString('en-IN')}
-            </Title>
-            <Text type="secondary" style={{ fontSize: 10, whiteSpace: 'nowrap' }}>Settled Payouts</Text>
           </Card>
-        </div>
+        </Col>
 
-        <div className="hissob-stat-col">
-          <Card className="hissob-stat-card" style={{ borderTop: '4px solid #F59E0B', borderRadius: 12 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-              <Text type="secondary" style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.2, whiteSpace: 'nowrap' }}>
-                PENDING PAYOUT
-              </Text>
-              <Avatar style={{ backgroundColor: '#FEF3C7', color: '#D97706', flexShrink: 0 }} icon={<ClockCircleOutlined />} size="small" />
+        <Col xs={24} sm={12} md={6}>
+          <Card
+            className="hissob-card"
+            style={{ borderRadius: 16, border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-card)' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <Text type="secondary" style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  Pending Payout
+                </Text>
+                <Title level={3} style={{ margin: '4px 0 0 0', color: '#F59E0B', fontWeight: 900 }}>
+                  ₹ {totalPending.toLocaleString('en-IN')}
+                </Title>
+              </div>
+              <div style={{ background: 'rgba(245, 158, 11, 0.12)', padding: 12, borderRadius: 12 }}>
+                <ClockCircleOutlined style={{ fontSize: 24, color: '#F59E0B' }} />
+              </div>
             </div>
-            <Title level={4} style={{ margin: '4px 0 0 0', color: '#D97706', fontWeight: 900, whiteSpace: 'nowrap' }}>
-              ₹ {totalPending.toLocaleString('en-IN')}
-            </Title>
-            <Text type="secondary" style={{ fontSize: 10, whiteSpace: 'nowrap' }}>Awaiting Approval / Pay</Text>
           </Card>
-        </div>
+        </Col>
 
-        <div className="hissob-stat-col">
-          <Card className="hissob-stat-card" style={{ borderTop: '4px solid #6366F1', borderRadius: 12 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-              <Text type="secondary" style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.2, whiteSpace: 'nowrap' }}>
-                TOTAL VOUCHERS
-              </Text>
-              <Avatar style={{ backgroundColor: '#E0E7FF', color: '#4F46E5', flexShrink: 0 }} icon={<FileTextOutlined />} size="small" />
+        <Col xs={24} sm={12} md={6}>
+          <Card
+            className="hissob-card"
+            style={{ borderRadius: 16, border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-card)' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <Text type="secondary" style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  Total Vouchers
+                </Text>
+                <Title level={3} style={{ margin: '4px 0 0 0', color: '#6366F1', fontWeight: 900 }}>
+                  {expenses.length}
+                </Title>
+              </div>
+              <div style={{ background: 'rgba(99, 102, 241, 0.12)', padding: 12, borderRadius: 12 }}>
+                <FileTextOutlined style={{ fontSize: 24, color: '#6366F1' }} />
+              </div>
             </div>
-            <Title level={4} style={{ margin: '4px 0 0 0', color: '#4F46E5', fontWeight: 900 }}>
-              {expenses.length}
-            </Title>
-            <Text type="secondary" style={{ fontSize: 10, whiteSpace: 'nowrap' }}>Recorded Requests</Text>
           </Card>
-        </div>
-      </div>
+        </Col>
+      </Row>
 
       {/* ── Main Directory Controls ── */}
-      <Card className="hissob-card" style={{ borderRadius: 14, boxShadow: '0 4px 16px rgba(11,35,71,0.06)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', flex: '1 1 auto', maxWidth: '100%' }}>
-            <Input
-              placeholder="Search vouchers, category, vendor, or applicant..."
-              prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-              allowClear
-              style={{ flex: '1 1 220px', minWidth: 180, maxWidth: '100%', borderRadius: 8 }}
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              size="middle"
-            />
-            <Select
-              placeholder="Filter by Status"
-              allowClear
-              style={{ flex: '1 1 150px', minWidth: 140, maxWidth: '100%' }}
-              onChange={(val) => setFilterStatus(val || '')}
-              size="middle"
-            >
-              <Option value="pending">🟡 PENDING APPROVAL</Option>
-              <Option value="approved">🔵 APPROVED</Option>
-              <Option value="paid">🟢 PAID</Option>
-              <Option value="rejected">🔴 REJECTED</Option>
-            </Select>
-          </div>
+      <Card
+        className="hissob-card"
+        style={{ borderRadius: 16, border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-card)' }}
+      >
+        <div style={{ marginBottom: 16 }}>
+          <Row gutter={[12, 12]} align="middle">
+            <Col xs={24} sm={10} md={10}>
+              <Input
+                size="large"
+                placeholder="Search vouchers, category, vendor, or applicant..."
+                prefix={<SearchOutlined style={{ color: 'var(--color-text-secondary)' }} />}
+                allowClear
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                style={{ borderRadius: 10 }}
+              />
+            </Col>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <Button
-              icon={<DownloadOutlined />}
-              size="small"
-              onClick={() => exportToCSV(filteredExpenses.map(e => ({
-                voucher_number: e.expense_number,
-                date: e.expense_date,
-                category: e.category,
-                vendor: e.vendor_name || 'N/A',
-                requested_by: e.requested_by_name || 'Member',
-                amount: Number(e.amount).toLocaleString('en-IN'),
-                status: e.status?.toUpperCase(),
-              })), `Expenses_${dayjs().format('YYYYMMDD')}`, [
-                { key: 'voucher_number', title: 'Voucher #' },
-                { key: 'date', title: 'Date' },
-                { key: 'category', title: 'Category' },
-                { key: 'vendor', title: 'Vendor' },
-                { key: 'requested_by', title: 'Requested By' },
-                { key: 'amount', title: 'Amount (₹)' },
-                { key: 'status', title: 'Status' },
-              ])}
-            >
-              CSV
-            </Button>
-            <Button
-              icon={<DownloadOutlined />}
-              size="small"
-              style={{ color: '#22C55E', borderColor: '#22C55E' }}
-              onClick={() => exportToExcel(filteredExpenses.map(e => ({
-                voucher_number: e.expense_number,
-                date: e.expense_date,
-                category: e.category,
-                vendor: e.vendor_name || 'N/A',
-                requested_by: e.requested_by_name || 'Member',
-                amount: Number(e.amount),
-                status: e.status?.toUpperCase(),
-              })), `Expenses_${dayjs().format('YYYYMMDD')}`, [
-                { key: 'voucher_number', title: 'Voucher #' },
-                { key: 'date', title: 'Date' },
-                { key: 'category', title: 'Category' },
-                { key: 'vendor', title: 'Vendor' },
-                { key: 'requested_by', title: 'Requested By' },
-                { key: 'amount', title: 'Amount (₹)' },
-                { key: 'status', title: 'Status' },
-              ])}
-            >
-              Excel
-            </Button>
-            <Segmented
-              value={viewMode}
-              onChange={(val) => setViewMode(val as any)}
-              options={[
-                { label: 'Table', value: 'table', icon: <UnorderedListOutlined /> },
-                { label: 'Grid', value: 'grid', icon: <AppstoreOutlined /> },
-              ]}
-              style={{ fontWeight: 700 }}
-            />
-          </div>
+            <Col xs={24} sm={7} md={7}>
+              <Select
+                size="large"
+                placeholder="Filter by Status"
+                allowClear
+                style={{ width: '100%', borderRadius: 10 }}
+                onChange={(val) => setFilterStatus(val || '')}
+              >
+                <Option value="pending">🟡 PENDING APPROVAL</Option>
+                <Option value="approved">🔵 APPROVED</Option>
+                <Option value="paid">🟢 PAID</Option>
+                <Option value="rejected">🔴 REJECTED</Option>
+              </Select>
+            </Col>
+
+            <Col xs={24} sm={7} md={7} style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, flexWrap: 'wrap' }}>
+              <Button
+                size="large"
+                icon={<DownloadOutlined />}
+                onClick={() => exportToCSV(filteredExpenses.map(e => ({
+                  voucher_number: e.expense_number,
+                  date: e.expense_date,
+                  category: e.category,
+                  vendor: e.vendor_name || 'N/A',
+                  requested_by: e.requested_by_name || 'Member',
+                  amount: Number(e.amount).toLocaleString('en-IN'),
+                  status: e.status?.toUpperCase(),
+                })), `Expenses_${dayjs().format('YYYYMMDD')}`, [
+                  { key: 'voucher_number', title: 'Voucher #' },
+                  { key: 'date', title: 'Date' },
+                  { key: 'category', title: 'Category' },
+                  { key: 'vendor', title: 'Vendor' },
+                  { key: 'requested_by', title: 'Requested By' },
+                  { key: 'amount', title: 'Amount (₹)' },
+                  { key: 'status', title: 'Status' },
+                ])}
+                style={{ borderRadius: 10 }}
+              >
+                CSV
+              </Button>
+              <Button
+                size="large"
+                icon={<DownloadOutlined />}
+                style={{ color: '#22C55E', borderColor: '#22C55E', borderRadius: 10 }}
+                onClick={() => exportToExcel(filteredExpenses.map(e => ({
+                  voucher_number: e.expense_number,
+                  date: e.expense_date,
+                  category: e.category,
+                  vendor: e.vendor_name || 'N/A',
+                  requested_by: e.requested_by_name || 'Member',
+                  amount: Number(e.amount),
+                  status: e.status?.toUpperCase(),
+                })), `Expenses_${dayjs().format('YYYYMMDD')}`, [
+                  { key: 'voucher_number', title: 'Voucher #' },
+                  { key: 'date', title: 'Date' },
+                  { key: 'category', title: 'Category' },
+                  { key: 'vendor', title: 'Vendor' },
+                  { key: 'requested_by', title: 'Requested By' },
+                  { key: 'amount', title: 'Amount (₹)' },
+                  { key: 'status', title: 'Status' },
+                ])}
+              >
+                Excel
+              </Button>
+              <Segmented
+                size="large"
+                value={viewMode}
+                onChange={(val) => setViewMode(val as any)}
+                options={[
+                  { value: 'table', icon: <UnorderedListOutlined /> },
+                  { value: 'grid', icon: <AppstoreOutlined /> },
+                ]}
+                style={{ borderRadius: 10, fontWeight: 700 }}
+              />
+            </Col>
+          </Row>
         </div>
 
         {/* View Mode: Table vs Mobile Grid Cards */}

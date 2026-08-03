@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Card, Table, Button, Tag, Space, Input, Select, Modal, Form,
-  InputNumber, DatePicker, Row, Col, Statistic, Tabs, Drawer,
+  InputNumber, DatePicker, Row, Col, Tabs, Drawer,
   Typography, message, Popconfirm, Badge, Progress, Segmented
 } from 'antd';
 import {
@@ -187,6 +187,7 @@ export const InventoryPage: React.FC = () => {
     {
       title: 'Asset Code & Item Name',
       key: 'name',
+      width: 200,
       render: (_: any, r: Asset) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{
@@ -212,6 +213,7 @@ export const InventoryPage: React.FC = () => {
     {
       title: 'Category',
       key: 'category',
+      width: 130,
       render: (_: any, r: Asset) => (
         <Tag color="volcano" style={{ fontWeight: 700, borderRadius: 8 }}>
           {r.category?.name || 'General'}
@@ -221,6 +223,7 @@ export const InventoryPage: React.FC = () => {
     {
       title: 'Stock (Available / Total)',
       key: 'stock',
+      width: 170,
       render: (_: any, r: Asset) => {
         const percent = Math.round((r.quantity_available / (r.quantity_total || 1)) * 100);
         return (
@@ -242,6 +245,7 @@ export const InventoryPage: React.FC = () => {
       title: 'Condition',
       dataIndex: 'condition',
       key: 'condition',
+      width: 120,
       render: (cond: string) => {
         const c = CONDITION_COLORS[cond] || { color: 'default', label: cond, icon: '📌' };
         return <Tag color={c.color} style={{ fontWeight: 800, borderRadius: 8 }}>{c.icon} {c.label}</Tag>;
@@ -251,17 +255,20 @@ export const InventoryPage: React.FC = () => {
       title: 'Storage Location',
       dataIndex: 'storage_location',
       key: 'storage_location',
+      width: 140,
       render: (loc: string) => loc ? <span style={{ color: 'var(--color-text-primary)', fontSize: 12, fontWeight: 600 }}>📍 {loc}</span> : <Text type="secondary">-</Text>,
     },
     {
       title: 'Est. Value (₹)',
       dataIndex: 'estimated_value',
       key: 'estimated_value',
+      width: 130,
       render: (val: number) => <Text style={{ fontWeight: 800, color: '#10B981', fontSize: 13 }}>₹{Number(val).toLocaleString('en-IN')}</Text>,
     },
     {
       title: 'Actions',
       key: 'actions',
+      width: 140,
       render: (_: any, r: Asset) => (
         <Space size="small">
           <Button
@@ -293,6 +300,7 @@ export const InventoryPage: React.FC = () => {
     {
       title: 'Item Name',
       key: 'asset_name',
+      width: 170,
       render: (_: any, r: AssetCheckout) => (
         <div>
           <Text style={{ fontWeight: 800, color: 'var(--color-text-primary)' }}>{r.asset?.name || 'Asset Item'}</Text>
@@ -303,6 +311,7 @@ export const InventoryPage: React.FC = () => {
     {
       title: 'Issued To',
       key: 'issued_to',
+      width: 150,
       render: (_: any, r: AssetCheckout) => (
         <div>
           <Text style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>👤 {r.issued_to_person}</Text>
@@ -314,24 +323,28 @@ export const InventoryPage: React.FC = () => {
       title: 'Issue Date',
       dataIndex: 'issued_at',
       key: 'issued_at',
+      width: 140,
       render: (dt: string) => <span style={{ color: 'var(--color-text-secondary, #94A3B8)', fontSize: 12 }}>{dayjs(dt).format('DD MMM YYYY, hh:mm A')}</span>,
     },
     {
       title: 'Expected Return',
       dataIndex: 'expected_return_at',
       key: 'expected_return_at',
+      width: 130,
       render: (dt: string) => dt ? <span style={{ color: 'var(--color-text-primary)', fontSize: 12, fontWeight: 600 }}>{dayjs(dt).format('DD MMM YYYY')}</span> : <Text type="secondary">Not set</Text>,
     },
     {
       title: 'Issued By',
       dataIndex: 'issued_by_name',
       key: 'issued_by_name',
+      width: 120,
       render: (name: string) => <span style={{ color: 'var(--color-text-primary)', fontSize: 12 }}>{name || 'User'}</span>,
     },
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
+      width: 110,
       render: (st: string) => {
         const s = CHECKOUT_STATUS_COLORS[st] || { color: 'default', label: st };
         return <Tag color={s.color} style={{ fontWeight: 800, borderRadius: 8 }}>{s.label}</Tag>;
@@ -359,29 +372,53 @@ export const InventoryPage: React.FC = () => {
   ];
 
   return (
-    <div className="inventory-module animate-fadeIn" style={{ padding: '24px', maxWidth: 1400, margin: '0 auto' }}>
-      {/* ── Responsive Page Header ── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <Title level={3} style={{ margin: 0, color: 'var(--color-text-primary)', fontWeight: 900, letterSpacing: '-0.02em' }}>
-            📦 Mandal Equipment & Physical Asset Inventory
+    <div className="inventory-module animate-fadeIn" style={{ paddingBottom: 32 }}>
+      {/* ── Responsive Page Header Banner ── */}
+      <div
+        className="page-header"
+        style={{
+          marginBottom: 20,
+          background: 'var(--color-bg-card)',
+          padding: '16px 20px',
+          borderRadius: 16,
+          border: '1px solid var(--color-border)',
+          boxShadow: 'var(--shadow-card)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 14,
+        }}
+      >
+        <div style={{ flex: '1 1 260px' }}>
+          <Title level={3} style={{ margin: 0, color: 'var(--color-text-primary)', fontWeight: 900, fontSize: 'calc(1.1rem + 0.5vw)' }}>
+            📦 Equipment & Physical Asset Inventory
           </Title>
-          <Text type="secondary" style={{ fontSize: 13, color: 'var(--color-text-secondary, #94A3B8)' }}>
-            Manage reusable equipment, sound systems, shamiana mandap items, volunteer checkouts, storage locations & damage audit logs
+          <Text type="secondary" style={{ fontSize: 13, display: 'block', marginTop: 2 }}>
+            Manage reusable equipment, sound systems, mandap items, volunteer checkouts & damage audit logs.
           </Text>
         </div>
-        <Space wrap>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', flex: '1 1 280px', width: '100%' }}>
           <Button
+            size="large"
             icon={<AppstoreOutlined />}
             onClick={() => setCatModalOpen(true)}
-            style={{ fontWeight: 600, borderRadius: 10 }}
+            style={{ fontWeight: 600, borderRadius: 10, flex: '1 1 130px' }}
           >
             Manage Categories
           </Button>
           <Button
             type="primary"
+            size="large"
             icon={<PlusOutlined />}
-            style={{ background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)', borderColor: '#F97316', fontWeight: 800, borderRadius: 10, boxShadow: '0 4px 12px rgba(249,115,22,0.3)' }}
+            style={{
+              background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
+              borderColor: '#F97316',
+              fontWeight: 800,
+              borderRadius: 10,
+              boxShadow: '0 4px 12px rgba(249,115,22,0.3)',
+              flex: '1 1 130px',
+            }}
             onClick={() => {
               setEditingAsset(null);
               assetForm.resetFields();
@@ -390,83 +427,92 @@ export const InventoryPage: React.FC = () => {
           >
             Add New Asset
           </Button>
-        </Space>
+        </div>
       </div>
 
       {/* ── Summary Statistics Cards ── */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+      <Row gutter={[14, 14]} style={{ marginBottom: 20 }}>
         <Col xs={24} sm={12} md={6}>
           <Card
-            style={{
-              borderRadius: 16,
-              backgroundColor: 'var(--color-bg-container)',
-              border: '1px solid var(--color-border)',
-              borderLeft: '4px solid #3B82F6',
-              boxShadow: '0 4px 16px rgba(0,0,0,0.06)'
-            }}
+            className="hissob-card"
+            style={{ borderRadius: 16, border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-card)' }}
           >
-            <Statistic
-              title={<span style={{ fontWeight: 700, color: 'var(--color-text-secondary, #94A3B8)', fontSize: 12, textTransform: 'uppercase' }}>Registered Assets</span>}
-              value={summary?.total_assets_count ?? 0}
-              prefix={<ShoppingOutlined style={{ color: '#3B82F6' }} />}
-              styles={{ content: { fontWeight: 900, color: 'var(--color-text-primary)' } }}
-            />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <Text type="secondary" style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  Registered Assets
+                </Text>
+                <Title level={3} style={{ margin: '4px 0 0 0', color: 'var(--color-text-primary)', fontWeight: 900 }}>
+                  {summary?.total_assets_count ?? 0}
+                </Title>
+              </div>
+              <div style={{ background: 'rgba(59, 130, 246, 0.12)', padding: 12, borderRadius: 12 }}>
+                <ShoppingOutlined style={{ fontSize: 24, color: '#3B82F6' }} />
+              </div>
+            </div>
           </Card>
         </Col>
+
         <Col xs={24} sm={12} md={6}>
           <Card
-            style={{
-              borderRadius: 16,
-              backgroundColor: 'var(--color-bg-container)',
-              border: '1px solid var(--color-border)',
-              borderLeft: '4px solid #F59E0B',
-              boxShadow: '0 4px 16px rgba(0,0,0,0.06)'
-            }}
+            className="hissob-card"
+            style={{ borderRadius: 16, border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-card)' }}
           >
-            <Statistic
-              title={<span style={{ fontWeight: 700, color: 'var(--color-text-secondary, #94A3B8)', fontSize: 12, textTransform: 'uppercase' }}>Total Quantity</span>}
-              value={summary?.total_items_quantity ?? 0}
-              suffix={<span style={{ fontSize: 12, color: 'var(--color-text-secondary, #94A3B8)' }}>Pcs</span>}
-              prefix={<ToolOutlined style={{ color: '#F59E0B' }} />}
-              styles={{ content: { fontWeight: 900, color: '#F59E0B' } }}
-            />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <Text type="secondary" style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  Total Quantity (Pcs)
+                </Text>
+                <Title level={3} style={{ margin: '4px 0 0 0', color: '#F59E0B', fontWeight: 900 }}>
+                  {summary?.total_items_quantity ?? 0}
+                </Title>
+              </div>
+              <div style={{ background: 'rgba(245, 158, 11, 0.12)', padding: 12, borderRadius: 12 }}>
+                <ToolOutlined style={{ fontSize: 24, color: '#F59E0B' }} />
+              </div>
+            </div>
           </Card>
         </Col>
+
         <Col xs={24} sm={12} md={6}>
           <Card
-            style={{
-              borderRadius: 16,
-              backgroundColor: 'var(--color-bg-container)',
-              border: '1px solid var(--color-border)',
-              borderLeft: '4px solid #10B981',
-              boxShadow: '0 4px 16px rgba(0,0,0,0.06)'
-            }}
+            className="hissob-card"
+            style={{ borderRadius: 16, border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-card)' }}
           >
-            <Statistic
-              title={<span style={{ fontWeight: 700, color: 'var(--color-text-secondary, #94A3B8)', fontSize: 12, textTransform: 'uppercase' }}>Est. Total Valuation</span>}
-              value={summary?.total_estimated_value ?? 0}
-              precision={2}
-              prefix="₹"
-              styles={{ content: { fontWeight: 900, color: '#10B981' } }}
-            />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <Text type="secondary" style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  Est. Total Valuation
+                </Text>
+                <Title level={3} style={{ margin: '4px 0 0 0', color: '#10B981', fontWeight: 900 }}>
+                  ₹{Number(summary?.total_estimated_value ?? 0).toLocaleString('en-IN')}
+                </Title>
+              </div>
+              <div style={{ background: 'rgba(16, 185, 129, 0.12)', padding: 12, borderRadius: 12 }}>
+                <span style={{ fontSize: 22, fontWeight: 900, color: '#10B981' }}>₹</span>
+              </div>
+            </div>
           </Card>
         </Col>
+
         <Col xs={24} sm={12} md={6}>
           <Card
-            style={{
-              borderRadius: 16,
-              backgroundColor: 'var(--color-bg-container)',
-              border: '1px solid var(--color-border)',
-              borderLeft: '4px solid #F97316',
-              boxShadow: '0 4px 16px rgba(0,0,0,0.06)'
-            }}
+            className="hissob-card"
+            style={{ borderRadius: 16, border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-card)' }}
           >
-            <Statistic
-              title={<span style={{ fontWeight: 700, color: 'var(--color-text-secondary, #94A3B8)', fontSize: 12, textTransform: 'uppercase' }}>Active Volunteer Checkouts</span>}
-              value={summary?.active_checkouts_count ?? 0}
-              prefix={<ExportOutlined style={{ color: '#F97316' }} />}
-              styles={{ content: { fontWeight: 900, color: '#F97316' } }}
-            />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <Text type="secondary" style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  Active Checkouts
+                </Text>
+                <Title level={3} style={{ margin: '4px 0 0 0', color: '#F97316', fontWeight: 900 }}>
+                  {summary?.active_checkouts_count ?? 0}
+                </Title>
+              </div>
+              <div style={{ background: 'rgba(249, 115, 22, 0.12)', padding: 12, borderRadius: 12 }}>
+                <ExportOutlined style={{ fontSize: 24, color: '#F97316' }} />
+              </div>
+            </div>
           </Card>
         </Col>
       </Row>
@@ -480,107 +526,100 @@ export const InventoryPage: React.FC = () => {
           boxShadow: '0 6px 20px rgba(0,0,0,0.08)'
         }}
       >
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: 12,
-          marginBottom: 16,
-          borderBottom: '1px solid var(--color-border)',
-          paddingBottom: 4
-        }}>
-          <div style={{ flex: '1 1 260px', minWidth: 0 }}>
-            <Tabs
-              activeKey={activeTab}
-              onChange={setActiveTab}
-              tabBarStyle={{ marginBottom: 0, borderBottom: 'none' }}
-              items={[
-                {
-                  key: 'assets',
-                  label: (
-                    <span style={{ fontWeight: 800, fontSize: 14 }}>
-                      📋 Assets ({assets.length})
-                    </span>
-                  ),
-                },
-                {
-                  key: 'checkouts',
-                  label: (
-                    <span style={{ fontWeight: 800, fontSize: 14 }}>
-                      🤝 Checkouts ({checkouts.filter((c) => c.status === 'issued').length})
-                    </span>
-                  ),
-                },
-                {
-                  key: 'history',
-                  label: (
-                    <span style={{ fontWeight: 800, fontSize: 14 }}>
-                      📜 Return Audit ({checkouts.length})
-                    </span>
-                  ),
-                },
-              ]}
-            />
-          </div>
-
-          <div style={{ flex: '0 0 auto' }}>
-            <Segmented
-              value={viewMode}
-              onChange={(val) => setViewMode(val as 'table' | 'grid')}
-              options={[
-                { value: 'grid', icon: <AppstoreOutlined /> },
-                { value: 'table', icon: <UnorderedListOutlined /> },
-              ]}
-              size="small"
-            />
-          </div>
+        {/* ── Top Tabs Bar ── */}
+        <div style={{ marginBottom: 16, borderBottom: '1px solid var(--color-border)', paddingBottom: 4, width: '100%', overflowX: 'auto' }}>
+          <Tabs
+            activeKey={activeTab}
+            onChange={setActiveTab}
+            tabBarStyle={{ marginBottom: 0, borderBottom: 'none' }}
+            items={[
+              {
+                key: 'assets',
+                label: (
+                  <span style={{ fontWeight: 800, fontSize: 14 }}>
+                    📋 Assets ({assets.length})
+                  </span>
+                ),
+              },
+              {
+                key: 'checkouts',
+                label: (
+                  <span style={{ fontWeight: 800, fontSize: 14 }}>
+                    🤝 Checkouts ({checkouts.filter((c) => c.status === 'issued').length})
+                  </span>
+                ),
+              },
+              {
+                key: 'history',
+                label: (
+                  <span style={{ fontWeight: 800, fontSize: 14 }}>
+                    📜 Return Audit ({checkouts.length})
+                  </span>
+                ),
+              },
+            ]}
+          />
         </div>
 
         {/* Tab Children Content */}
         {activeTab === 'assets' && (
           <div>
             {/* Filters Bar */}
-                  <Row gutter={[12, 12]} style={{ marginBottom: 20 }}>
-                    <Col xs={24} sm={10} md={8}>
-                      <Input
-                        placeholder="Search by asset name, code, storage location..."
-                        prefix={<SearchOutlined style={{ color: '#F97316' }} />}
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        allowClear
-                        style={{ borderRadius: 10 }}
-                      />
-                    </Col>
-                    <Col xs={12} sm={7} md={5}>
-                      <Select
-                        placeholder="Filter by Category"
-                        style={{ width: '100%' }}
-                        value={selectedCategory}
-                        onChange={setSelectedCategory}
-                        allowClear
-                      >
-                        {categories.map((c) => (
-                          <Select.Option key={c.id} value={c.id}>{c.name}</Select.Option>
-                        ))}
-                      </Select>
-                    </Col>
-                    <Col xs={12} sm={7} md={5}>
-                      <Select
-                        placeholder="Filter by Condition"
-                        style={{ width: '100%' }}
-                        value={selectedCondition}
-                        onChange={setSelectedCondition}
-                        allowClear
-                      >
-                        <Select.Option value="new">🆕 New</Select.Option>
-                        <Select.Option value="good">✅ Good</Select.Option>
-                        <Select.Option value="fair">⚠️ Fair</Select.Option>
-                        <Select.Option value="damaged">🚨 Damaged</Select.Option>
-                        <Select.Option value="under_repair">🛠️ Under Repair</Select.Option>
-                      </Select>
-                    </Col>
-                  </Row>
+            <Row gutter={[12, 12]} style={{ marginBottom: 20 }} align="middle">
+              <Col xs={24} sm={10} md={10}>
+                <Input
+                  size="large"
+                  placeholder="Search by asset name, code, storage location..."
+                  prefix={<SearchOutlined style={{ color: '#F97316' }} />}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  allowClear
+                  style={{ borderRadius: 10 }}
+                />
+              </Col>
+              <Col xs={24} sm={7} md={5}>
+                <Select
+                  size="large"
+                  placeholder="Filter by Category"
+                  style={{ width: '100%', borderRadius: 10 }}
+                  value={selectedCategory}
+                  onChange={setSelectedCategory}
+                  allowClear
+                >
+                  {categories.map((c) => (
+                    <Select.Option key={c.id} value={c.id}>{c.name}</Select.Option>
+                  ))}
+                </Select>
+              </Col>
+              <Col xs={24} sm={7} md={5}>
+                <Select
+                  size="large"
+                  placeholder="Filter by Condition"
+                  style={{ width: '100%', borderRadius: 10 }}
+                  value={selectedCondition}
+                  onChange={setSelectedCondition}
+                  allowClear
+                >
+                  <Select.Option value="new">🆕 New</Select.Option>
+                  <Select.Option value="good">✅ Good</Select.Option>
+                  <Select.Option value="fair">⚠️ Fair</Select.Option>
+                  <Select.Option value="damaged">🚨 Damaged</Select.Option>
+                  <Select.Option value="under_repair">🛠️ Under Repair</Select.Option>
+                </Select>
+              </Col>
+              <Col xs={24} sm={24} md={4} style={{ textAlign: 'right' }}>
+                <Segmented
+                  value={viewMode}
+                  onChange={(val) => setViewMode(val as 'table' | 'grid')}
+                  options={[
+                    { value: 'grid', icon: <AppstoreOutlined /> },
+                    { value: 'table', icon: <UnorderedListOutlined /> },
+                  ]}
+                  size="large"
+                  style={{ borderRadius: 10 }}
+                />
+              </Col>
+            </Row>
 
                   {/* Render Grid Cards View or Table View */}
                   {viewMode === 'grid' ? (

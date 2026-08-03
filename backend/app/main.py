@@ -43,26 +43,11 @@ class CORSStaticFiles(StaticFiles):
 
 # ─── App Factory ───────────────────────────────────────────────
 def create_app() -> FastAPI:
-    # Ensure all models are imported and tables created if missing
+    # Ensure all models are registered and database tables created if missing
     try:
         import app.models
         from app.core.database import engine, Base
-        from sqlalchemy import text
         Base.metadata.create_all(bind=engine)
-        with engine.connect() as conn:
-            conn.execute(text("ALTER TABLE event_invitations ADD COLUMN IF NOT EXISTS title VARCHAR(200) DEFAULT 'Ganesh Utsav VIP Invitation';"))
-            conn.execute(text("ALTER TABLE event_invitations ADD COLUMN IF NOT EXISTS vip_tier VARCHAR(50) DEFAULT 'General Patron';"))
-            conn.execute(text("ALTER TABLE event_invitations ADD COLUMN IF NOT EXISTS rsvp_status VARCHAR(20) DEFAULT 'pending';"))
-            conn.execute(text("ALTER TABLE event_invitations ADD COLUMN IF NOT EXISTS guests_count INTEGER DEFAULT 1;"))
-            conn.execute(text("ALTER TABLE event_invitations ADD COLUMN IF NOT EXISTS special_requests TEXT;"))
-            conn.execute(text("ALTER TABLE event_invitations ADD COLUMN IF NOT EXISTS checked_in BOOLEAN DEFAULT FALSE;"))
-            conn.execute(text("ALTER TABLE event_invitations ADD COLUMN IF NOT EXISTS checked_in_at TIMESTAMP WITH TIME ZONE;"))
-            conn.execute(text("ALTER TABLE event_invitations ADD COLUMN IF NOT EXISTS qr_code_url VARCHAR(500);"))
-            conn.execute(text("ALTER TABLE event_invitations ADD COLUMN IF NOT EXISTS mahaprasad_menu VARCHAR(500);"))
-            conn.execute(text("ALTER TABLE event_invitations ADD COLUMN IF NOT EXISTS timing_slots VARCHAR(300);"))
-            conn.execute(text("ALTER TABLE event_invitations ADD COLUMN IF NOT EXISTS chief_guests VARCHAR(300);"))
-            conn.execute(text("ALTER TABLE event_invitations ADD COLUMN IF NOT EXISTS created_by_id UUID;"))
-            conn.commit()
     except Exception as e:
         logging.getLogger("hisob.db").warning("Auto table creation check: %s", str(e))
 

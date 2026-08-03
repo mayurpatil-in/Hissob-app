@@ -176,38 +176,38 @@ const OrganizationSettingsTab: React.FC = () => {
   if (isLoading) return <Spin style={{ margin: '40px auto', display: 'block' }} />;
 
   return (
-    <Card className="hissob-card" style={{ maxWidth: 800 }}>
+    <Card className="hissob-card" style={{ width: '100%', borderRadius: 16, border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-card)' }}>
       <Title level={5} style={{ color: '#F97316', marginTop: 0 }}><BankOutlined /> Organization Profile & Address</Title>
       <Text type="secondary">Update your organization address, registration details, and print settings here.</Text>
 
       <Divider style={{ margin: '16px 0' }} />
 
-      <Row gutter={[24, 24]}>
+      <Row gutter={[20, 20]}>
         <Col xs={24} md={12}>
-          <div style={{ marginBottom: 16 }}>
+          <div style={{ marginBottom: 8 }}>
             <Text strong>Organization Logo</Text>
             <div style={{ marginTop: 8 }}>
               {org?.logo_url && (
                 <img src={import.meta.env.VITE_API_URL?.replace('/api/v1', '') + org.logo_url} alt="Logo" style={{ height: 80, objectFit: 'contain', marginBottom: 12, border: '1px solid #eee', padding: 4, borderRadius: 8, display: 'block' }} />
               )}
               <Upload customRequest={handleLogoUpload} showUploadList={false} accept="image/*">
-                <Button icon={<UploadOutlined />} loading={logoUploading}>Upload New Logo</Button>
+                <Button size="middle" icon={<UploadOutlined />} loading={logoUploading} style={{ borderRadius: 8 }}>Upload New Logo</Button>
               </Upload>
             </div>
           </div>
         </Col>
 
         <Col xs={24} md={12}>
-          <div style={{ marginBottom: 16 }}>
+          <div style={{ marginBottom: 8 }}>
             <Text strong>Payment QR Code (Optional)</Text>
             <div style={{ marginTop: 8 }}>
               {org?.qr_code_url && (
                 <img src={import.meta.env.VITE_API_URL?.replace('/api/v1', '') + org.qr_code_url} alt="QR Code" style={{ height: 80, objectFit: 'contain', marginBottom: 12, border: '1px solid #eee', padding: 4, borderRadius: 8, display: 'block' }} />
               )}
               <Upload customRequest={handleQrUpload} showUploadList={false} accept="image/*">
-                <Button icon={<QrcodeOutlined />} loading={qrUploading}>Upload Custom QR Code</Button>
+                <Button size="middle" icon={<QrcodeOutlined />} loading={qrUploading} style={{ borderRadius: 8 }}>Upload Custom QR Code</Button>
               </Upload>
-              <div style={{ fontSize: 11, color: '#888', marginTop: 4 }}>If not uploaded, we will generate one dynamically using your UPI ID.</div>
+              <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4 }}>If not uploaded, we will generate one dynamically using your UPI ID.</div>
             </div>
           </div>
         </Col>
@@ -216,54 +216,54 @@ const OrganizationSettingsTab: React.FC = () => {
       <Divider style={{ margin: '16px 0' }} />
 
       <Form form={form} layout="vertical" onFinish={handleSave}>
-        <Row gutter={16}>
+        <Row gutter={[16, 0]}>
           <Col xs={24} md={12}>
             <Form.Item label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Organization / Mandal Name</span>} name="name" rules={[{ required: true, message: 'Please enter Organization Name' }]}>
-              <Input placeholder="e.g. Vighnaharta Ganesh Utsav Mandal" />
+              <Input size="large" placeholder="e.g. Vighnaharta Ganesh Utsav Mandal" style={{ borderRadius: 10 }} />
             </Form.Item>
           </Col>
           <Col xs={24} md={12}>
             <Form.Item label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>UPI ID (For dynamic QR generation)</span>} name="upi_id">
-              <Input placeholder="e.g. yourbank@upi" />
+              <Input size="large" placeholder="e.g. yourbank@upi" style={{ borderRadius: 10 }} />
             </Form.Item>
           </Col>
         </Row>
 
-        <Row gutter={16}>
+        <Row gutter={[16, 0]}>
           <Col xs={24}>
             <Form.Item label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Street Address / Location</span>} name="address">
-              <Input.TextArea rows={2} placeholder="e.g. Station Road, Near Main Temple, Kolhapur" />
+              <Input.TextArea rows={2} placeholder="e.g. Station Road, Near Main Temple, Kolhapur" style={{ borderRadius: 10 }} />
             </Form.Item>
           </Col>
         </Row>
 
-        <Row gutter={16}>
+        <Row gutter={[16, 0]}>
           <Col xs={24} sm={8}>
             <Form.Item label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>City / District</span>} name="city">
-              <Input placeholder="e.g. Kolhapur" />
+              <Input size="large" placeholder="e.g. Kolhapur" style={{ borderRadius: 10 }} />
             </Form.Item>
           </Col>
           <Col xs={24} sm={8}>
             <Form.Item label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>State</span>} name="state">
-              <Input placeholder="e.g. Maharashtra" />
+              <Input size="large" placeholder="e.g. Maharashtra" style={{ borderRadius: 10 }} />
             </Form.Item>
           </Col>
           <Col xs={24} sm={8}>
             <Form.Item label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Pincode</span>} name="pincode">
-              <Input placeholder="e.g. 416001" />
+              <Input size="large" placeholder="e.g. 416001" style={{ borderRadius: 10 }} />
             </Form.Item>
           </Col>
         </Row>
         
-        <Row gutter={16}>
+        <Row gutter={[16, 0]}>
           <Col xs={24} md={12}>
             <Form.Item label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Trust / Society Reg. No.</span>} name="registration_number">
-              <Input placeholder="e.g. Reg. No. MAH/1234/2020" />
+              <Input size="large" placeholder="e.g. Reg. No. MAH/1234/2020" style={{ borderRadius: 10 }} />
             </Form.Item>
           </Col>
           <Col xs={24} md={12}>
             <Form.Item label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Receipt Print Template</span>} name="receipt_template" tooltip="Choose how your receipts look when printed.">
-              <Select style={{ width: '100%' }}>
+              <Select size="large" style={{ width: '100%', borderRadius: 10 }}>
                 <Select.Option value="modern">Modern English (Default)</Select.Option>
                 <Select.Option value="marathi_traditional">Traditional Marathi (Classic Maroon)</Select.Option>
               </Select>
@@ -277,8 +277,8 @@ const OrganizationSettingsTab: React.FC = () => {
         <Title level={5} style={{ color: '#3B82F6', marginTop: 0 }}><MailOutlined /> Automated Email & Notification Controls</Title>
         <Text type="secondary">Manage automated email receipts and daily executive financial digests.</Text>
 
-        <div style={{ marginTop: 16, background: 'var(--color-bg)', padding: '16px 12px', borderRadius: 12, border: '1px solid var(--color-border)' }}>
-          <Row gutter={16} align="middle" style={{ marginBottom: 16 }}>
+        <div style={{ marginTop: 16, background: 'var(--color-bg)', padding: '16px 14px', borderRadius: 12, border: '1px solid var(--color-border)' }}>
+          <Row gutter={[12, 12]} align="middle" style={{ marginBottom: 16 }}>
             <Col xs={18} sm={19}>
               <Text strong style={{ fontSize: 13, color: 'var(--color-text-primary)' }}>Send Instant Email Receipts to Donors</Text>
               <br />
@@ -291,7 +291,7 @@ const OrganizationSettingsTab: React.FC = () => {
             </Col>
           </Row>
 
-          <Row gutter={16} align="middle" style={{ marginBottom: 16 }}>
+          <Row gutter={[12, 12]} align="middle" style={{ marginBottom: 16 }}>
             <Col xs={18} sm={19}>
               <Text strong style={{ fontSize: 13, color: 'var(--color-text-primary)' }}>Send Welcome Email to New Donors</Text>
               <br />
@@ -304,7 +304,7 @@ const OrganizationSettingsTab: React.FC = () => {
             </Col>
           </Row>
 
-          <Row gutter={16} align="middle" style={{ marginBottom: 16 }}>
+          <Row gutter={[12, 12]} align="middle" style={{ marginBottom: 16 }}>
             <Col xs={18} sm={19}>
               <Text strong style={{ fontSize: 13, color: 'var(--color-text-primary)' }}>Enable Daily Financial Digest Email (9:00 PM)</Text>
               <br />
@@ -318,28 +318,30 @@ const OrganizationSettingsTab: React.FC = () => {
           </Row>
 
           <Form.Item label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Custom Daily Digest Recipient Emails (Optional)</span>} name="digest_recipients" tooltip="Separate multiple emails with commas. If left empty, all active Org Admins & Committee members will receive the digest automatically.">
-            <Input.TextArea rows={2} placeholder="e.g. president@mandal.org, treasurer@gmail.com, secretary@mandal.org" />
+            <Input.TextArea rows={2} placeholder="e.g. president@mandal.org, treasurer@gmail.com, secretary@mandal.org" style={{ borderRadius: 10 }} />
           </Form.Item>
 
           <Divider style={{ margin: '14px 0' }} />
 
-          <Row gutter={12} align="middle">
+          <Row gutter={[12, 12]}>
             <Col xs={24} sm={12}>
               <Button
                 type="dashed"
+                size="large"
                 icon={<ApiOutlined />}
                 loading={testingSmtp}
                 onClick={openTestSmtpModal}
-                style={{ width: '100%', borderColor: '#3B82F6', color: '#3B82F6', fontWeight: 600 }}
+                style={{ width: '100%', borderColor: '#3B82F6', color: '#3B82F6', fontWeight: 700, borderRadius: 10 }}
               >
                 Test SMTP Connection
               </Button>
             </Col>
-            <Col xs={24} sm={12} style={{ marginTop: 8 }}>
+            <Col xs={24} sm={12}>
               <Button
+                size="large"
                 icon={<HistoryOutlined />}
                 onClick={handleOpenLogs}
-                style={{ width: '100%', fontWeight: 600 }}
+                style={{ width: '100%', fontWeight: 700, borderRadius: 10 }}
               >
                 View Email Delivery Logs
               </Button>
@@ -370,9 +372,9 @@ const OrganizationSettingsTab: React.FC = () => {
         <Title level={5} style={{ color: '#3B82F6', marginTop: 0 }}><RobotOutlined /> AI Assistant & LLM Intelligence Engine</Title>
         <Text type="secondary">Choose which Large Language Model (LLM) powers your organization's AI financial chatbot, voice parser & audit intelligence.</Text>
 
-        <div style={{ marginTop: 16, background: 'var(--color-bg)', padding: '16px', borderRadius: 12, border: '1px solid var(--color-border)' }}>
+        <div style={{ marginTop: 16, background: 'var(--color-bg)', padding: '16px 14px', borderRadius: 12, border: '1px solid var(--color-border)' }}>
           <Form.Item label={<span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Preferred AI Engine Model Provider</span>} name="ai_provider" tooltip="Select between Google Gemini 2.0 Flash (Recommended, Ultra Fast) and OpenAI GPT-4o-Mini. Both support context-aware financial Q&A.">
-            <Select style={{ width: '100%' }}>
+            <Select size="large" style={{ width: '100%', borderRadius: 10 }}>
               <Select.Option value="gemini">✨ Google Gemini 2.0 Flash (Recommended • Fast & High Accuracy)</Select.Option>
               <Select.Option value="openai">🤖 OpenAI GPT-4o-Mini (Powerful Natural Language Reasoning)</Select.Option>
             </Select>
@@ -380,7 +382,7 @@ const OrganizationSettingsTab: React.FC = () => {
         </div>
 
         <Form.Item style={{ textAlign: 'right', marginTop: 24, marginBottom: 0 }}>
-          <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={updateMutation.isPending} block={window.innerWidth < 576} style={{ background: '#F97316', borderColor: '#F97316', borderRadius: 8, fontWeight: 700 }}>
+          <Button type="primary" size="large" htmlType="submit" icon={<SaveOutlined />} loading={updateMutation.isPending} style={{ background: '#F97316', borderColor: '#F97316', borderRadius: 10, fontWeight: 700, width: '100%', maxWidth: 220 }}>
             Save Preferences
           </Button>
         </Form.Item>
@@ -400,7 +402,7 @@ const OrganizationSettingsTab: React.FC = () => {
         confirmLoading={testingSmtp}
         okText="Send Test Email"
         okButtonProps={{ style: { background: '#2563EB', fontWeight: 700 } }}
-        destroyOnClose
+        destroyOnHidden
       >
         <div style={{ marginTop: 12 }}>
           <Text type="secondary" style={{ fontSize: 13, display: 'block', marginBottom: 12 }}>
@@ -438,48 +440,59 @@ const OrganizationSettingsTab: React.FC = () => {
           </Button>,
         ]}
         width={850}
-        destroyOnClose
+        style={{ maxWidth: '95vw', top: 16 }}
+        destroyOnHidden
       >
         <Table
           dataSource={emailLogs}
           rowKey="id"
           loading={logsLoading}
-          pagination={{ pageSize: 8 }}
+          pagination={{ pageSize: 8, responsive: true }}
+          scroll={{ x: 750 }}
           columns={[
             {
               title: 'Date & Time',
               dataIndex: 'sent_at',
               key: 'sent_at',
-              render: (val: string) => new Date(val).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }),
+              width: 140,
+              render: (val: string) => (
+                <span style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
+                  {new Date(val).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                </span>
+              ),
             },
             {
               title: 'Type',
               dataIndex: 'email_type',
               key: 'email_type',
+              width: 110,
               render: (val: string) => {
                 const colorMap: Record<string, string> = { RECEIPT: 'blue', WELCOME: 'purple', DAILY_DIGEST: 'orange', REPORT: 'cyan', TEST: 'geekblue' };
-                return <Tag color={colorMap[val] || 'default'}>{val}</Tag>;
+                return <Tag color={colorMap[val] || 'default'} style={{ margin: 0 }}>{val}</Tag>;
               },
             },
             {
               title: 'Recipient Email',
               dataIndex: 'recipient',
               key: 'recipient',
-              render: (val: string) => <strong>{val}</strong>,
+              width: 190,
+              render: (val: string) => <strong style={{ fontSize: 12, wordBreak: 'break-all' }}>{val}</strong>,
             },
             {
               title: 'Subject',
               dataIndex: 'subject',
               key: 'subject',
+              width: 180,
               ellipsis: true,
             },
             {
               title: 'Status',
               dataIndex: 'status',
               key: 'status',
+              width: 100,
               render: (statusVal: string, record: EmailLogItem) => (
                 <Tooltip title={record.error_message || 'Delivered successfully'}>
-                  <Tag color={statusVal === 'SENT' ? 'success' : 'error'}>
+                  <Tag color={statusVal === 'SENT' ? 'success' : 'error'} style={{ margin: 0 }}>
                     {statusVal === 'SENT' ? '✓ SENT' : '✕ FAILED'}
                   </Tag>
                 </Tooltip>
@@ -488,6 +501,7 @@ const OrganizationSettingsTab: React.FC = () => {
             {
               title: 'Action',
               key: 'action',
+              width: 90,
               render: (_: any, record: EmailLogItem) => (
                 <Button
                   size="small"

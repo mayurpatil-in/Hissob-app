@@ -33,7 +33,7 @@ class DonorRepository(BaseRepository[Donor]):
         stmt = (
             select(Donor)
             .options(joinedload(Donor.area))
-            .where(Donor.tenant_id == tenant_id, Donor.is_active == True)
+            .where(Donor.tenant_id == tenant_id, Donor.is_active == True, Donor.is_deleted == False)
         )
         if query:
             q = f"%{query.strip()}%"

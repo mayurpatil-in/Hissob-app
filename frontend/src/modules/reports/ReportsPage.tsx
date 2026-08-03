@@ -98,7 +98,7 @@ const EmailReportModal: React.FC<{
       open={open}
       onCancel={onCancel}
       footer={null}
-      destroyOnClose
+      destroyOnHidden
     >
       <Form form={form} layout="vertical" onFinish={handleSend} style={{ marginTop: 16 }}>
         <Form.Item
@@ -713,65 +713,82 @@ const ReportsPage: React.FC = () => {
   ];
 
   return (
-    <div className="reports-module animate-fadeIn" style={{ maxWidth: '100%', overflowX: 'hidden' }}>
-      <div className="page-header" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 16, marginBottom: 24, maxWidth: '100%' }}>
-        <div style={{ flex: '1 1 280px', maxWidth: '100%' }}>
-          <Title level={3} style={{ margin: 0, color: 'var(--color-text-primary)', fontWeight: 900 }}>
-            Financial Reports & Statements
+    <div className="reports-module animate-fadeIn" style={{ paddingBottom: 32 }}>
+      {/* ── Page Header Banner ── */}
+      <div
+        className="page-header"
+        style={{
+          marginBottom: 20,
+          background: 'var(--color-bg-card)',
+          padding: '16px 20px',
+          borderRadius: 16,
+          border: '1px solid var(--color-border)',
+          boxShadow: 'var(--shadow-card)',
+        }}
+      >
+        <div style={{ marginBottom: 14 }}>
+          <Title level={3} style={{ margin: 0, color: 'var(--color-text-primary)', fontWeight: 900, fontSize: 'calc(1.1rem + 0.5vw)' }}>
+            <BarChartOutlined style={{ color: '#F97316', marginRight: 6 }} />
+            Financial Reports & Audit Statements
           </Title>
-          <Text type="secondary" style={{ fontSize: 13, fontWeight: 600, display: 'block', marginTop: 4 }}>
-            Real-time daily collection breakdown, Cash Book ledger, and Trustee accounting schedules
+          <Text type="secondary" style={{ fontSize: 13, display: 'block', marginTop: 2 }}>
+            Real-time daily collection breakdown, Cash Book ledger, and Trustee accounting schedules.
           </Text>
         </div>
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', flex: '1 1 auto', alignItems: 'center', maxWidth: '100%', width: '100%' }}>
-          {/* ── Feature #1: Interactive Date Range Picker with Quick Presets ── */}
-          <DatePicker.RangePicker
-            allowClear
-            size="middle"
-            value={dateRange as any}
-            onChange={(dates) => setDateRange(dates as any)}
-            presets={[
-              { label: 'Today', value: [dayjs(), dayjs()] },
-              { label: 'This Week', value: [dayjs().startOf('week'), dayjs().endOf('week')] },
-              { label: 'This Month', value: [dayjs().startOf('month'), dayjs().endOf('month')] },
-              { label: 'Last Month', value: [dayjs().subtract(1, 'month').startOf('month'), dayjs().subtract(1, 'month').endOf('month')] },
-              { label: 'Last 90 Days', value: [dayjs().subtract(90, 'days'), dayjs()] },
-            ]}
-            style={{ flex: '1 1 230px', minWidth: '210px', maxWidth: '100%', borderRadius: 8, fontWeight: 600, border: '1px solid #CBD5E1' }}
-          />
 
-          <Select
-            placeholder="All Financial Years"
-            allowClear
-            size="middle"
-            style={{ flex: '1 1 150px', minWidth: '140px', maxWidth: '100%', fontWeight: 600 }}
-            onChange={(val) => setSelectedFy(val)}
-            suffixIcon={<CalendarOutlined style={{ color: '#2563EB' }} />}
-          >
-            {fiscalYears.map((fy: any) => (
-              <Option key={fy.id} value={fy.id}>{fy.name}</Option>
-            ))}
-          </Select>
+        {/* ── Responsive Control Grid ── */}
+        <Row gutter={[12, 12]} align="middle">
+          <Col xs={24} sm={12} md={10}>
+            <DatePicker.RangePicker
+              allowClear
+              size="large"
+              value={dateRange as any}
+              onChange={(dates) => setDateRange(dates as any)}
+              presets={[
+                { label: 'Today', value: [dayjs(), dayjs()] },
+                { label: 'This Week', value: [dayjs().startOf('week'), dayjs().endOf('week')] },
+                { label: 'This Month', value: [dayjs().startOf('month'), dayjs().endOf('month')] },
+                { label: 'Last Month', value: [dayjs().subtract(1, 'month').startOf('month'), dayjs().subtract(1, 'month').endOf('month')] },
+                { label: 'Last 90 Days', value: [dayjs().subtract(90, 'days'), dayjs()] },
+              ]}
+              style={{ width: '100%', borderRadius: 10 }}
+            />
+          </Col>
 
-          {/* ── Feature #4: Trustee Dossier Generator Button ── */}
-          <Button
-            type="primary"
-            size="middle"
-            icon={<AuditOutlined />}
-            onClick={() => setDossierModalVisible(true)}
-            style={{
-              flex: '1 1 auto',
-              minWidth: '180px',
-              maxWidth: '100%',
-              background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
-              borderRadius: 8,
-              fontWeight: 700,
-              boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)',
-            }}
-          >
-            Generate Trust Dossier
-          </Button>
-        </div>
+          <Col xs={24} sm={6} md={7}>
+            <Select
+              placeholder="All Financial Years"
+              allowClear
+              size="large"
+              style={{ width: '100%', borderRadius: 10 }}
+              onChange={(val) => setSelectedFy(val)}
+              suffixIcon={<CalendarOutlined style={{ color: '#2563EB' }} />}
+            >
+              {fiscalYears.map((fy: any) => (
+                <Option key={fy.id} value={fy.id}>{fy.name}</Option>
+              ))}
+            </Select>
+          </Col>
+
+          <Col xs={24} sm={6} md={7}>
+            <Button
+              type="primary"
+              size="large"
+              icon={<AuditOutlined />}
+              onClick={() => setDossierModalVisible(true)}
+              style={{
+                width: '100%',
+                background: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+                borderColor: '#2563EB',
+                borderRadius: 10,
+                fontWeight: 700,
+                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)',
+              }}
+            >
+              Trust Dossier
+            </Button>
+          </Col>
+        </Row>
       </div>
 
       {/* ── Feature #5: Cash Book Running Reconciliation Alert ── */}

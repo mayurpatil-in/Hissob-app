@@ -442,7 +442,7 @@ export const CustomReportBuilder: React.FC = () => {
         open={emailModalOpen}
         onCancel={() => setEmailModalOpen(false)}
         footer={null}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical" onFinish={handleSendEmailReport} style={{ marginTop: 16 }}>
           <Form.Item

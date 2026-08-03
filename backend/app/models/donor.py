@@ -6,7 +6,7 @@ from sqlalchemy import String, Boolean, ForeignKey, Text, Date, Integer, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID
 from app.core.database import Base
-from app.models.base import UUIDMixin, TimestampMixin, TenantMixin
+from app.models.base import UUIDMixin, TimestampMixin, TenantMixin, SoftDeleteMixin
 
 
 class Area(Base, UUIDMixin, TimestampMixin, TenantMixin):
@@ -23,7 +23,7 @@ class Area(Base, UUIDMixin, TimestampMixin, TenantMixin):
         return f"<Area {self.name}>"
 
 
-class Donor(Base, UUIDMixin, TimestampMixin, TenantMixin):
+class Donor(Base, UUIDMixin, TimestampMixin, TenantMixin, SoftDeleteMixin):
     __tablename__ = "donors"
     __table_args__ = (
         Index("idx_donors_tenant_phone", "tenant_id", "phone"),
