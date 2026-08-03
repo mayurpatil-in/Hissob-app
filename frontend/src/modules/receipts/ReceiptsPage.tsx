@@ -5,8 +5,10 @@ import {
 } from 'antd';
 import {
   PlusOutlined, PrinterOutlined, RobotOutlined, CheckCircleOutlined, WhatsAppOutlined, DownloadOutlined, RocketOutlined,
-  AppstoreOutlined, UnorderedListOutlined, DollarOutlined, EditOutlined, DeleteOutlined, CloseOutlined
+  AppstoreOutlined, UnorderedListOutlined, DollarOutlined, EditOutlined, DeleteOutlined, CloseOutlined, LinkOutlined, ReloadOutlined
 } from '@ant-design/icons';
+import { PaymentLinkModal } from '../payments/PaymentLinkModal';
+import { RefundModal } from './RefundModal';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { getReceipts, createReceipt, updateReceipt, cancelReceipt, deleteReceipt, settleReceipt, getDonors, getFinancialYears, getFestivals, getMyOrganization } from '../../api/services';
@@ -88,8 +90,10 @@ const ReceiptsPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingReceipt, setEditingReceipt] = useState<any | null>(null);
   const [cancelModalReceipt, setCancelModalReceipt] = useState<any | null>(null);
+  const [refundModalReceipt, setRefundModalReceipt] = useState<any | null>(null);
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [isEodModalOpen, setIsEodModalOpen] = useState(false);
+  const [isPaymentLinkModalOpen, setIsPaymentLinkModalOpen] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [viewMode, setViewMode] = useState<'table' | 'grid'>(
@@ -431,6 +435,15 @@ const ReceiptsPage: React.FC = () => {
                   onClick={() => setCancelModalReceipt(record)}
                 />
               </Tooltip>
+              {Boolean(record.transaction_ref) && (
+                <Tooltip title="Initiate Online Refund via Razorpay">
+                  <Button
+                    icon={<ReloadOutlined style={{ color: '#F59E0B' }} />}
+                    size="small"
+                    onClick={() => setRefundModalReceipt(record)}
+                  />
+                </Tooltip>
+              )}
             </>
           ) : canPermanentlyDelete ? (
             <Tooltip title="Permanently Purge / Delete from Database (Org Admin Only)">
@@ -498,6 +511,14 @@ const ReceiptsPage: React.FC = () => {
             style={{ color: '#F97316', borderColor: '#F97316', borderRadius: 8, flex: '1 1 auto' }}
           >
             AI Entry
+          </Button>
+          <Button
+            icon={<LinkOutlined style={{ color: '#38BDF8' }} />}
+            size="large"
+            onClick={() => setIsPaymentLinkModalOpen(true)}
+            style={{ fontWeight: 600, borderRadius: 8, flex: '1 1 auto' }}
+          >
+            Payment Link
           </Button>
           <Button
             type="primary"
@@ -935,6 +956,22 @@ const ReceiptsPage: React.FC = () => {
         onOpenSettlementWithReceipts={(ids) => {
           navigate('/settlements', { state: { preselectedReceiptIds: ids } });
         }}
+      />
+
+      {/* ── Razorpay Payment Link Generator Modal ── */}
+      <PaymentLinkModal
+        open={isPaymentLinkModalOpen}
+        onClose={() => setIsPaymentLinkModalOpen(false)}
+        orgSlug={myOrg?.slug || 'default'}
+        orgName={myOrg?.name || 'Hissob Organization'}
+      />
+
+      {/* ── Razorpay Online Refund Modal ── */}
+      <RefundModal
+        open={Boolean(refundModalReceipt)}
+        onClose={() => setRefundModalReceipt(null)}
+        receipt={refundModalReceipt}
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: ['receipts'] })}
       />
     </div>
   );

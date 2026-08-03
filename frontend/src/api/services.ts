@@ -663,5 +663,67 @@ export const getPublicFestivalSchedule = async (festivalId: string) =>
 export const submitPublicYajmanRequest = async (payload: any) =>
   (await apiClient.post<any>('/planning/public/yajman-request', payload)).data;
 
+// ─── Razorpay Online Payment Gateway Services ───
+export const getRazorpayConfig = async () =>
+  (await apiClient.get<{ key_id: string; enabled: boolean; mode: string }>('/payments/razorpay/config')).data;
+
+export const createRazorpayOrder = async (payload: {
+  amount: number;
+  currency?: string;
+  donor_name?: string;
+  donor_phone?: string;
+  donor_email?: string;
+  purpose?: string;
+  slug_or_id?: string;
+}) => (await apiClient.post<{ order_id: string; amount: number; currency: string; key_id: string; is_mock?: boolean }>('/payments/razorpay/create-order', payload)).data;
+
+export const verifyRazorpayPayment = async (payload: {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+  slug_or_id?: string;
+  full_name: string;
+  phone: string;
+  email?: string;
+  pan_number?: string;
+  city?: string;
+  amount: number;
+  purpose?: string;
+  notes?: string;
+}) => (await apiClient.post<any>('/payments/razorpay/verify-payment', payload)).data;
+
+export const createRazorpayPaymentLink = async (payload: {
+  amount: number;
+  donor_name?: string;
+  donor_phone?: string;
+  donor_email?: string;
+  purpose?: string;
+  description?: string;
+  slug_or_id?: string;
+}) => (await apiClient.post<{
+  payment_link_id: string;
+  short_url: string;
+  amount: number;
+  currency: string;
+  status: string;
+  whatsapp_link: string;
+  is_mock?: boolean;
+}>('/payments/razorpay/create-payment-link', payload)).data;
+
+export const initiateRazorpayRefund = async (payload: {
+  receipt_id: string;
+  amount?: number;
+  reason?: string;
+}) => (await apiClient.post<{
+  success: boolean;
+  refund_id: string;
+  amount: number;
+  status: string;
+  receipt_number: string;
+  message: string;
+}>('/payments/razorpay/refund', payload)).data;
+
+
+
 
 

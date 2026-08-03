@@ -5,7 +5,7 @@ import {
   TeamOutlined, CheckCircleOutlined, BankOutlined,
   PlusOutlined, AuditOutlined, ThunderboltOutlined,
   SwapOutlined, CalendarOutlined, QrcodeOutlined,
-  SafetyOutlined, SafetyCertificateFilled, SettingOutlined
+  SafetyOutlined, SafetyCertificateFilled, SettingOutlined, LinkOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -17,6 +17,7 @@ import ActivityTimelineWidget from './ActivityTimelineWidget';
 import { FestivalPlanningWidget } from './FestivalPlanningWidget';
 import type { WidgetPreferences } from './DashboardCustomizerModal';
 import { DashboardCustomizerModal, DEFAULT_WIDGET_PREFERENCES } from './DashboardCustomizerModal';
+import { PaymentLinkModal } from '../payments/PaymentLinkModal';
 import './dashboard.css';
 
 const STATUS_COLOR: Record<string, string> = {
@@ -41,6 +42,7 @@ const Dashboard: React.FC = () => {
   const isOrgAdmin = user?.is_super_admin || can('organization', 'manage') || userRoles.some(r => r.includes('admin') || r.includes('org'));
 
   const [isCustomizerOpen, setIsCustomizerOpen] = useState(false);
+  const [isPaymentLinkModalOpen, setIsPaymentLinkModalOpen] = useState(false);
   
   // Organization-wide widget preference key per tenant
   const activeTenantId = selectedTenantId || user?.tenant_id || 'default_org';
@@ -437,6 +439,15 @@ const Dashboard: React.FC = () => {
                 UPI QR Portal
               </Button>
             </Tooltip>
+            <Tooltip title="Generate & share Razorpay online payment link">
+              <Button
+                icon={<LinkOutlined style={{ color: '#38BDF8' }} />}
+                className="hero-action-btn"
+                onClick={() => setIsPaymentLinkModalOpen(true)}
+              >
+                Payment Link
+              </Button>
+            </Tooltip>
           </div>
         )}
 
@@ -613,6 +624,14 @@ const Dashboard: React.FC = () => {
         preferences={preferences}
         onSavePreferences={handleSavePreferences}
         onResetDefaults={handleResetDefaults}
+      />
+
+      {/* ── Razorpay Payment Link Generator Modal ── */}
+      <PaymentLinkModal
+        open={isPaymentLinkModalOpen}
+        onClose={() => setIsPaymentLinkModalOpen(false)}
+        orgSlug={activeOrg?.slug || 'default'}
+        orgName={activeOrg?.name || 'Hissob Organization'}
       />
     </div>
   );

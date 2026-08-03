@@ -25,6 +25,7 @@ from app.routers.inventory import router as inventory_router
 from app.routers.planning import router as planning_router
 from app.routers.invitations import router as invitations_router
 from app.routers.event_invitations import router as event_invitations_router
+from app.routers.payments import router as payments_router
 
 router = APIRouter()
 router.include_router(auth_router)
@@ -50,6 +51,7 @@ router.include_router(inventory_router)
 router.include_router(planning_router)
 router.include_router(invitations_router)
 router.include_router(event_invitations_router)
+router.include_router(payments_router)
 
 
 

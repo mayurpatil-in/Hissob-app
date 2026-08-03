@@ -62,6 +62,9 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     OPENAI_MODEL_NAME: str = "gpt-4o-mini"
     
+    # Razorpay Payment Gateway Settings
+    RAZORPAY_KEY_ID: str = "rzp_test_hissob_key"
+    RAZORPAY_KEY_SECRET: str = "hissob_razorpay_secret_key"
 
     def check_security(self):
         if self.SECRET_KEY in ("change-me", "secret") or self.JWT_SECRET_KEY in ("change-me-jwt", "secret"):

@@ -5,12 +5,16 @@ import {
   Tag, App, Modal, Result, Avatar, Spin
 } from 'antd';
 import {
+  CreditCardOutlined, QrcodeOutlined,
   SafetyOutlined, CheckCircleOutlined,
   CopyOutlined, HeartFilled,
   DollarOutlined, LockOutlined
 } from '@ant-design/icons';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { getPublicOrgInfo, submitPublicDonation, lookupPublicDonor } from '../../api/services';
+import {
+  getPublicOrgInfo, submitPublicDonation, lookupPublicDonor,
+  createRazorpayOrder, verifyRazorpayPayment
+} from '../../api/services';
 import QRCode from 'qrcode';
 
 const { Title, Text } = Typography;
@@ -24,6 +28,20 @@ const PURPOSES = [
   'Mandir / Building Fund',
   'Social Welfare & Charity',
 ];
+
+const loadRazorpayScript = (): Promise<boolean> => {
+  return new Promise((resolve) => {
+    if ((window as any).Razorpay) {
+      resolve(true);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
 
 const UpiPaymentPage: React.FC = () => {
   const { slug } = useParams<{ slug?: string }>();
@@ -39,6 +57,8 @@ const UpiPaymentPage: React.FC = () => {
   const [copiedUpi, setCopiedUpi] = useState<boolean>(false);
   const [existingDonorInfo, setExistingDonorInfo] = useState<any>(null);
   const [qrCodeImgUrl, setQrCodeImgUrl] = useState<string | null>(null);
+  const [paymentGateway, setPaymentGateway] = useState<'upi' | 'razorpay'>('upi');
+  const [isRazorpayLoading, setIsRazorpayLoading] = useState<boolean>(false);
 
   // Fetch Public Organization Info
   const { data: org } = useQuery({
@@ -121,25 +141,132 @@ const UpiPaymentPage: React.FC = () => {
     }
   };
 
+  const handleRazorpayPay = async (values: any) => {
+    setIsRazorpayLoading(true);
+    try {
+      const res = await loadRazorpayScript();
+      if (!res) {
+        message.error('Failed to load Razorpay SDK. Please check your internet connection.');
+        setIsRazorpayLoading(false);
+        return;
+      }
+
+      // Create Razorpay Order
+      const order = await createRazorpayOrder({
+        amount: effectiveAmount,
+        donor_name: values.full_name,
+        donor_phone: values.phone,
+        donor_email: values.email,
+        purpose: purpose,
+        slug_or_id: slug || org?.slug,
+      });
+
+      // Handle offline test / demo mode if API key is not live
+      if (order.is_mock) {
+        message.loading({ content: 'Processing demo gateway verification...', key: 'rzp_verify' });
+        const receipt = await verifyRazorpayPayment({
+          razorpay_order_id: order.order_id,
+          razorpay_payment_id: `pay_demo_${Date.now()}`,
+          razorpay_signature: 'mock_sig',
+          slug_or_id: slug || org?.slug,
+          full_name: values.full_name,
+          phone: values.phone,
+          email: values.email,
+          pan_number: values.pan_number,
+          city: values.city,
+          amount: effectiveAmount,
+          purpose: purpose,
+        });
+        message.success({ content: 'Demo online payment successful! Official receipt generated.', key: 'rzp_verify' });
+        setCompletedReceipt(receipt);
+        setIsSuccessModalOpen(true);
+        setIsRazorpayLoading(false);
+        return;
+      }
+
+      const isLocalhostImage = logoUrl?.includes('localhost') || logoUrl?.includes('127.0.0.1');
+      const razorpayImage = (logoUrl && !isLocalhostImage) ? logoUrl : undefined;
+
+      const options = {
+        key: order.key_id,
+        amount: order.amount,
+        currency: order.currency || 'INR',
+        name: orgName,
+        description: `${purpose} - ₹${effectiveAmount}`,
+        image: razorpayImage,
+        order_id: order.order_id,
+        handler: async (response: any) => {
+          try {
+            message.loading({ content: 'Verifying payment and generating receipt...', key: 'rzp_verify' });
+            const receipt = await verifyRazorpayPayment({
+              razorpay_order_id: response.razorpay_order_id || order.order_id,
+              razorpay_payment_id: response.razorpay_payment_id || `pay_${Date.now()}`,
+              razorpay_signature: response.razorpay_signature || 'mock_sig',
+              slug_or_id: slug || org?.slug,
+              full_name: values.full_name,
+              phone: values.phone,
+              email: values.email,
+              pan_number: values.pan_number,
+              city: values.city,
+              amount: effectiveAmount,
+              purpose: purpose,
+            });
+            message.success({ content: 'Payment successful! Official receipt generated.', key: 'rzp_verify' });
+            setCompletedReceipt(receipt);
+            setIsSuccessModalOpen(true);
+          } catch (err: any) {
+            message.error({ content: err?.response?.data?.detail || 'Payment verification failed', key: 'rzp_verify' });
+          } finally {
+            setIsRazorpayLoading(false);
+          }
+        },
+        prefill: {
+          name: values.full_name,
+          contact: values.phone,
+          email: values.email,
+        },
+        theme: {
+          color: '#F97316',
+        },
+        modal: {
+          ondismiss: () => {
+            setIsRazorpayLoading(false);
+            message.info('Payment cancelled');
+          },
+        },
+      };
+
+      const paymentObject = new (window as any).Razorpay(options);
+      paymentObject.open();
+    } catch (err: any) {
+      setIsRazorpayLoading(false);
+      message.error(err?.response?.data?.detail || 'Failed to initiate Razorpay checkout');
+    }
+  };
+
   const handleFormFinish = (values: any) => {
     if (effectiveAmount <= 0) {
       message.warning('Please select or enter a valid donation amount');
       return;
     }
 
-    submitMutation.mutate({
-      slug_or_id: slug || org?.slug,
-      full_name: values.full_name,
-      phone: values.phone,
-      email: values.email,
-      pan_number: values.pan_number,
-      city: values.city,
-      amount: effectiveAmount,
-      payment_mode: 'upi',
-      upi_reference: values.upi_reference,
-      purpose: purpose,
-      notes: values.notes,
-    });
+    if (paymentGateway === 'razorpay') {
+      handleRazorpayPay(values);
+    } else {
+      submitMutation.mutate({
+        slug_or_id: slug || org?.slug,
+        full_name: values.full_name,
+        phone: values.phone,
+        email: values.email,
+        pan_number: values.pan_number,
+        city: values.city,
+        amount: effectiveAmount,
+        payment_mode: 'upi',
+        upi_reference: values.upi_reference,
+        purpose: purpose,
+        notes: values.notes,
+      });
+    }
   };
 
   return (
@@ -317,9 +444,24 @@ const UpiPaymentPage: React.FC = () => {
                   style={{ marginBottom: 16, background: '#0F172A', color: '#F8FAFC', border: '1px solid #334155' }}
                 />
 
-                {/* 3. Donor Details */}
+                {/* 3. Choose Payment Gateway */}
                 <Text style={{ fontWeight: 800, color: '#F8FAFC', fontSize: 13, display: 'block', marginBottom: 8 }}>
-                  3. Donor Information (For Official Receipt)
+                  3. Select Payment Mode
+                </Text>
+                <Segmented
+                  options={[
+                    { label: '📱 Dynamic UPI QR (0% Fee)', value: 'upi', icon: <QrcodeOutlined /> },
+                    { label: '💳 Razorpay (Cards / Netbanking)', value: 'razorpay', icon: <CreditCardOutlined /> },
+                  ]}
+                  value={paymentGateway}
+                  onChange={(val) => setPaymentGateway(val as any)}
+                  block
+                  style={{ marginBottom: 16, background: '#0F172A', color: '#F8FAFC', border: '1px solid #334155' }}
+                />
+
+                {/* 4. Donor Details */}
+                <Text style={{ fontWeight: 800, color: '#F8FAFC', fontSize: 13, display: 'block', marginBottom: 8 }}>
+                  4. Donor Information (For Official Receipt)
                 </Text>
 
                 {existingDonorInfo && (
@@ -371,28 +513,37 @@ const UpiPaymentPage: React.FC = () => {
                   </Col>
                 </Row>
 
-                <Form.Item name="upi_reference" label={<span style={{ fontSize: 12, fontWeight: 700, color: '#CBD5E1' }}>UPI Reference / UTR Number (Post Payment)</span>} style={{ marginBottom: 16 }}>
-                  <Input placeholder="e.g. 123456789012 (12-digit UTR)" prefix={<LockOutlined style={{ color: '#22C55E' }} />} style={{ background: '#0F172A', color: '#F8FAFC', borderColor: '#334155' }} />
-                </Form.Item>
+                {paymentGateway === 'upi' && (
+                  <Form.Item name="upi_reference" label={<span style={{ fontSize: 12, fontWeight: 700, color: '#CBD5E1' }}>UPI Reference / UTR Number (Post Payment)</span>} style={{ marginBottom: 16 }}>
+                    <Input placeholder="e.g. 123456789012 (12-digit UTR)" prefix={<LockOutlined style={{ color: '#22C55E' }} />} style={{ background: '#0F172A', color: '#F8FAFC', borderColor: '#334155' }} />
+                  </Form.Item>
+                )}
 
                 <Button
                   type="primary"
                   htmlType="submit"
                   block
                   size="large"
-                  loading={submitMutation.isPending}
-                  icon={<HeartFilled />}
+                  loading={paymentGateway === 'razorpay' ? isRazorpayLoading : submitMutation.isPending}
+                  icon={paymentGateway === 'razorpay' ? <CreditCardOutlined /> : <HeartFilled />}
                   style={{
-                    background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
-                    borderColor: '#F97316',
+                    background: paymentGateway === 'razorpay'
+                      ? 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)'
+                      : 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
+                    borderColor: paymentGateway === 'razorpay' ? '#2563EB' : '#F97316',
                     height: 48,
                     borderRadius: 12,
                     fontWeight: 900,
                     fontSize: 16,
-                    boxShadow: '0 6px 20px rgba(249, 115, 22, 0.35)'
+                    boxShadow: paymentGateway === 'razorpay'
+                      ? '0 6px 20px rgba(37, 99, 235, 0.35)'
+                      : '0 6px 20px rgba(249, 115, 22, 0.35)'
                   }}
                 >
-                  Submit & Download Official Receipt
+                  {paymentGateway === 'razorpay'
+                    ? `Pay ₹${effectiveAmount.toLocaleString('en-IN')} Online via Razorpay`
+                    : 'Submit UPI & Download Official Receipt'
+                  }
                 </Button>
               </Form>
             </Col>
