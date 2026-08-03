@@ -6,7 +6,15 @@ import os
 # Enable UTF-8 mode globally for font parsing & file I/O
 os.environ["PYTHONUTF8"] = "1"
 import logging
+import warnings
 import traceback
+
+# Suppress false fpdf2 PyFPDF namespace warnings and fontTools subset verbosity
+warnings.filterwarnings("ignore", category=UserWarning, module="fpdf")
+warnings.filterwarnings("ignore", message=".*PyFPDF.*")
+logging.getLogger("fontTools").setLevel(logging.ERROR)
+logging.getLogger("fontTools.subset").setLevel(logging.ERROR)
+
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -114,9 +122,13 @@ def create_app() -> FastAPI:
             from app.core.database import SessionLocal
             from sqlalchemy import text
             db = SessionLocal()
-            db.execute(text("SELECT 1"))
-            db.close()
-            db_status = "connected"
+            try:
+                db.execute(text("SELECT 1"))
+                db_status = "connected"
+            except Exception as e:
+                db_status = f"error: {str(e)}"
+            finally:
+                db.close()
         except Exception as e:
             db_status = f"error: {str(e)}"
 

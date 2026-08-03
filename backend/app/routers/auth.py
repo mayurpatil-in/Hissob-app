@@ -32,6 +32,12 @@ limiter = Limiter(key_func=get_remote_address)
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
+# ─── In-memory failed login tracker for account lockout ────────
+_failed_logins: dict[str, dict] = {}  # email -> {"count": int, "locked_until": datetime|None}
+_MAX_FAILED_ATTEMPTS = 5
+_LOCKOUT_DURATION_MINUTES = 30
+
+
 @router.post("/login", response_model=LoginResponse, summary="User Login")
 @limiter.limit("5/minute")
 async def login(
@@ -40,14 +46,44 @@ async def login(
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ):
+    email_key = payload.email.lower().strip()
+
+    # ── Account Lockout Check ────────────────────────────────
+    lockout_info = _failed_logins.get(email_key)
+    if lockout_info:
+        locked_until = lockout_info.get("locked_until")
+        if locked_until and datetime.now(timezone.utc) < locked_until:
+            remaining = int((locked_until - datetime.now(timezone.utc)).total_seconds() // 60) + 1
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"Account temporarily locked due to {_MAX_FAILED_ATTEMPTS} failed login attempts. Try again in {remaining} minutes.",
+            )
+        elif locked_until and datetime.now(timezone.utc) >= locked_until:
+            # Lockout expired — reset counter
+            _failed_logins.pop(email_key, None)
+
     user_repo = UserRepository(db)
     user = user_repo.get_by_email(payload.email)
 
     if not user or not verify_password(payload.password, user.hashed_password):
+        # ── Increment failed login counter ───────────────────
+        if email_key not in _failed_logins:
+            _failed_logins[email_key] = {"count": 0, "locked_until": None}
+        _failed_logins[email_key]["count"] += 1
+        if _failed_logins[email_key]["count"] >= _MAX_FAILED_ATTEMPTS:
+            _failed_logins[email_key]["locked_until"] = datetime.now(timezone.utc) + timedelta(minutes=_LOCKOUT_DURATION_MINUTES)
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"Account locked for {_LOCKOUT_DURATION_MINUTES} minutes after {_MAX_FAILED_ATTEMPTS} consecutive failed login attempts.",
+            )
+        remaining_attempts = _MAX_FAILED_ATTEMPTS - _failed_logins[email_key]["count"]
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password",
+            detail=f"Invalid email or password. {remaining_attempts} attempt(s) remaining before account lockout.",
         )
+
+    # ── Successful credential check — clear lockout counter ──
+    _failed_logins.pop(email_key, None)
 
     if not user.is_active:
         raise HTTPException(
@@ -270,9 +306,9 @@ async def disable_totp(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ):
-    if payload.password:
-        if not verify_password(payload.password, current_user.hashed_password):
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect password. Cannot disable 2FA.")
+    # Password verification is MANDATORY to disable 2FA (security requirement)
+    if not verify_password(payload.password, current_user.hashed_password):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect password. Cannot disable 2FA.")
 
     current_user.totp_enabled = False
     current_user.totp_secret = None
@@ -291,7 +327,7 @@ async def forgot_password(
 
     # Return success even if user not found to prevent user enumeration
     if user and user.is_active:
-        expire = datetime.now(timezone.utc) + timedelta(hours=24)
+        expire = datetime.now(timezone.utc) + timedelta(hours=1)  # 1-hour expiry for security
         token = jwt.encode(
             {"sub": str(user.id), "email": user.email, "exp": expire, "type": "password_reset"},
             settings.JWT_SECRET_KEY,

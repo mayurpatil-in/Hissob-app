@@ -4,8 +4,16 @@ PDF Generation Service — Generates Executive Luxury PDF Receipt documents with
 import os
 import io
 import logging
+import warnings
 from pathlib import Path
 from typing import Optional
+
+# Suppress false fpdf2 PyFPDF namespace warnings and fontTools subset verbosity
+warnings.filterwarnings("ignore", category=UserWarning, module="fpdf")
+warnings.filterwarnings("ignore", message=".*PyFPDF.*")
+logging.getLogger("fontTools").setLevel(logging.ERROR)
+logging.getLogger("fontTools.subset").setLevel(logging.ERROR)
+
 import qrcode
 from fpdf import FPDF
 from app.core.config import settings

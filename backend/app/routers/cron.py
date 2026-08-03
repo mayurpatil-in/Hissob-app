@@ -17,19 +17,19 @@ logger = logging.getLogger("hisob.cron")
 
 router = APIRouter(prefix="/cron", tags=["Scheduled Jobs / Cron"])
 
-CRON_SECRET_KEY = os.environ.get("CRON_SECRET_KEY", "hisob-cron-secret-396")
+CRON_SECRET_KEY = os.environ.get("CRON_SECRET_KEY", "")
 
 
 def verify_cron_key(key: Optional[str] = Query(None), x_cron_secret: Optional[str] = Header(None)):
     """Verifies that cron request is authenticated via key parameter or header."""
+    if not CRON_SECRET_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Cron secret key is not configured. Set CRON_SECRET_KEY environment variable.",
+        )
     provided_key = key or x_cron_secret
     if not provided_key or provided_key != CRON_SECRET_KEY:
-        # Also allow if super admin key or default key matches
-        if provided_key != "hisob-cron-secret-396":
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid cron authorization key")
-
-
-import os
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid cron authorization key")
 
 
 @router.get("/daily-digest", summary="Trigger Daily Financial Digest for All Active Organizations (GET for cPanel Cron)")
@@ -44,8 +44,8 @@ async def trigger_daily_digest(
     Computes daily financial digest metrics (Collections, Cash vs Digital, Pending Settlements, Expenses)
     and sends executive digest emails to all Organization Admins and Committee members.
     
-    Can be scheduled in WebHostMost cPanel Cron Jobs as:
-    curl -s "https://api.hisob.in/api/v1/cron/daily-digest?key=hisob-cron-secret-396"
+    Schedule in cPanel Cron Jobs with the CRON_SECRET_KEY env var:
+    curl -s "https://api.hisob.in/api/v1/cron/daily-digest?key=YOUR_CRON_SECRET_KEY"
     """
     verify_cron_key(key=key, x_cron_secret=x_cron_secret)
 
@@ -78,4 +78,5 @@ async def trigger_tenant_digest(
     """Triggers daily financial digest for a single organization."""
     verify_cron_key(key=key, x_cron_secret=x_cron_secret)
     return send_tenant_daily_digest(db, tenant_id, force=force)
+
 

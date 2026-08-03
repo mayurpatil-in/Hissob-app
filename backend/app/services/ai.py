@@ -326,14 +326,24 @@ class AIService:
                     f"* **Pending Approvals:** ₹ {ctx['pending_expenses']:,.2f}\n"
                     f"* **Net Reserve / Surplus:** ₹ {ctx['net_surplus']:,.2f}"
                 )
-            elif "donor" in q_lower or "vip" in q_lower or "top" in q_lower:
-                top_str = "\n".join([f"  - **{d['name']}**: ₹ {d['total']:,.2f}" + (" (VIP 🌟)" if d['is_vip'] else "") for d in ctx.get('top_donors', [])])
-                llm_response = (
-                    f"👥 **Donor Intelligence Summary**:\n\n"
-                    f"* **Total Donors:** {ctx['total_donors']}\n"
-                    f"* **VIP Donors:** {ctx['vip_donors_count']}\n"
-                    f"* **Top Contributors:**\n{top_str or '  - No transactions recorded yet.'}"
-                )
+            elif any(k in q_lower for k in ["donor", "donate", "donation", "vip", "top"]):
+                # Try matching specific donor names mentioned in the prompt
+                matched = [
+                    d for d in ctx.get('top_donors', [])
+                    if any(part in d['name'].lower() for part in q_lower.split() if len(part) > 2)
+                ]
+                if matched:
+                    d_lines = "\n".join([f"* **{d['name']}** has made a total donation of **₹ {d['total']:,.2f}**." + (" Categorized as a **VIP donor** 🌟." if d['is_vip'] else "") for d in matched])
+                    llm_response = f"👤 **Donor Search Result**:\n\n{d_lines}\n\nFeel free to ask if you need details on specific receipts or cash settlements!"
+                else:
+                    top_str = "\n".join([f"  - **{d['name']}**: ₹ {d['total']:,.2f}" + (" (VIP 🌟)" if d['is_vip'] else "") for d in ctx.get('top_donors', [])])
+                    llm_response = (
+                        f"👥 **Donor Intelligence Summary**:\n\n"
+                        f"* **Total Donors:** {ctx['total_donors']}\n"
+                        f"* **VIP Donors:** {ctx['vip_donors_count']}\n"
+                        f"* **Top Contributors:**\n{top_str or '  - No transactions recorded yet.'}"
+                    )
+
             elif "ganesh" in q_lower or "durga" in q_lower or "festival" in q_lower:
                 fest_str = "\n".join([f"  - **{f['name']}**: Target ₹ {f['budget']:,.2f} | Collected ₹ {f['collected']:,.2f} | Expenses ₹ {f['expenses']:,.2f}" for f in ctx.get('festivals', [])])
                 llm_response = (

@@ -4,7 +4,7 @@ Receipt model — core financial collection document.
 import uuid
 import enum
 from datetime import date
-from sqlalchemy import String, Boolean, ForeignKey, Date, Text, Numeric, Integer, Index
+from sqlalchemy import String, Boolean, ForeignKey, Date, Text, Numeric, Integer, Index, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID
 from app.core.database import Base
@@ -32,6 +32,7 @@ class ReceiptStatus(str, enum.Enum):
 class Receipt(Base, UUIDMixin, TimestampMixin, TenantMixin):
     __tablename__ = "receipts"
     __table_args__ = (
+        UniqueConstraint("tenant_id", "receipt_number", name="uq_receipts_tenant_receipt_number"),
         Index("idx_receipts_tenant_status", "tenant_id", "status"),
         Index("idx_receipts_tenant_date", "tenant_id", "receipt_date"),
         Index("idx_receipts_tenant_status_date", "tenant_id", "status", "receipt_date"),
@@ -53,7 +54,7 @@ class Receipt(Base, UUIDMixin, TimestampMixin, TenantMixin):
     )
 
     # Receipt details
-    receipt_number: Mapped[str] = mapped_column(String(50), nullable=False, unique=True, index=True)
+    receipt_number: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
     receipt_date: Mapped[date] = mapped_column(Date, nullable=False)
     amount: Mapped[float] = mapped_column(Numeric(15, 2), nullable=False)
     payment_mode: Mapped[PaymentMode] = mapped_column(String(20), nullable=False)

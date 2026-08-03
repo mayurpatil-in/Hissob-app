@@ -1,13 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Input, Button, Spin, App, Tooltip } from 'antd';
+import { useNavigate } from 'react-router-dom';
 
 import {
   CloseOutlined, PlusOutlined, ArrowRightOutlined,
   AudioOutlined, CopyOutlined, CheckOutlined, ReloadOutlined,
-  DeleteOutlined, ThunderboltOutlined
+  DeleteOutlined, ThunderboltOutlined, ShareAltOutlined, SoundOutlined,
+  FileTextOutlined, CheckCircleOutlined, RiseOutlined
+
 } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { chatWithAI, getMyOrganization, type AIChatResponse, type AIChatMessageItem } from '../../api/services';
+
 
 interface Message {
   id: string;
@@ -19,11 +23,12 @@ interface Message {
 }
 
 const CHIP_SUGGESTIONS = [
-  { label: 'FESTIVAL COLLECTIONS', query: 'How much did we collect for Ganesh Chaturthi?' },
-  { label: 'TOP DONORS', query: 'Who are our top 5 VIP donors?' },
-  { label: 'UNSETTLED CASH', query: 'How much cash is currently pending settlement?' },
-  { label: 'EXPENSE RATIO', query: 'What is our expense vs collection ratio?' },
+  { icon: '📿', label: 'COLLECTIONS', query: 'How much did we collect for Ganesh Chaturthi?' },
+  { icon: '👥', label: 'VIP DONORS', query: 'Who are our top 5 VIP donors?' },
+  { icon: '💰', label: 'UNSETTLED CASH', query: 'How much cash is currently pending settlement?' },
+  { icon: '💸', label: 'EXPENSES', query: 'What is our total expense vs collection ratio?' },
 ];
+
 
 interface Props {
   embedded?: boolean;
@@ -143,11 +148,95 @@ export const HisobBotLogoSVG: React.FC<{
 
 const AIChatWidget: React.FC<Props> = ({ embedded = false }) => {
   const { message } = App.useApp();
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(embedded);
   const [activeProvider, setActiveProvider] = useState<string>('Google Gemini');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [speakingMsgId, setSpeakingMsgId] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<any>(null);
+
+  const handleSpeakText = (msgId: string, text: string) => {
+    if ('speechSynthesis' in window) {
+      if (speakingMsgId === msgId) {
+        window.speechSynthesis.cancel();
+        setSpeakingMsgId(null);
+        return;
+      }
+      window.speechSynthesis.cancel();
+      const cleanText = text.replace(/[*_#`~]/g, '');
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      utterance.rate = 1.0;
+      utterance.onend = () => setSpeakingMsgId(null);
+      utterance.onerror = () => setSpeakingMsgId(null);
+      setSpeakingMsgId(msgId);
+      window.speechSynthesis.speak(utterance);
+    } else {
+      message.warning('Text-to-Speech is not supported in this browser.');
+    }
+  };
+
+  const handleShareWhatsApp = (text: string) => {
+    const cleanText = text.replace(/\*\*/g, '*');
+    const formattedMessage = `📊 *Hisob AI Financial Briefing*\n\n${cleanText}\n\n_Delivered by Hisob ERP AI Copilot_`;
+    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(formattedMessage)}`;
+    window.open(url, '_blank');
+  };
+
+  const renderEntityActions = (text: string) => {
+    const t = text.toLowerCase();
+    const actions: { label: string; icon: React.ReactNode; path: string }[] = [];
+
+    if (t.includes('donor') || t.includes('donation') || t.includes('collected') || t.includes('receipt')) {
+      actions.push({
+        label: 'Inspect Receipts',
+        icon: <FileTextOutlined style={{ fontSize: 11 }} />,
+        path: '/receipts',
+      });
+    }
+    if (t.includes('unsettled') || t.includes('settlement') || t.includes('cash pending')) {
+      actions.push({
+        label: 'Settle Pending Cash',
+        icon: <CheckCircleOutlined style={{ fontSize: 11 }} />,
+        path: '/settlements',
+      });
+    }
+    if (t.includes('expense') || t.includes('paid') || t.includes('spend')) {
+      actions.push({
+        label: 'Inspect Expenses',
+        icon: <RiseOutlined style={{ fontSize: 11 }} />,
+        path: '/expenses',
+      });
+    }
+
+    if (actions.length === 0) return null;
+
+    return (
+      <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        {actions.map((act, idx) => (
+          <Button
+            key={idx}
+            type="default"
+            size="small"
+            icon={act.icon}
+            onClick={() => navigate(act.path)}
+            style={{
+              fontSize: 11,
+              height: 24,
+              borderRadius: 12,
+              borderColor: 'rgba(0, 102, 255, 0.3)',
+              color: '#0066FF',
+              background: 'rgba(0, 102, 255, 0.04)',
+              fontWeight: 600,
+            }}
+          >
+            {act.label}
+          </Button>
+        ))}
+      </div>
+    );
+  };
+
 
   const { data: org } = useQuery({
     queryKey: ['my-organization'],
@@ -619,6 +708,9 @@ const AIChatWidget: React.FC<Props> = ({ embedded = false }) => {
             >
               {renderFormattedText(msg.text)}
 
+              {/* Interactive Entity Action Shortcuts for AI responses */}
+              {msg.sender === 'ai' && renderEntityActions(msg.text)}
+
               {/* Message Bottom Toolbar for AI responses */}
               <div
                 style={{
@@ -631,6 +723,24 @@ const AIChatWidget: React.FC<Props> = ({ embedded = false }) => {
               >
                 {msg.sender === 'ai' ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Tooltip title="Listen (Voice Playback)">
+                      <Button
+                        type="text"
+                        size="small"
+                        icon={<SoundOutlined style={{ fontSize: 11, color: speakingMsgId === msg.id ? '#22C55E' : 'var(--color-text-secondary)' }} />}
+                        onClick={() => handleSpeakText(msg.id, msg.text)}
+                        style={{ padding: '0 4px', height: 18 }}
+                      />
+                    </Tooltip>
+                    <Tooltip title="Share to WhatsApp">
+                      <Button
+                        type="text"
+                        size="small"
+                        icon={<ShareAltOutlined style={{ fontSize: 11, color: '#25D366' }} />}
+                        onClick={() => handleShareWhatsApp(msg.text)}
+                        style={{ padding: '0 4px', height: 18 }}
+                      />
+                    </Tooltip>
                     <Tooltip title="Copy Answer">
                       <Button
                         type="text"
@@ -656,6 +766,7 @@ const AIChatWidget: React.FC<Props> = ({ embedded = false }) => {
                     )}
                   </div>
                 ) : (
+
                   <div />
                 )}
 
@@ -773,9 +884,10 @@ const AIChatWidget: React.FC<Props> = ({ embedded = false }) => {
                   e.currentTarget.style.background = 'var(--color-bg)';
                 }}
               >
-                <span>{chip.label}</span>
+                <span>{chip.icon} {chip.label}</span>
                 <PlusOutlined style={{ fontSize: 9 }} />
               </button>
+
             ))}
           </div>
         </div>
