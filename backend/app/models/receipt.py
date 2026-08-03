@@ -18,6 +18,7 @@ class PaymentMode(str, enum.Enum):
     DD = "dd"
     NEFT = "neft"
     RTGS = "rtgs"
+    DIGITAL = "digital"
     OTHER = "other"
 
 

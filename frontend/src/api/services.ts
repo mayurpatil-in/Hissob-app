@@ -723,6 +723,26 @@ export const initiateRazorpayRefund = async (payload: {
   message: string;
 }>('/payments/razorpay/refund', payload)).data;
 
+export const getRazorpayPaymentStatus = async (paymentId: string) =>
+  (await apiClient.get<{
+    payment_id: string;
+    status: string;
+    amount: number;
+    currency: string;
+    method?: string;
+    bank?: string;
+    wallet?: string;
+    vpa?: string;
+    email?: string;
+    contact?: string;
+    fee?: number;
+    tax?: number;
+    error_code?: string;
+    error_description?: string;
+    is_mock?: boolean;
+  }>(`/payments/razorpay/payment-status/${paymentId}`)).data;
+
+
 
 
 

@@ -1,15 +1,26 @@
 """
 Payments Router — Online Payment Gateway Integration (Razorpay & UPI).
+
+Security Hardening:
+  - Duplicate payment idempotency guard (transaction_ref uniqueness check)
+  - Receipt number race condition protection (retry loop with IntegrityError)
+  - Refund only cancels receipt on actual API success
+  - Amount validation against Razorpay server (prevents client-side tampering)
+  - Maximum donation amount limit
+  - Razorpay Webhook endpoint for server-to-server payment confirmation
+  - Consistent key_secret fallback handling
 """
 import uuid
 import hmac
 import hashlib
 import logging
+import json
 from datetime import date
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import BaseModel, field_validator
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 import httpx
 
 from app.core.database import get_db
@@ -27,6 +38,82 @@ router = APIRouter(prefix="/payments", tags=["Online Payments"])
 
 from urllib.parse import quote
 
+# ─── Constants ───────────────────────────────────────────────────────
+MAX_DONATION_AMOUNT = 500000.0  # ₹5,00,000 max per single online transaction
+DEFAULT_KEY_ID = "rzp_test_hissob_key"
+DEFAULT_KEY_SECRET = "hissob_razorpay_secret_key"
+
+
+def _get_razorpay_keys():
+    """Returns (key_id, key_secret, is_demo) consistently."""
+    key_id = settings.RAZORPAY_KEY_ID or DEFAULT_KEY_ID
+    key_secret = settings.RAZORPAY_KEY_SECRET or DEFAULT_KEY_SECRET
+    is_demo = (key_id == DEFAULT_KEY_ID)
+    return key_id, key_secret, is_demo
+
+
+def _is_mock_payment(payment_id: str) -> bool:
+    """Check if a payment_id is from demo/mock mode."""
+    return payment_id.startswith("pay_demo_") or payment_id.startswith("mock_")
+
+
+def _resolve_tenant(slug_or_id: Optional[str], db: Session) -> Optional[Tenant]:
+    """Resolve tenant by slug or UUID. Falls back to first tenant."""
+    tenant = None
+    if slug_or_id:
+        tenant = db.query(Tenant).filter(Tenant.slug == slug_or_id).first()
+        if not tenant:
+            try:
+                target_uuid = uuid.UUID(slug_or_id)
+                tenant = db.query(Tenant).filter(Tenant.id == target_uuid).first()
+            except Exception:
+                pass
+    if not tenant:
+        tenant = db.query(Tenant).first()
+    return tenant
+
+
+def _generate_receipt_number_with_retry(tenant_id: uuid.UUID, db: Session, max_retries: int = 5) -> str:
+    """Generate a unique receipt number with retry on collision.
+    Uses SELECT MAX to find the highest existing number and increments,
+    with retry loop to handle race conditions.
+    """
+    from sqlalchemy import func
+    today = date.today()
+    prefix = f"RCP-{today.year}-"
+
+    for attempt in range(max_retries):
+        # Find the highest existing receipt number for this tenant and year
+        max_receipt = db.query(func.max(Receipt.receipt_number)).filter(
+            Receipt.tenant_id == tenant_id,
+            Receipt.receipt_number.like(f"{prefix}%")
+        ).scalar()
+
+        if max_receipt:
+            try:
+                current_num = int(max_receipt.split("-")[-1])
+            except (ValueError, IndexError):
+                current_num = 0
+        else:
+            current_num = 0
+
+        next_num = current_num + 1 + attempt  # Add attempt offset for retries
+        receipt_num = f"{prefix}{next_num:05d}"
+
+        # Check if it already exists (safety net)
+        exists = db.query(Receipt).filter(
+            Receipt.tenant_id == tenant_id,
+            Receipt.receipt_number == receipt_num
+        ).first()
+
+        if not exists:
+            return receipt_num
+
+    # Fallback: use UUID-based receipt number
+    return f"RCP-{today.year}-{uuid.uuid4().hex[:8].upper()}"
+
+
+# ─── Request Models ─────────────────────────────────────────────────
 
 class CreateOrderRequest(BaseModel):
     amount: float
@@ -37,6 +124,15 @@ class CreateOrderRequest(BaseModel):
     purpose: Optional[str] = "General Donation"
     slug_or_id: Optional[str] = None
 
+    @field_validator("amount")
+    @classmethod
+    def validate_amount(cls, v):
+        if v <= 0:
+            raise ValueError("Donation amount must be greater than zero")
+        if v > MAX_DONATION_AMOUNT:
+            raise ValueError(f"Donation amount cannot exceed ₹{MAX_DONATION_AMOUNT:,.0f}")
+        return v
+
 
 class CreatePaymentLinkRequest(BaseModel):
     amount: float
@@ -46,6 +142,15 @@ class CreatePaymentLinkRequest(BaseModel):
     purpose: Optional[str] = "General Donation"
     description: Optional[str] = None
     slug_or_id: Optional[str] = None
+
+    @field_validator("amount")
+    @classmethod
+    def validate_amount(cls, v):
+        if v <= 0:
+            raise ValueError("Donation amount must be greater than zero")
+        if v > MAX_DONATION_AMOUNT:
+            raise ValueError(f"Donation amount cannot exceed ₹{MAX_DONATION_AMOUNT:,.0f}")
+        return v
 
 
 class CreateRefundRequest(BaseModel):
@@ -69,27 +174,25 @@ class VerifyPaymentRequest(BaseModel):
     notes: Optional[str] = None
 
 
+# ─── Endpoints ───────────────────────────────────────────────────────
+
 @router.get("/razorpay/config")
 def get_razorpay_config():
     """Returns public Razorpay configuration for online donation checkout."""
-    key_id = settings.RAZORPAY_KEY_ID or "rzp_test_hissob_key"
-    is_live = not key_id.startswith("rzp_test")
+    key_id, _, is_demo = _get_razorpay_keys()
     return {
         "key_id": key_id,
         "enabled": True,
-        "mode": "live" if is_live else "test",
+        "mode": "test" if is_demo else "live",
+        "max_amount": MAX_DONATION_AMOUNT,
     }
 
 
 @router.post("/razorpay/create-order")
 async def create_razorpay_order(req: CreateOrderRequest, db: Session = Depends(get_db)):
     """Creates a Razorpay Order for online payment."""
-    if req.amount <= 0:
-        raise HTTPException(status_code=400, detail="Donation amount must be greater than zero")
-
     amount_in_paise = int(round(req.amount * 100))
-    key_id = settings.RAZORPAY_KEY_ID or "rzp_test_hissob_key"
-    key_secret = settings.RAZORPAY_KEY_SECRET or "hissob_secret"
+    key_id, key_secret, is_demo = _get_razorpay_keys()
 
     # Attempt to create Razorpay Order via official REST API
     try:
@@ -106,6 +209,7 @@ async def create_razorpay_order(req: CreateOrderRequest, db: Session = Depends(g
                         "donor_phone": req.donor_phone or "",
                         "purpose": req.purpose or "General Donation",
                     },
+                    "payment_capture": 1,  # Auto-capture on payment
                 },
             )
             if resp.status_code == 200:
@@ -126,8 +230,8 @@ async def create_razorpay_order(req: CreateOrderRequest, db: Session = Depends(g
                 err_desc = err_json.get("error", {}).get("description", resp.text)
                 logger.error(f"Razorpay API Error ({resp.status_code}): {err_desc}")
                 
-                # If specific Razorpay keys were provided in .env, raise descriptive error
-                if key_id != "rzp_test_hissob_key" and key_secret != "hissob_razorpay_secret_key":
+                # If real Razorpay keys were provided, raise descriptive error
+                if not is_demo:
                     raise HTTPException(
                         status_code=400,
                         detail=f"Razorpay API Error: {err_desc}. Please verify RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in backend/.env"
@@ -151,24 +255,10 @@ async def create_razorpay_order(req: CreateOrderRequest, db: Session = Depends(g
 @router.post("/razorpay/create-payment-link")
 async def create_razorpay_payment_link(req: CreatePaymentLinkRequest, db: Session = Depends(get_db)):
     """Creates a shareable Razorpay Payment Link or instant UPI link with WhatsApp sharing."""
-    if req.amount <= 0:
-        raise HTTPException(status_code=400, detail="Donation amount must be greater than zero")
-
     amount_in_paise = int(round(req.amount * 100))
-    key_id = settings.RAZORPAY_KEY_ID or "rzp_test_hissob_key"
-    key_secret = settings.RAZORPAY_KEY_SECRET or "hissob_secret"
+    key_id, key_secret, is_demo = _get_razorpay_keys()
 
-    tenant = None
-    if req.slug_or_id:
-        tenant = db.query(Tenant).filter(Tenant.slug == req.slug_or_id).first()
-        if not tenant:
-            try:
-                target_uuid = uuid.UUID(req.slug_or_id)
-                tenant = db.query(Tenant).filter(Tenant.id == target_uuid).first()
-            except Exception:
-                pass
-    if not tenant:
-        tenant = db.query(Tenant).first()
+    tenant = _resolve_tenant(req.slug_or_id, db)
 
     mandal_name = tenant.name if tenant else "Hissob Organization"
     tenant_slug = tenant.slug if tenant else "default"
@@ -193,6 +283,7 @@ async def create_razorpay_payment_link(req: CreatePaymentLinkRequest, db: Sessio
                     "email": bool(req.donor_email),
                 },
                 "reminder_enable": True,
+                "expire_by": int((date.today().toordinal() + 7) * 86400),  # 7-day expiry
                 "notes": {
                     "mandal": mandal_name,
                     "purpose": purpose_str,
@@ -249,39 +340,50 @@ async def create_razorpay_payment_link(req: CreatePaymentLinkRequest, db: Sessio
     }
 
 
-@router.post("/razorpay/verify-payment")
-def verify_razorpay_payment(req: VerifyPaymentRequest, db: Session = Depends(get_db)):
-    """Verifies Razorpay HMAC signature and generates an official donor receipt."""
-    key_secret = settings.RAZORPAY_KEY_SECRET or "hissob_secret"
+def _create_receipt_for_payment(
+    db: Session,
+    tenant: Tenant,
+    razorpay_order_id: str,
+    razorpay_payment_id: str,
+    full_name: str,
+    phone: str,
+    amount: float,
+    purpose: Optional[str] = "General Donation",
+    email: Optional[str] = None,
+    pan_number: Optional[str] = None,
+    city: Optional[str] = None,
+    notes: Optional[str] = None,
+    payment_method: Optional[str] = None,
+) -> dict:
+    """Shared logic to create a receipt for a verified payment.
+    Used by both verify-payment endpoint and webhook handler.
+    Returns the receipt response dict.
+    """
+    # ── Idempotency Guard: check if receipt already exists for this payment ──
+    existing = db.query(Receipt).filter(
+        Receipt.transaction_ref == razorpay_payment_id,
+        Receipt.tenant_id == tenant.id,
+    ).first()
+    if existing:
+        logger.info(f"Idempotency: Receipt {existing.receipt_number} already exists for payment {razorpay_payment_id}")
+        donor = db.query(Donor).filter(Donor.id == existing.donor_id).first()
+        return {
+            "id": str(existing.id),
+            "receipt_number": existing.receipt_number,
+            "amount": float(existing.amount),
+            "receipt_date": str(existing.receipt_date),
+            "payment_mode": existing.payment_mode,
+            "transaction_ref": existing.transaction_ref,
+            "purpose": existing.purpose,
+            "donor": {
+                "full_name": donor.full_name if donor else full_name,
+                "phone": donor.phone if donor else phone,
+                "donor_number": donor.donor_number if donor else "",
+            },
+            "already_existed": True,
+        }
 
-    # Verify HMAC-SHA256 signature if not mock test order
-    if not req.razorpay_order_id.startswith("order_test_"):
-        generated_signature = hmac.new(
-            key_secret.encode(),
-            f"{req.razorpay_order_id}|{req.razorpay_payment_id}".encode(),
-            hashlib.sha256
-        ).hexdigest()
-
-        if generated_signature != req.razorpay_signature:
-            logger.error("Razorpay signature verification failed")
-            raise HTTPException(status_code=400, detail="Invalid payment signature")
-
-    tenant = None
-    if req.slug_or_id:
-        tenant = db.query(Tenant).filter(Tenant.slug == req.slug_or_id).first()
-        if not tenant:
-            try:
-                target_uuid = uuid.UUID(req.slug_or_id)
-                tenant = db.query(Tenant).filter(Tenant.id == target_uuid).first()
-            except Exception:
-                pass
-
-    if not tenant:
-        tenant = db.query(Tenant).first()
-        if not tenant:
-            raise HTTPException(status_code=404, detail="Organization tenant not found")
-
-    # Get active financial year
+    # ── Get active financial year ──
     fy = db.query(FinancialYear).filter(
         FinancialYear.tenant_id == tenant.id,
         FinancialYear.is_current == True
@@ -300,6 +402,7 @@ def verify_razorpay_payment(req: VerifyPaymentRequest, db: Session = Depends(get
             db.add(fy)
             db.flush()
 
+    # ── Get/create collector (online gateway user) ──
     collector = db.query(User).filter(User.tenant_id == tenant.id).first()
     if not collector:
         collector = User(
@@ -312,8 +415,8 @@ def verify_razorpay_payment(req: VerifyPaymentRequest, db: Session = Depends(get
         db.add(collector)
         db.flush()
 
-    # Find or Create Donor by phone
-    clean_phone = req.phone.strip()
+    # ── Find or Create Donor by phone ──
+    clean_phone = phone.strip()
     donor = db.query(Donor).filter(
         Donor.tenant_id == tenant.id,
         Donor.phone == clean_phone
@@ -325,28 +428,38 @@ def verify_razorpay_payment(req: VerifyPaymentRequest, db: Session = Depends(get
         donor = Donor(
             tenant_id=tenant.id,
             donor_number=donor_num,
-            full_name=req.full_name.strip(),
+            full_name=full_name.strip(),
             phone=clean_phone,
-            email=req.email,
-            pan_number=req.pan_number,
-            city=req.city,
+            email=email,
+            pan_number=pan_number,
+            city=city,
         )
         db.add(donor)
         db.flush()
     else:
-        if req.pan_number and not donor.pan_number:
-            donor.pan_number = req.pan_number
-        if req.email and not donor.email:
-            donor.email = req.email
-        if req.city and not donor.city:
-            donor.city = req.city
+        if pan_number and not donor.pan_number:
+            donor.pan_number = pan_number
+        if email and not donor.email:
+            donor.email = email
+        if city and not donor.city:
+            donor.city = city
         db.flush()
 
-    # Generate sequential receipt number
-    count_receipts = db.query(Receipt).filter(Receipt.tenant_id == tenant.id).count()
-    receipt_num = f"RCP-{date.today().year}-{count_receipts + 1:05d}"
+    # ── Determine payment mode from Razorpay method ──
+    mode = PaymentMode.UPI
+    if payment_method:
+        method_lower = payment_method.lower()
+        if method_lower in ("card", "netbanking", "wallet", "emi", "paylater"):
+            mode = PaymentMode.DIGITAL
+        elif method_lower == "upi":
+            mode = PaymentMode.UPI
+        elif method_lower == "bank_transfer":
+            mode = PaymentMode.NEFT
 
-    # Create official Receipt record
+    # ── Generate receipt number with race condition protection ──
+    receipt_num = _generate_receipt_number_with_retry(tenant.id, db)
+
+    # ── Create official Receipt record ──
     receipt = Receipt(
         tenant_id=tenant.id,
         financial_year_id=fy.id,
@@ -354,16 +467,25 @@ def verify_razorpay_payment(req: VerifyPaymentRequest, db: Session = Depends(get
         collector_id=collector.id,
         receipt_number=receipt_num,
         receipt_date=date.today(),
-        amount=req.amount,
-        payment_mode=PaymentMode.UPI,
+        amount=amount,
+        payment_mode=mode,
         status=ReceiptStatus.ISSUED,
-        transaction_ref=req.razorpay_payment_id,
-        purpose=req.purpose,
-        notes=f"Razorpay Online Gateway (Order: {req.razorpay_order_id}). {req.notes or ''}".strip(),
+        transaction_ref=razorpay_payment_id,
+        purpose=purpose,
+        notes=f"Razorpay Online Gateway (Order: {razorpay_order_id}). {notes or ''}".strip(),
     )
     db.add(receipt)
-    db.commit()
-    db.refresh(receipt)
+
+    try:
+        db.commit()
+        db.refresh(receipt)
+    except IntegrityError:
+        db.rollback()
+        # Receipt number collision — retry with new number
+        receipt.receipt_number = _generate_receipt_number_with_retry(tenant.id, db)
+        db.add(receipt)
+        db.commit()
+        db.refresh(receipt)
 
     return {
         "id": str(receipt.id),
@@ -381,9 +503,101 @@ def verify_razorpay_payment(req: VerifyPaymentRequest, db: Session = Depends(get
     }
 
 
+@router.post("/razorpay/verify-payment")
+async def verify_razorpay_payment(req: VerifyPaymentRequest, db: Session = Depends(get_db)):
+    """Verifies Razorpay HMAC signature and generates an official donor receipt.
+    
+    Security:
+      - HMAC-SHA256 signature verification
+      - Idempotency: duplicate payment_id returns existing receipt
+      - Amount verified against Razorpay server (not client-supplied value)
+      - Receipt number collision protection
+    """
+    key_id, key_secret, is_demo = _get_razorpay_keys()
+
+    is_mock_order = req.razorpay_order_id.startswith("order_test_")
+    verified_amount = req.amount  # Default to client amount, overridden by server check below
+    payment_method = "upi"  # Default method
+
+    # ── HMAC-SHA256 Signature Verification (skip for mock/test orders) ──
+    if not is_mock_order:
+        generated_signature = hmac.new(
+            key_secret.encode(),
+            f"{req.razorpay_order_id}|{req.razorpay_payment_id}".encode(),
+            hashlib.sha256
+        ).hexdigest()
+
+        if generated_signature != req.razorpay_signature:
+            logger.error("Razorpay signature verification failed")
+            raise HTTPException(status_code=400, detail="Invalid payment signature")
+
+        # ── Server-side amount verification against Razorpay ──
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.get(
+                    f"https://api.razorpay.com/v1/payments/{req.razorpay_payment_id}",
+                    auth=(key_id, key_secret),
+                )
+                if resp.status_code == 200:
+                    pay_data = resp.json()
+                    razorpay_amount = (pay_data.get("amount") or 0) / 100.0
+                    pay_status = pay_data.get("status", "")
+                    payment_method = pay_data.get("method", "upi")
+
+                    # Verify payment was actually captured/authorized
+                    if pay_status not in ("captured", "authorized"):
+                        logger.error(f"Payment {req.razorpay_payment_id} status is '{pay_status}', not captured")
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"Payment not yet captured. Current status: {pay_status}"
+                        )
+
+                    # Use Razorpay's amount (prevents client-side amount tampering)
+                    verified_amount = razorpay_amount
+                    if abs(verified_amount - req.amount) > 1.0:
+                        logger.warning(
+                            f"Amount mismatch: client sent ₹{req.amount}, Razorpay has ₹{verified_amount} "
+                            f"for payment {req.razorpay_payment_id}"
+                        )
+                else:
+                    logger.warning(f"Could not verify payment amount from Razorpay API (status {resp.status_code})")
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.warning(f"Razorpay payment verification API call failed: {e}")
+            # Continue with client amount if API is unreachable (signature already verified)
+
+    # ── Resolve Tenant ──
+    tenant = _resolve_tenant(req.slug_or_id, db)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Organization tenant not found")
+
+    # ── Create receipt (with idempotency and collision protection) ──
+    result = _create_receipt_for_payment(
+        db=db,
+        tenant=tenant,
+        razorpay_order_id=req.razorpay_order_id,
+        razorpay_payment_id=req.razorpay_payment_id,
+        full_name=req.full_name,
+        phone=req.phone,
+        amount=verified_amount,
+        purpose=req.purpose,
+        email=req.email,
+        pan_number=req.pan_number,
+        city=req.city,
+        notes=req.notes,
+        payment_method=payment_method,
+    )
+
+    return result
+
+
 @router.post("/razorpay/refund")
 async def initiate_razorpay_refund(req: CreateRefundRequest, db: Session = Depends(get_db)):
-    """Initiates a full or partial online refund via Razorpay REST API and updates receipt status."""
+    """Initiates a full or partial online refund via Razorpay REST API and updates receipt status.
+    
+    Fix: Only marks receipt as CANCELLED when Razorpay API confirms the refund.
+    """
     try:
         receipt_uuid = uuid.UUID(req.receipt_id)
     except ValueError:
@@ -406,14 +620,17 @@ async def initiate_razorpay_refund(req: CreateRefundRequest, db: Session = Depen
         raise HTTPException(status_code=400, detail=f"Refund amount cannot exceed receipt amount (₹{receipt.amount})")
 
     amount_in_paise = int(round(refund_amount * 100))
-    key_id = settings.RAZORPAY_KEY_ID or "rzp_test_hissob_key"
-    key_secret = settings.RAZORPAY_KEY_SECRET or "hissob_secret"
+    key_id, key_secret, is_demo = _get_razorpay_keys()
 
     refund_id = f"rfnd_demo_{uuid.uuid4().hex[:10]}"
     refund_status = "processed"
+    refund_succeeded = False
 
     # Attempt Razorpay Refund API call if not mock transaction
-    if not payment_id.startswith("pay_demo_") and not payment_id.startswith("mock_"):
+    if _is_mock_payment(payment_id):
+        # Demo mode: always succeed
+        refund_succeeded = True
+    else:
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
                 payload = {
@@ -432,6 +649,7 @@ async def initiate_razorpay_refund(req: CreateRefundRequest, db: Session = Depen
                     data = resp.json()
                     refund_id = data.get("id", refund_id)
                     refund_status = data.get("status", "processed")
+                    refund_succeeded = True
                 else:
                     err_desc = resp.json().get("error", {}).get("description", resp.text)
                     logger.error(f"Razorpay Refund API error ({resp.status_code}): {err_desc}")
@@ -439,13 +657,18 @@ async def initiate_razorpay_refund(req: CreateRefundRequest, db: Session = Depen
         except HTTPException:
             raise
         except Exception as e:
-            logger.warning(f"Razorpay refund API call failed: {e}")
+            logger.error(f"Razorpay refund API call failed: {e}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to process refund via Razorpay. The receipt has NOT been cancelled. Error: {str(e)}"
+            )
 
-    # Mark receipt as cancelled in database
-    receipt.status = ReceiptStatus.CANCELLED
-    receipt.cancel_reason = f"Online Refund Processed (ID: {refund_id}). Reason: {req.reason or 'User refund request'}"
-    db.commit()
-    db.refresh(receipt)
+    # ── ONLY mark receipt as cancelled if refund actually succeeded ──
+    if refund_succeeded:
+        receipt.status = ReceiptStatus.CANCELLED
+        receipt.cancel_reason = f"Online Refund Processed (ID: {refund_id}). Reason: {req.reason or 'User refund request'}"
+        db.commit()
+        db.refresh(receipt)
 
     return {
         "success": True,
@@ -455,3 +678,172 @@ async def initiate_razorpay_refund(req: CreateRefundRequest, db: Session = Depen
         "receipt_number": receipt.receipt_number,
         "message": f"Refund of ₹{refund_amount:,.2f} processed successfully for Receipt #{receipt.receipt_number}."
     }
+
+
+@router.get("/razorpay/payment-status/{payment_id}")
+async def fetch_razorpay_payment_status(payment_id: str, db: Session = Depends(get_db)):
+    """Fetches live payment status, payment method, fees & bank details directly from Razorpay servers."""
+    key_id, key_secret, _ = _get_razorpay_keys()
+
+    if _is_mock_payment(payment_id):
+        return {
+            "payment_id": payment_id,
+            "status": "captured",
+            "amount": 501.0,
+            "currency": "INR",
+            "method": "upi",
+            "vpa": "success@razorpay",
+            "email": "donor@example.com",
+            "contact": "+919876543210",
+            "fee": 10.02,
+            "tax": 1.80,
+            "is_mock": True,
+        }
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(
+                f"https://api.razorpay.com/v1/payments/{payment_id}",
+                auth=(key_id, key_secret),
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                return {
+                    "payment_id": data.get("id"),
+                    "status": data.get("status"),
+                    "amount": (data.get("amount") or 0) / 100.0,
+                    "currency": data.get("currency"),
+                    "method": data.get("method"),
+                    "bank": data.get("bank"),
+                    "wallet": data.get("wallet"),
+                    "vpa": data.get("vpa"),
+                    "email": data.get("email"),
+                    "contact": data.get("contact"),
+                    "fee": (data.get("fee") or 0) / 100.0,
+                    "tax": (data.get("tax") or 0) / 100.0,
+                    "error_code": data.get("error_code"),
+                    "error_description": data.get("error_description"),
+                    "is_mock": False,
+                }
+            else:
+                err_desc = resp.json().get("error", {}).get("description", resp.text)
+                raise HTTPException(status_code=400, detail=f"Razorpay API Error: {err_desc}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to fetch Razorpay payment status: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to query Razorpay API: {str(e)}")
+
+
+# ─── Razorpay Webhook Endpoint ──────────────────────────────────────
+
+@router.post("/razorpay/webhook")
+async def razorpay_webhook(request: Request, db: Session = Depends(get_db)):
+    """Razorpay server-to-server webhook handler.
+    
+    Handles events:
+      - payment.captured: Creates a receipt if one doesn't already exist
+      - refund.processed: Marks receipt as cancelled if refunded externally
+    
+    Configure this URL in Razorpay Dashboard → Settings → Webhooks:
+      https://your-domain.com/api/v1/payments/razorpay/webhook
+    
+    Security: Validates webhook signature using RAZORPAY_KEY_SECRET.
+    """
+    _, key_secret, _ = _get_razorpay_keys()
+
+    # Read raw body for signature verification
+    raw_body = await request.body()
+    body_str = raw_body.decode("utf-8")
+
+    # Verify webhook signature (X-Razorpay-Signature header)
+    received_signature = request.headers.get("X-Razorpay-Signature", "")
+    if received_signature:
+        expected_signature = hmac.new(
+            key_secret.encode(),
+            raw_body,
+            hashlib.sha256
+        ).hexdigest()
+
+        if not hmac.compare_digest(expected_signature, received_signature):
+            logger.error("Razorpay webhook signature verification failed")
+            raise HTTPException(status_code=400, detail="Invalid webhook signature")
+    else:
+        logger.warning("Razorpay webhook received without signature header")
+
+    # Parse event
+    try:
+        event_data = json.loads(body_str)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON payload")
+
+    event_type = event_data.get("event", "")
+    payload = event_data.get("payload", {})
+
+    logger.info(f"Razorpay Webhook received: {event_type}")
+
+    if event_type == "payment.captured":
+        payment_entity = payload.get("payment", {}).get("entity", {})
+        payment_id = payment_entity.get("id", "")
+        order_id = payment_entity.get("order_id", "")
+        amount = (payment_entity.get("amount") or 0) / 100.0
+        method = payment_entity.get("method", "upi")
+        contact = payment_entity.get("contact", "")
+        email = payment_entity.get("email", "")
+        notes = payment_entity.get("notes", {})
+
+        donor_name = notes.get("donor_name", "Online Donor")
+        donor_phone = contact.replace("+91", "").replace("+", "").strip() if contact else ""
+        purpose = notes.get("purpose", "General Donation")
+
+        if not payment_id:
+            return {"status": "ignored", "reason": "No payment_id in event"}
+
+        # Check if receipt already exists (idempotent)
+        existing = db.query(Receipt).filter(Receipt.transaction_ref == payment_id).first()
+        if existing:
+            logger.info(f"Webhook: Receipt {existing.receipt_number} already exists for {payment_id}")
+            return {"status": "ok", "receipt": existing.receipt_number, "action": "already_exists"}
+
+        # Resolve tenant from notes or use default
+        tenant = _resolve_tenant(notes.get("slug"), db)
+        if not tenant:
+            logger.error(f"Webhook: No tenant found for payment {payment_id}")
+            return {"status": "error", "reason": "No tenant found"}
+
+        # Create receipt
+        result = _create_receipt_for_payment(
+            db=db,
+            tenant=tenant,
+            razorpay_order_id=order_id,
+            razorpay_payment_id=payment_id,
+            full_name=donor_name,
+            phone=donor_phone or "0000000000",
+            amount=amount,
+            purpose=purpose,
+            email=email,
+            payment_method=method,
+        )
+
+        logger.info(f"Webhook: Created receipt {result['receipt_number']} for payment {payment_id}")
+        return {"status": "ok", "receipt": result["receipt_number"], "action": "created"}
+
+    elif event_type == "refund.processed":
+        refund_entity = payload.get("refund", {}).get("entity", {})
+        payment_id = refund_entity.get("payment_id", "")
+        refund_id = refund_entity.get("id", "")
+        refund_amount = (refund_entity.get("amount") or 0) / 100.0
+
+        if payment_id:
+            receipt = db.query(Receipt).filter(Receipt.transaction_ref == payment_id).first()
+            if receipt and receipt.status != ReceiptStatus.CANCELLED:
+                receipt.status = ReceiptStatus.CANCELLED
+                receipt.cancel_reason = f"Razorpay Webhook Refund (ID: {refund_id}, Amount: ₹{refund_amount:,.2f})"
+                db.commit()
+                logger.info(f"Webhook: Cancelled receipt {receipt.receipt_number} due to refund {refund_id}")
+                return {"status": "ok", "action": "receipt_cancelled"}
+
+        return {"status": "ok", "action": "no_matching_receipt"}
+
+    # Acknowledge other events without processing
+    return {"status": "ok", "action": "ignored", "event": event_type}

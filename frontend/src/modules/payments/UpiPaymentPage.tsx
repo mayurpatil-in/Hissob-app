@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Card, Row, Col, Typography, Input, Button, Form, Segmented,
-  Tag, App, Modal, Result, Avatar, Spin
+  Tag, App, Modal, Result, Avatar, Spin, ConfigProvider, theme
 } from 'antd';
 import {
   CreditCardOutlined, QrcodeOutlined,
@@ -270,13 +270,44 @@ const UpiPaymentPage: React.FC = () => {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #0F172A 100%)',
-      padding: '24px 16px 48px 16px',
-      color: '#F8FAFC',
-      fontFamily: "'Inter', sans-serif"
-    }}>
+    <ConfigProvider
+      theme={{
+        algorithm: theme.darkAlgorithm,
+        token: {
+          colorBgContainer: '#0F172A',
+          colorBgElevated: '#1E293B',
+          colorText: '#F8FAFC',
+          colorTextSecondary: '#94A3B8',
+          colorTextPlaceholder: '#64748B',
+          colorBorder: '#334155',
+          colorPrimary: '#F97316',
+        },
+        components: {
+          Input: {
+            colorBgContainer: '#0F172A',
+            colorText: '#F8FAFC',
+            colorTextPlaceholder: '#94A3B8',
+            colorBorder: '#334155',
+            activeBorderColor: '#F97316',
+            hoverBorderColor: '#F97316',
+          },
+          Segmented: {
+            colorBgContainer: '#0F172A',
+            colorBgLayout: '#0F172A',
+            colorText: '#CBD5E1',
+            itemSelectedBg: '#F97316',
+            itemSelectedColor: '#FFFFFF',
+          },
+        },
+      }}
+    >
+      <div className="upi-payment-page" style={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #0F172A 100%)',
+        padding: '24px 16px 48px 16px',
+        color: '#F8FAFC',
+        fontFamily: "'Inter', sans-serif"
+      }}>
       {/* ── Top Header Brand ── */}
       <div style={{ maxWidth: 840, margin: '0 auto 24px auto', textAlign: 'center' }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
@@ -317,7 +348,7 @@ const UpiPaymentPage: React.FC = () => {
         }}>
           <Row gutter={[24, 24]}>
             {/* ── LEFT COL: Amount & QR Code ── */}
-            <Col xs={24} md={11} style={{ textAlign: 'center', borderRight: '1px solid #334155', paddingRight: 20 }}>
+            <Col xs={24} md={11} className="upi-payment-left-col" style={{ textAlign: 'center' }}>
               <div style={{ background: '#0F172A', borderRadius: 16, padding: '16px 12px', marginBottom: 16, border: '1px solid #334155' }}>
                 <Text style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5, color: '#F97316' }}>
                   Scan to Pay via Any UPI App
@@ -429,7 +460,7 @@ const UpiPaymentPage: React.FC = () => {
                   placeholder="Or enter custom amount in ₹"
                   value={customAmount}
                   onChange={(e) => setCustomAmount(e.target.value)}
-                  style={{ borderRadius: 8, marginBottom: 16, background: '#0F172A', color: '#F8FAFC', borderColor: '#334155' }}
+                  style={{ borderRadius: 8, marginBottom: 16, height: 42 }}
                 />
 
                 {/* 2. Select Purpose */}
@@ -441,7 +472,7 @@ const UpiPaymentPage: React.FC = () => {
                   value={purpose}
                   onChange={(val) => setPurpose(val as string)}
                   block
-                  style={{ marginBottom: 16, background: '#0F172A', color: '#F8FAFC', border: '1px solid #334155' }}
+                  style={{ marginBottom: 16 }}
                 />
 
                 {/* 3. Choose Payment Gateway */}
@@ -456,7 +487,7 @@ const UpiPaymentPage: React.FC = () => {
                   value={paymentGateway}
                   onChange={(val) => setPaymentGateway(val as any)}
                   block
-                  style={{ marginBottom: 16, background: '#0F172A', color: '#F8FAFC', border: '1px solid #334155' }}
+                  style={{ marginBottom: 16 }}
                 />
 
                 {/* 4. Donor Details */}
@@ -481,14 +512,14 @@ const UpiPaymentPage: React.FC = () => {
                 <Row gutter={12}>
                   <Col span={12}>
                     <Form.Item name="full_name" rules={[{ required: true, message: 'Donor name required' }]} style={{ marginBottom: 10 }}>
-                      <Input placeholder="Full Name *" style={{ background: '#0F172A', color: '#F8FAFC', borderColor: '#334155' }} />
+                      <Input placeholder="Full Name *" style={{ borderRadius: 8, height: 40 }} />
                     </Form.Item>
                   </Col>
                   <Col span={12}>
                     <Form.Item name="phone" rules={[{ required: true, message: 'Mobile required for WhatsApp receipt' }]} style={{ marginBottom: 10 }}>
                       <Input
                         placeholder="Mobile Number *"
-                        style={{ background: '#0F172A', color: '#F8FAFC', borderColor: '#334155' }}
+                        style={{ borderRadius: 8, height: 40 }}
                         onBlur={(e) => handlePhoneBlur(e.target.value)}
                         onChange={(e) => {
                           if (e.target.value.trim().length >= 10) {
@@ -503,23 +534,32 @@ const UpiPaymentPage: React.FC = () => {
                 <Row gutter={12}>
                   <Col span={12}>
                     <Form.Item name="pan_number" style={{ marginBottom: 10 }}>
-                      <Input placeholder="PAN Number (For 80G Tax)" style={{ background: '#0F172A', color: '#F8FAFC', borderColor: '#334155' }} />
+                      <Input placeholder="PAN Number (For 80G Tax)" style={{ borderRadius: 8, height: 40 }} />
                     </Form.Item>
                   </Col>
                   <Col span={12}>
+                    <Form.Item name="email" style={{ marginBottom: 10 }}>
+                      <Input placeholder="Email (For Receipt)" type="email" style={{ borderRadius: 8, height: 40 }} />
+                    </Form.Item>
+                  </Col>
+                </Row>
+
+                <Row gutter={12}>
+                  <Col span={24}>
                     <Form.Item name="city" style={{ marginBottom: 10 }}>
-                      <Input placeholder="City / Area" style={{ background: '#0F172A', color: '#F8FAFC', borderColor: '#334155' }} />
+                      <Input placeholder="City / Area" style={{ borderRadius: 8, height: 40 }} />
                     </Form.Item>
                   </Col>
                 </Row>
 
                 {paymentGateway === 'upi' && (
                   <Form.Item name="upi_reference" label={<span style={{ fontSize: 12, fontWeight: 700, color: '#CBD5E1' }}>UPI Reference / UTR Number (Post Payment)</span>} style={{ marginBottom: 16 }}>
-                    <Input placeholder="e.g. 123456789012 (12-digit UTR)" prefix={<LockOutlined style={{ color: '#22C55E' }} />} style={{ background: '#0F172A', color: '#F8FAFC', borderColor: '#334155' }} />
+                    <Input placeholder="e.g. 123456789012 (12-digit UTR)" prefix={<LockOutlined style={{ color: '#22C55E' }} />} style={{ borderRadius: 8, height: 40 }} />
                   </Form.Item>
                 )}
 
                 <Button
+                  className="upi-submit-btn"
                   type="primary"
                   htmlType="submit"
                   block
@@ -589,6 +629,7 @@ const UpiPaymentPage: React.FC = () => {
         )}
       </Modal>
     </div>
+    </ConfigProvider>
   );
 };
 

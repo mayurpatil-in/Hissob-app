@@ -12,6 +12,7 @@ export default defineConfig({
       devOptions: {
         enabled: true,          // serve SW + manifest in dev mode
         type: 'module',
+        suppressWarnings: true,
       },
       manifest: {
         name: 'Hisob ERP — Festival Collection & Financial Management',
@@ -50,8 +51,9 @@ export default defineConfig({
         categories: ['finance', 'business', 'productivity'],
       },
       workbox: {
+        disableDevLogs: true,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        navigateFallbackDenylist: [/^\/api\//],
+        navigateFallbackDenylist: [/^\/api\//, /^\/@vite/, /^\/@react-refresh/, /^\/src\//],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,

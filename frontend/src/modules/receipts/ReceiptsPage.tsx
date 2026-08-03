@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import {
   Table, Button, Tag, Space, Modal, Form, Input,
-  Select, Card, Row, Col, Typography, App, Tooltip, Avatar, Segmented, Skeleton
+  Select, Card, Row, Col, Typography, App, Tooltip, Avatar, Segmented, Skeleton, Spin
 } from 'antd';
 import {
   PlusOutlined, PrinterOutlined, RobotOutlined, CheckCircleOutlined, WhatsAppOutlined, DownloadOutlined, RocketOutlined,
-  AppstoreOutlined, UnorderedListOutlined, DollarOutlined, EditOutlined, DeleteOutlined, CloseOutlined, LinkOutlined, ReloadOutlined
+  AppstoreOutlined, UnorderedListOutlined, DollarOutlined, EditOutlined, DeleteOutlined, CloseOutlined, LinkOutlined, ReloadOutlined, EyeOutlined
 } from '@ant-design/icons';
 import { PaymentLinkModal } from '../payments/PaymentLinkModal';
 import { RefundModal } from './RefundModal';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { getReceipts, createReceipt, updateReceipt, cancelReceipt, deleteReceipt, settleReceipt, getDonors, getFinancialYears, getFestivals, getMyOrganization } from '../../api/services';
+import { getReceipts, createReceipt, updateReceipt, cancelReceipt, deleteReceipt, settleReceipt, getDonors, getFinancialYears, getFestivals, getMyOrganization, getRazorpayPaymentStatus, formatErrorMessage } from '../../api/services';
 import { useAuthStore } from '../../store/authStore';
 import { generateWhatsAppReceiptLink } from '../../utils/whatsapp';
 import { printReceiptWindow, shareReceiptViaWhatsApp, downloadReceiptImage, isReceiptBlobCached, preloadReceiptFonts } from '../../utils/printReceipt';
@@ -95,11 +95,26 @@ const ReceiptsPage: React.FC = () => {
   const [isEodModalOpen, setIsEodModalOpen] = useState(false);
   const [isPaymentLinkModalOpen, setIsPaymentLinkModalOpen] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>('');
+  const [filterMode, setFilterMode] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [razorpayStatusData, setRazorpayStatusData] = useState<any | null>(null);
+  const [fetchingStatus, setFetchingStatus] = useState(false);
   const [viewMode, setViewMode] = useState<'table' | 'grid'>(
     typeof window !== 'undefined' && window.innerWidth <= 768 ? 'grid' : 'table'
   );
   const [actionLoadingKey, setActionLoadingKey] = useState<string | null>(null);
+
+  const handleFetchRazorpayStatus = async (paymentId: string) => {
+    setFetchingStatus(true);
+    try {
+      const data = await getRazorpayPaymentStatus(paymentId);
+      setRazorpayStatusData(data);
+    } catch (err: any) {
+      message.error(formatErrorMessage(err?.response?.data?.detail, 'Failed to fetch Razorpay status'));
+    } finally {
+      setFetchingStatus(false);
+    }
+  };
 
 
 
@@ -169,15 +184,23 @@ const ReceiptsPage: React.FC = () => {
   const { data: myOrg } = useQuery({ queryKey: ['myOrganization'], queryFn: getMyOrganization, staleTime: 5 * 60 * 1000 });
 
   const filteredReceipts = React.useMemo(() => {
-    if (!searchQuery.trim()) return receipts;
-    const q = searchQuery.toLowerCase().trim();
-    return receipts.filter((r: any) =>
-      r.receipt_number?.toLowerCase().includes(q) ||
-      r.donor?.full_name?.toLowerCase().includes(q) ||
-      (r.donor?.phone && r.donor.phone.includes(q)) ||
-      r.purpose?.toLowerCase().includes(q)
-    );
-  }, [receipts, searchQuery]);
+    let result = receipts;
+    if (filterMode) {
+      result = result.filter((r: any) => (r.payment_mode || '').toLowerCase() === filterMode.toLowerCase());
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      result = result.filter((r: any) =>
+        r.receipt_number?.toLowerCase().includes(q) ||
+        r.donor?.full_name?.toLowerCase().includes(q) ||
+        (r.donor?.phone && r.donor.phone.includes(q)) ||
+        r.purpose?.toLowerCase().includes(q) ||
+        r.transaction_ref?.toLowerCase().includes(q) ||
+        r.upi_reference?.toLowerCase().includes(q)
+      );
+    }
+    return result;
+  }, [receipts, searchQuery, filterMode]);
 
   const canPermanentlyDelete = isOrgAdmin && (user?.is_super_admin || myOrg?.allow_permanent_deletion !== false);
 
@@ -419,6 +442,15 @@ const ReceiptsPage: React.FC = () => {
               onClick={() => printReceiptWindow(record, myOrg?.name || 'Hisob ERP', myOrg)}
             />
           </Tooltip>
+          {Boolean(record.transaction_ref) && (
+            <Tooltip title="Verify Live Razorpay Payment Status & Bank Fees">
+              <Button
+                icon={<EyeOutlined style={{ color: '#38BDF8' }} />}
+                size="small"
+                onClick={() => handleFetchRazorpayStatus(record.transaction_ref)}
+              />
+            </Tooltip>
+          )}
           {record.status !== 'cancelled' ? (
             <>
               <Tooltip title="Edit Receipt Details">
@@ -614,7 +646,7 @@ const ReceiptsPage: React.FC = () => {
             <Select
               placeholder="Filter by Status"
               allowClear
-              style={{ width: 190, maxWidth: '100%' }}
+              style={{ width: 180, maxWidth: '100%' }}
               onChange={(val) => setFilterStatus(val || '')}
               size="middle"
             >
@@ -622,6 +654,19 @@ const ReceiptsPage: React.FC = () => {
               <Option value="pending_settlement">🟡 PENDING SETTLEMENT</Option>
               <Option value="settled">🟢 SETTLED</Option>
               <Option value="cancelled">🔴 CANCELLED</Option>
+            </Select>
+            <Select
+              placeholder="Filter by Mode"
+              allowClear
+              style={{ width: 170, maxWidth: '100%' }}
+              onChange={(val) => setFilterMode(val || '')}
+              size="middle"
+            >
+              <Option value="upi">📱 Online / UPI</Option>
+              <Option value="cash">💵 Cash</Option>
+              <Option value="digital">💳 Card / Netbanking</Option>
+              <Option value="cheque">🏦 Cheque</Option>
+              <Option value="neft">⚡ NEFT / RTGS</Option>
             </Select>
           </div>
 
@@ -973,6 +1018,68 @@ const ReceiptsPage: React.FC = () => {
         receipt={refundModalReceipt}
         onSuccess={() => queryClient.invalidateQueries({ queryKey: ['receipts'] })}
       />
+
+      {/* ── Live Razorpay Payment Status Modal ── */}
+      <Modal
+        open={Boolean(razorpayStatusData) || fetchingStatus}
+        onCancel={() => setRazorpayStatusData(null)}
+        footer={null}
+        width={480}
+        destroyOnHidden
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ background: '#0284C7', width: 34, height: 34, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF' }}>
+              <EyeOutlined style={{ fontSize: 18 }} />
+            </div>
+            <div>
+              <Title level={5} style={{ margin: 0, fontWeight: 900 }}>Live Razorpay Status</Title>
+              <Text type="secondary" style={{ fontSize: 11 }}>Official Bank Settlement Verification</Text>
+            </div>
+          </div>
+        }
+      >
+        {fetchingStatus ? (
+          <div style={{ padding: 40, textAlign: 'center' }}><Spin size="large" /></div>
+        ) : razorpayStatusData ? (
+          <div style={{ marginTop: 16 }}>
+            <div style={{ background: '#F8FAFC', padding: 16, borderRadius: 12, border: '1px solid #E2E8F0', marginBottom: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                <Text type="secondary" style={{ fontSize: 12 }}>Payment Status</Text>
+                <Tag color={razorpayStatusData.status === 'captured' ? 'success' : 'warning'} style={{ fontWeight: 800, textTransform: 'uppercase' }}>
+                  {razorpayStatusData.status}
+                </Tag>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                <Text type="secondary" style={{ fontSize: 12 }}>Transaction Amount</Text>
+                <Text style={{ fontWeight: 900, color: '#0F172A', fontSize: 15 }}>₹{razorpayStatusData.amount?.toLocaleString('en-IN')}</Text>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                <Text type="secondary" style={{ fontSize: 12 }}>Payment Method</Text>
+                <Tag color="purple" style={{ fontWeight: 700, textTransform: 'uppercase' }}>{razorpayStatusData.method || 'UPI'}</Tag>
+              </div>
+              {razorpayStatusData.vpa && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <Text type="secondary" style={{ fontSize: 12 }}>UPI VPA Address</Text>
+                  <Text style={{ fontWeight: 700, color: '#0284C7' }}>{razorpayStatusData.vpa}</Text>
+                </div>
+              )}
+              {razorpayStatusData.bank && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <Text type="secondary" style={{ fontSize: 12 }}>Issuing Bank</Text>
+                  <Text style={{ fontWeight: 700 }}>{razorpayStatusData.bank}</Text>
+                </div>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                <Text type="secondary" style={{ fontSize: 12 }}>Razorpay Gateway Fee</Text>
+                <Text style={{ fontSize: 12 }}>₹{razorpayStatusData.fee || 0} (+ ₹{razorpayStatusData.tax || 0} GST)</Text>
+              </div>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <Button onClick={() => setRazorpayStatusData(null)} type="primary" style={{ borderRadius: 8 }}>Close Verification</Button>
+            </div>
+          </div>
+        ) : null}
+      </Modal>
     </div>
   );
 };
