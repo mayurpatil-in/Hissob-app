@@ -1,17 +1,28 @@
 """
 Event Invitation Model for Digital Event Patrika Cards & VIP RSVP Tracking.
 """
-import uuid
 import enum
+import uuid
 from datetime import datetime
-from sqlalchemy import String, ForeignKey, Text, DateTime, Enum as SAEnum, Integer, Boolean
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from sqlalchemy import Boolean
+from sqlalchemy import DateTime
+from sqlalchemy import Enum as SAEnum
+from sqlalchemy import ForeignKey
+from sqlalchemy import Integer
+from sqlalchemy import String
+from sqlalchemy import Text
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import relationship
+
 from app.core.database import Base
-from app.models.base import UUIDMixin, TimestampMixin
+from app.models.base import TimestampMixin
+from app.models.base import UUIDMixin
 
 
-class RsvpStatus(str, enum.Enum):
+class RsvpStatus(enum.StrEnum):
     PENDING = "pending"
     ATTENDING = "attending"
     DECLINED = "declined"
@@ -38,24 +49,24 @@ class EventInvitation(Base, UUIDMixin, TimestampMixin):
     guest_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     guest_phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
     vip_tier: Mapped[str] = mapped_column(String(50), default="General Patron", nullable=False)
-    
+
     token: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
-    
+
     rsvp_status: Mapped[RsvpStatus] = mapped_column(
         SAEnum(RsvpStatus), default=RsvpStatus.PENDING, nullable=False
     )
     guests_count: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     special_requests: Mapped[str | None] = mapped_column(Text, nullable=True)
-    
+
     checked_in: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     checked_in_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     qr_code_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    
+
     # Mahaprasad & Custom Patrika Details
     mahaprasad_menu: Mapped[str | None] = mapped_column(String(500), nullable=True)
     timing_slots: Mapped[str | None] = mapped_column(String(300), nullable=True)
     chief_guests: Mapped[str | None] = mapped_column(String(300), nullable=True)
-    
+
     created_by_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="SET NULL"),

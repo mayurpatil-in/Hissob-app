@@ -1,16 +1,26 @@
 """
 Role & Permission models — Dynamic RBAC engine.
 """
-import uuid
 import enum
-from sqlalchemy import String, Boolean, ForeignKey, Table, Column, Text
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+import uuid
+
+from sqlalchemy import Boolean
+from sqlalchemy import Column
+from sqlalchemy import ForeignKey
+from sqlalchemy import String
+from sqlalchemy import Table
+from sqlalchemy import Text
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import relationship
+
 from app.core.database import Base
-from app.models.base import UUIDMixin, TimestampMixin
+from app.models.base import TimestampMixin
+from app.models.base import UUIDMixin
 
 
-class PermissionAction(str, enum.Enum):
+class PermissionAction(enum.StrEnum):
     VIEW = "view"
     CREATE = "create"
     UPDATE = "update"

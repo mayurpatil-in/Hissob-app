@@ -2,10 +2,14 @@
 Base mixin for all models — provides common audit columns.
 """
 import uuid
-from datetime import datetime, timezone
-from sqlalchemy import DateTime, Boolean, func
-from sqlalchemy.orm import Mapped, mapped_column
+from datetime import datetime
+
+from sqlalchemy import Boolean
+from sqlalchemy import DateTime
+from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import mapped_column
 
 
 class TimestampMixin:

@@ -1,29 +1,38 @@
 """
 User Invitations Router — Onboarding Team Members, Trustees, Treasurers & Volunteers.
 """
+import contextlib
 import secrets
-from datetime import datetime, timedelta, timezone
-from typing import List, Optional
+from datetime import UTC
+from datetime import datetime
+from datetime import timedelta
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
-from sqlalchemy import select, or_
 
-from app.core.database import get_db
+from fastapi import APIRouter
+from fastapi import Depends
+from fastapi import HTTPException
+from fastapi import Query
+from fastapi import status
+from sqlalchemy import or_
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
 from app.auth.deps import get_current_active_user
-from app.auth.jwt import create_access_token, create_refresh_token
+from app.auth.jwt import create_access_token
+from app.auth.jwt import create_refresh_token
+from app.core.database import get_db
 from app.core.security import hash_password
-from app.models.user import User, UserStatus
+from app.models.rbac import Role
 from app.models.tenant import Tenant
-from app.models.rbac import Role, user_roles
-from app.models.user_invitation import UserInvitation, InvitationStatus
-from app.schemas.invitation import (
-    UserInviteCreateSchema,
-    BulkUserInviteSchema,
-    UserInviteOutSchema,
-    PublicVerifyInviteSchema,
-    UserInviteAcceptSchema,
-)
+from app.models.user import User
+from app.models.user import UserStatus
+from app.models.user_invitation import InvitationStatus
+from app.models.user_invitation import UserInvitation
+from app.schemas.invitation import BulkUserInviteSchema
+from app.schemas.invitation import PublicVerifyInviteSchema
+from app.schemas.invitation import UserInviteAcceptSchema
+from app.schemas.invitation import UserInviteCreateSchema
+from app.schemas.invitation import UserInviteOutSchema
 from app.services.email_service import send_user_invitation_email
 
 router = APIRouter(prefix="/invitations", tags=["User Invitations"])
@@ -32,7 +41,7 @@ router = APIRouter(prefix="/invitations", tags=["User Invitations"])
 def _format_invite_out(invite: UserInvitation, tenant_name: str) -> UserInviteOutSchema:
     out = UserInviteOutSchema.from_orm(invite)
     out.shareable_url = f"https://hisob.in/accept-invite?token={invite.token}"
-    
+
     # Generate direct WhatsApp message link
     msg = f"Hello! You've been invited to join {tenant_name} as {invite.role_name} on Hisob ERP. Complete your setup here: {out.shareable_url}"
     from urllib.parse import quote
@@ -69,7 +78,7 @@ def send_user_invitation(
 
     if existing_invite:
         # Check if expired, if so mark expired
-        if existing_invite.expires_at < datetime.now(timezone.utc):
+        if existing_invite.expires_at < datetime.now(UTC):
             existing_invite.status = InvitationStatus.EXPIRED
             db.commit()
         else:
@@ -87,8 +96,8 @@ def send_user_invitation(
         select(Role).where(
             or_(
                 Role.tenant_id == current_user.tenant_id,
-                Role.is_system == True,
-                Role.tenant_id == None,
+                Role.is_system,
+                Role.tenant_id is None,
             ),
             Role.slug == data.role_name.lower(),
         )
@@ -96,7 +105,7 @@ def send_user_invitation(
 
     # Generate secure token
     token = secrets.token_urlsafe(32)
-    expires_at = datetime.now(timezone.utc) + timedelta(days=data.expires_in_days or 7)
+    expires_at = datetime.now(UTC) + timedelta(days=data.expires_in_days or 7)
 
     invite = UserInvitation(
         tenant_id=current_user.tenant_id,
@@ -137,7 +146,7 @@ def send_user_invitation(
     return _format_invite_out(invite, tenant.name)
 
 
-@router.post("/bulk", response_model=List[UserInviteOutSchema])
+@router.post("/bulk", response_model=list[UserInviteOutSchema])
 def bulk_send_user_invitations(
     data: BulkUserInviteSchema,
     db: Session = Depends(get_db),
@@ -154,9 +163,9 @@ def bulk_send_user_invitations(
     return results
 
 
-@router.get("", response_model=List[UserInviteOutSchema])
+@router.get("", response_model=list[UserInviteOutSchema])
 def list_user_invitations(
-    status_filter: Optional[InvitationStatus] = Query(None, alias="status"),
+    status_filter: InvitationStatus | None = Query(None, alias="status"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -175,7 +184,7 @@ def list_user_invitations(
     tenant_name = tenant.name if tenant else "Hisob Organization"
 
     # Check for expired ones dynamically
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     updated = False
     for inv in invites:
         if inv.status == InvitationStatus.PENDING and inv.expires_at < now:
@@ -207,14 +216,14 @@ def resend_user_invitation(
     tenant = db.execute(select(Tenant).where(Tenant.id == current_user.tenant_id)).scalar_one_or_none()
 
     # Refresh expiration and token
-    invite.expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    invite.expires_at = datetime.now(UTC) + timedelta(days=7)
     invite.status = InvitationStatus.PENDING
     invite.token = secrets.token_urlsafe(32)
     db.commit()
 
     invite_url = f"https://hisob.in/accept-invite?token={invite.token}"
     expires_str = invite.expires_at.strftime("%d %b %Y, %I:%M %p")
-    try:
+    with contextlib.suppress(Exception):
         send_user_invitation_email(
             to_email=invite.email,
             org_name=tenant.name,
@@ -227,8 +236,6 @@ def resend_user_invitation(
             db=db,
             tenant_id=tenant.id,
         )
-    except Exception:
-        pass
 
     return _format_invite_out(invite, tenant.name if tenant else "Hisob")
 
@@ -275,7 +282,7 @@ def verify_invite_token(token: str, db: Session = Depends(get_db)):
     if invite.status == InvitationStatus.REVOKED:
         return PublicVerifyInviteSchema(valid=False, error="This invitation has been revoked by the organization admin.")
 
-    if invite.expires_at < datetime.now(timezone.utc):
+    if invite.expires_at < datetime.now(UTC):
         invite.status = InvitationStatus.EXPIRED
         db.commit()
         return PublicVerifyInviteSchema(valid=False, error="This invitation link has expired. Please request a new invite.")
@@ -304,7 +311,7 @@ def accept_user_invitation(data: UserInviteAcceptSchema, db: Session = Depends(g
     if not invite or invite.status != InvitationStatus.PENDING:
         raise HTTPException(status_code=400, detail="Invalid or expired invitation token.")
 
-    if invite.expires_at < datetime.now(timezone.utc):
+    if invite.expires_at < datetime.now(UTC):
         invite.status = InvitationStatus.EXPIRED
         db.commit()
         raise HTTPException(status_code=400, detail="This invitation link has expired.")
@@ -323,8 +330,8 @@ def accept_user_invitation(data: UserInviteAcceptSchema, db: Session = Depends(g
             select(Role).where(
                 or_(
                     Role.tenant_id == invite.tenant_id,
-                    Role.is_system == True,
-                    Role.tenant_id == None,
+                    Role.is_system,
+                    Role.tenant_id is None,
                 ),
                 Role.slug == invite.role_name.lower(),
             )
@@ -345,11 +352,11 @@ def accept_user_invitation(data: UserInviteAcceptSchema, db: Session = Depends(g
         new_user.roles.append(role)
 
     db.add(new_user)
-    
+
     # Mark invite accepted
     invite.status = InvitationStatus.ACCEPTED
-    invite.accepted_at = datetime.now(timezone.utc)
-    
+    invite.accepted_at = datetime.now(UTC)
+
     db.commit()
     db.refresh(new_user)
 

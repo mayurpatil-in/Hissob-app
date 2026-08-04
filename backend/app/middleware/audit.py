@@ -2,11 +2,10 @@
 Audit middleware — logs every mutating request automatically.
 """
 import time
-from datetime import datetime, timezone
+
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
-import json
 
 
 class AuditMiddleware(BaseHTTPMiddleware):

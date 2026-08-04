@@ -1,30 +1,33 @@
 """
 Generic repository — provides base CRUD for all models.
 """
-from typing import TypeVar, Generic, Type, Optional, List, Any
+from typing import TypeVar
 from uuid import UUID
+
+from sqlalchemy import func
+from sqlalchemy import select
 from sqlalchemy.orm import Session
-from sqlalchemy import select, func
+
 from app.core.database import Base
 
 ModelType = TypeVar("ModelType", bound=Base)
 
 
-class BaseRepository(Generic[ModelType]):
-    def __init__(self, model: Type[ModelType], db: Session):
+class BaseRepository[ModelType: Base]:
+    def __init__(self, model: type[ModelType], db: Session):
         self.model = model
         self.db = db
 
-    def get(self, id: UUID) -> Optional[ModelType]:
+    def get(self, id: UUID) -> ModelType | None:
         return self.db.get(self.model, id)
 
-    def get_all(self, skip: int = 0, limit: int = 100) -> List[ModelType]:
+    def get_all(self, skip: int = 0, limit: int = 100) -> list[ModelType]:
         stmt = select(self.model).offset(skip).limit(limit)
         return list(self.db.execute(stmt).scalars().all())
 
     def get_by_tenant(
         self, tenant_id: UUID, skip: int = 0, limit: int = 100
-    ) -> List[ModelType]:
+    ) -> list[ModelType]:
         stmt = (
             select(self.model)
             .where(self.model.tenant_id == tenant_id)

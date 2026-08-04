@@ -1,19 +1,26 @@
 import os
 import uuid
-from typing import Optional
-from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
+
+from fastapi import APIRouter
+from fastapi import Depends
+from fastapi import File
+from fastapi import HTTPException
+from fastapi import UploadFile
 from sqlalchemy.orm import Session
-from app.core.database import get_db
-from app.core.config import settings
+
 from app.auth.deps import get_current_active_user
+from app.core.config import settings
+from app.core.database import get_db
 from app.models.user import User
+from app.schemas.ai import AIAuditResponse
+from app.schemas.ai import AIChatInput
+from app.schemas.ai import AIChatResponse
+from app.schemas.ai import AIInsightsResponse
+from app.schemas.ai import AIReportResponse
+from app.schemas.ai import ParsedBillOutput
+from app.schemas.ai import ParsedReceiptOutput
+from app.schemas.ai import ParseReceiptInput
 from app.services.ai import AIService
-from app.schemas.ai import (
-    ParseReceiptInput, ParsedReceiptOutput,
-    AIInsightsResponse, AIChatInput, AIChatResponse,
-    AIAuditResponse, AIReportResponse, ParsedBillOutput,
-)
 
 router = APIRouter(prefix="/ai", tags=["AI Assistant"])
 

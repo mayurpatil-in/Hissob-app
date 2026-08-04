@@ -1,17 +1,19 @@
 """
 Super Admin Router — System platform analytics, tenant storage, and global settings.
 """
-from typing import Dict, Any, List
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
+from fastapi import Depends
+from sqlalchemy import func
+from sqlalchemy import select
 from sqlalchemy.orm import Session
-from sqlalchemy import select, func
-from app.core.database import get_db
+
 from app.auth.deps import get_super_admin
-from app.models.user import User
-from app.models.tenant import Tenant
-from app.models.receipt import Receipt
-from app.models.finance import Expense
+from app.core.database import get_db
 from app.models.audit import AuditLog
+from app.models.finance import Expense
+from app.models.receipt import Receipt
+from app.models.tenant import Tenant
+from app.models.user import User
 
 router = APIRouter(prefix="/super-admin", tags=["Super Admin"])
 

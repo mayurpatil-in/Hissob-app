@@ -1,10 +1,11 @@
 """
 Expense Repository.
 """
-from typing import Optional, List
 from uuid import UUID
-from sqlalchemy.orm import Session
+
 from sqlalchemy import select
+from sqlalchemy.orm import Session
+
 from app.models.finance import Expense
 from app.repositories.base import BaseRepository
 
@@ -20,12 +21,12 @@ class ExpenseRepository(BaseRepository[Expense]):
     def get_by_tenant(
         self,
         tenant_id: UUID,
-        status: Optional[str] = None,
-        fy_id: Optional[UUID] = None,
-        category: Optional[str] = None,
+        status: str | None = None,
+        fy_id: UUID | None = None,
+        category: str | None = None,
         skip: int = 0,
         limit: int = 100,
-    ) -> List[Expense]:
+    ) -> list[Expense]:
         stmt = select(Expense).where(Expense.tenant_id == tenant_id)
         if status:
             stmt = stmt.where(Expense.status == status)

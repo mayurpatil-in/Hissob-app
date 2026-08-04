@@ -1,7 +1,8 @@
-import os
 import logging
-from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import List
+import os
+
+from pydantic_settings import BaseSettings
+from pydantic_settings import SettingsConfigDict
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,7 @@ class Settings(BaseSettings):
     ALLOWED_ORIGINS: str = "https://hisob.in,https://www.hisob.in,https://api.hisob.in,http://localhost:5173,http://localhost:3000"
 
     @property
-    def cors_origins(self) -> List[str]:
+    def cors_origins(self) -> list[str]:
         return [o.strip() for o in self.ALLOWED_ORIGINS.split(",")]
 
     # Uploads
@@ -58,10 +59,10 @@ class Settings(BaseSettings):
 
     # AI Integration Settings (Google Gemini & OpenAI LLM)
     GEMINI_API_KEY: str = ""
-    GEMINI_MODEL_NAME: str = "gemini-2.0-flash" 
+    GEMINI_MODEL_NAME: str = "gemini-2.0-flash"
     OPENAI_API_KEY: str = ""
     OPENAI_MODEL_NAME: str = "gpt-4o-mini"
-    
+
     # Razorpay Payment Gateway Settings
     RAZORPAY_KEY_ID: str = "rzp_test_hissob_key"
     RAZORPAY_KEY_SECRET: str = "hissob_razorpay_secret_key"

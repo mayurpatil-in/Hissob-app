@@ -1,14 +1,11 @@
 """
 RBAC permission engine — dynamic permission checking.
 """
-from typing import Optional
-from uuid import UUID
-from functools import wraps
-from fastapi import Depends, HTTPException, status
-from sqlalchemy.orm import Session
-from sqlalchemy import select
-from app.core.database import get_db
-from app.models.rbac import Role, Permission, PermissionAction
+from fastapi import Depends
+from fastapi import HTTPException
+from fastapi import status
+
+from app.models.rbac import PermissionAction
 from app.models.user import User
 
 

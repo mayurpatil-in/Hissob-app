@@ -1,18 +1,23 @@
 """
 Pydantic schemas for Inventory & Asset Management module.
 """
-from pydantic import BaseModel, Field
-from typing import Optional
+from datetime import date
+from datetime import datetime
 from uuid import UUID
-from datetime import date, datetime
-from app.models.inventory import AssetCondition, CheckoutAction, CheckoutStatus
+
+from pydantic import BaseModel
+from pydantic import Field
+
+from app.models.inventory import AssetCondition
+from app.models.inventory import CheckoutAction
+from app.models.inventory import CheckoutStatus
 
 
 # ── Asset Category Schemas ──
 class AssetCategoryBase(BaseModel):
     name: str = Field(..., min_length=2, max_length=150)
-    code: Optional[str] = None
-    description: Optional[str] = None
+    code: str | None = None
+    description: str | None = None
 
 
 class AssetCategoryCreate(AssetCategoryBase):
@@ -20,10 +25,10 @@ class AssetCategoryCreate(AssetCategoryBase):
 
 
 class AssetCategoryUpdate(BaseModel):
-    name: Optional[str] = None
-    code: Optional[str] = None
-    description: Optional[str] = None
-    is_active: Optional[bool] = None
+    name: str | None = None
+    code: str | None = None
+    description: str | None = None
+    is_active: bool | None = None
 
 
 class AssetCategoryResponse(AssetCategoryBase):
@@ -39,16 +44,16 @@ class AssetCategoryResponse(AssetCategoryBase):
 # ── Asset Item Schemas ──
 class AssetBase(BaseModel):
     category_id: UUID
-    festival_id: Optional[UUID] = None
+    festival_id: UUID | None = None
     name: str = Field(..., min_length=2, max_length=200)
-    asset_code: Optional[str] = None
+    asset_code: str | None = None
     quantity_total: int = Field(default=1, ge=1)
     unit: str = Field(default="Pcs", max_length=30)
     condition: AssetCondition = AssetCondition.GOOD
-    storage_location: Optional[str] = None
+    storage_location: str | None = None
     estimated_value: float = Field(default=0.0, ge=0.0)
-    purchase_date: Optional[date] = None
-    notes: Optional[str] = None
+    purchase_date: date | None = None
+    notes: str | None = None
 
 
 class AssetCreate(AssetBase):
@@ -56,17 +61,17 @@ class AssetCreate(AssetBase):
 
 
 class AssetUpdate(BaseModel):
-    category_id: Optional[UUID] = None
-    festival_id: Optional[UUID] = None
-    name: Optional[str] = None
-    quantity_total: Optional[int] = Field(default=None, ge=1)
-    unit: Optional[str] = None
-    condition: Optional[AssetCondition] = None
-    storage_location: Optional[str] = None
-    estimated_value: Optional[float] = None
-    purchase_date: Optional[date] = None
-    notes: Optional[str] = None
-    is_active: Optional[bool] = None
+    category_id: UUID | None = None
+    festival_id: UUID | None = None
+    name: str | None = None
+    quantity_total: int | None = Field(default=None, ge=1)
+    unit: str | None = None
+    condition: AssetCondition | None = None
+    storage_location: str | None = None
+    estimated_value: float | None = None
+    purchase_date: date | None = None
+    notes: str | None = None
+    is_active: bool | None = None
 
 
 class AssetResponse(AssetBase):
@@ -76,7 +81,7 @@ class AssetResponse(AssetBase):
     is_active: bool
     created_at: datetime
     updated_at: datetime
-    category: Optional[AssetCategoryResponse] = None
+    category: AssetCategoryResponse | None = None
 
     model_config = {"from_attributes": True}
 
@@ -86,14 +91,14 @@ class AssetCheckoutCreate(BaseModel):
     asset_id: UUID
     quantity: int = Field(default=1, ge=1)
     issued_to_person: str = Field(..., min_length=2, max_length=200)
-    expected_return_at: Optional[datetime] = None
-    notes: Optional[str] = None
+    expected_return_at: datetime | None = None
+    notes: str | None = None
 
 
 class AssetReturnCreate(BaseModel):
     checkout_id: UUID
     returned_condition: AssetCondition = AssetCondition.GOOD
-    damage_notes: Optional[str] = None
+    damage_notes: str | None = None
     damage_charge: float = Field(default=0.0, ge=0.0)
 
 
@@ -106,16 +111,16 @@ class AssetCheckoutResponse(BaseModel):
     issued_to_person: str
     issued_by_user_id: UUID
     issued_at: datetime
-    expected_return_at: Optional[datetime] = None
-    returned_at: Optional[datetime] = None
-    returned_condition: Optional[AssetCondition] = None
-    damage_notes: Optional[str] = None
+    expected_return_at: datetime | None = None
+    returned_at: datetime | None = None
+    returned_condition: AssetCondition | None = None
+    damage_notes: str | None = None
     damage_charge: float
     status: CheckoutStatus
     created_at: datetime
     updated_at: datetime
-    asset: Optional[AssetResponse] = None
-    issued_by_name: Optional[str] = None
+    asset: AssetResponse | None = None
+    issued_by_name: str | None = None
 
     model_config = {"from_attributes": True}
 

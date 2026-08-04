@@ -2,36 +2,40 @@
 Email Service — Automated Transactional & Receipt Email Delivery for Hisob ERP.
 Uses standard Python smtplib with WebHostMost cPanel SMTP or external provider.
 """
-import smtplib
 import logging
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from email.mime.application import MIMEApplication
+import smtplib
+from datetime import UTC
 from email.header import Header
+from email.mime.application import MIMEApplication
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from email.utils import formataddr
-from typing import Optional, Dict, Any, List, Tuple
+from typing import Any
 from uuid import UUID
+
 from sqlalchemy.orm import Session
+
 from app.core.config import settings
 
 logger = logging.getLogger("hisob.email")
 
 
 def _record_email_log(
-    db: Optional[Session],
-    tenant_id: Optional[UUID],
+    db: Session | None,
+    tenant_id: UUID | None,
     recipient: str,
     subject: str,
     email_type: str,
     status: str,
-    error_message: Optional[str] = None,
-    metadata_json: Optional[dict] = None,
+    error_message: str | None = None,
+    metadata_json: dict | None = None,
 ):
     """Helper to persist email dispatch status in database email_logs table."""
     try:
-        from app.models.email_log import EmailLog
-        from datetime import datetime, timezone
+        from datetime import datetime
+
         from app.core.database import SessionLocal
+        from app.models.email_log import EmailLog
 
         close_session = False
         if db is None:
@@ -46,7 +50,7 @@ def _record_email_log(
             status=status,
             error_message=error_message,
             metadata_json=metadata_json,
-            sent_at=datetime.now(timezone.utc),
+            sent_at=datetime.now(UTC),
         )
         db.add(log_entry)
         db.commit()
@@ -60,13 +64,13 @@ def send_raw_email(
     to_email: str,
     subject: str,
     html_content: str,
-    text_content: Optional[str] = None,
-    attachments: Optional[List[Tuple[str, bytes, str]]] = None,  # (filename, bytes, mime_type)
-    db: Optional[Session] = None,
-    tenant_id: Optional[UUID] = None,
+    text_content: str | None = None,
+    attachments: list[tuple[str, bytes, str]] | None = None,  # (filename, bytes, mime_type)
+    db: Session | None = None,
+    tenant_id: UUID | None = None,
     email_type: str = "TRANSACTIONAL",
-    metadata_json: Optional[dict] = None,
-    from_name: Optional[str] = None,
+    metadata_json: dict | None = None,
+    from_name: str | None = None,
 ) -> bool:
     """
     Sends an HTML email via SMTP using server configuration.
@@ -233,12 +237,12 @@ def build_receipt_html(
     purpose: str,
     payment_mode: str,
     org_name: str,
-    org_city: Optional[str] = None,
-    org_logo_url: Optional[str] = None,
-    org_pan: Optional[str] = None,
-    pan_number: Optional[str] = None,
-    receipt_id: Optional[str] = None,
-    transaction_ref: Optional[str] = None,
+    org_city: str | None = None,
+    org_logo_url: str | None = None,
+    org_pan: str | None = None,
+    pan_number: str | None = None,
+    receipt_id: str | None = None,
+    transaction_ref: str | None = None,
 ) -> str:
     """Generates an executive, luxury responsive HTML Receipt Card for Email Delivery."""
     amount_formatted = f"₹ {amount:,.2f}"
@@ -283,7 +287,7 @@ def build_receipt_html(
             <td align="center">
                 <!-- Main Container Card -->
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #FFFFFF; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08); border: 1px solid #E2E8F0;">
-                    
+
                     <!-- Top Brand Gradient Accent Stripe -->
                     <tr>
                         <td style="height: 5px; background: linear-gradient(90deg, #F59E0B 0%, #2563EB 50%, #10B981 100%);"></td>
@@ -301,7 +305,7 @@ def build_receipt_html(
                                         <p style="margin: 0 0 4px 0; font-size: 12px; color: #F59E0B; font-weight: 600;">{city_state}, India</p>
                                         <p style="margin: 0; font-size: 11px; color: #94A3B8;">Registered Public Trust</p>
                                     </td>
-                                    
+
                                     <!-- Right: Verified Badge & Legal Credentials -->
                                     <td valign="top" align="right" style="width: 200px;">
                                         <div style="background-color: rgba(34, 197, 94, 0.15); border: 1px solid #22C55E; color: #4ADE80; font-size: 10px; font-weight: 800; padding: 4px 12px; border-radius: 16px; text-transform: uppercase; display: inline-block; margin-bottom: 6px;">
@@ -385,7 +389,7 @@ def build_receipt_html(
                                             <div style="font-size: 11px; color: #16A34A; font-weight: 700; margin-bottom: 8px;">Digitally Signed ✔</div>
                                             <div style="border-bottom: 1px solid #CBD5E1; width: 140px; margin-bottom: 4px;"></div>
                                             <div style="font-size: 10px; color: #64748B; font-style: italic;">Authorized Trustee / Treasurer</div>
-                                            
+
                                             <div style="margin-top: 14px;">
                                                 <a href="{verify_link}" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%); color: #FFFFFF; font-size: 11px; font-weight: 800; padding: 10px 20px; border-radius: 10px; text-decoration: none; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3); text-transform: uppercase;">
                                                     📄 View & Download PDF Receipt
@@ -434,21 +438,22 @@ def send_receipt_email_notification(
     purpose: str,
     payment_mode: str,
     org_name: str,
-    org_city: Optional[str] = None,
-    org_logo_url: Optional[str] = None,
-    org_pan: Optional[str] = None,
-    pan_number: Optional[str] = None,
-    receipt_id: Optional[str] = None,
-    transaction_ref: Optional[str] = None,
-    db: Optional[Session] = None,
-    tenant_id: Optional[UUID] = None,
+    org_city: str | None = None,
+    org_logo_url: str | None = None,
+    org_pan: str | None = None,
+    pan_number: str | None = None,
+    receipt_id: str | None = None,
+    transaction_ref: str | None = None,
+    db: Session | None = None,
+    tenant_id: UUID | None = None,
     attach_pdf: bool = True,
 ) -> bool:
     """Wrapper function to build HTML and send automated receipt email with PDF/HTML attachment."""
     # Format receipt date as DD-MM-YYYY (e.g. 29-07-2026)
     formatted_date = str(receipt_date)
     try:
-        from datetime import date, datetime
+        from datetime import date
+        from datetime import datetime
         if isinstance(receipt_date, (date, datetime)):
             formatted_date = receipt_date.strftime("%d-%m-%Y")
         elif isinstance(receipt_date, str) and "-" in receipt_date:
@@ -525,7 +530,7 @@ def build_daily_digest_html(
     unsettled_cash_count: int,
     total_expenses_today: float,
     pending_expenses_count: int,
-    org_logo_url: Optional[str] = None,
+    org_logo_url: str | None = None,
 ) -> str:
     """Builds a responsive HTML Daily Financial Digest Email."""
     logo_img_tag = ""
@@ -545,7 +550,7 @@ def build_daily_digest_html(
         <tr>
             <td align="center">
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #FFFFFF; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.3); border: 1px solid #1E293B;">
-                    
+
                     <!-- Header -->
                     <tr>
                         <td style="background: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #0F172A 100%); padding: 32px 24px; text-align: center; color: #FFFFFF; border-bottom: 4px solid #3B82F6;">
@@ -586,7 +591,7 @@ def build_daily_digest_html(
                     <tr>
                         <td style="padding: 12px 24px 24px 24px;">
                             <h3 style="margin: 12px 0 12px 0; font-size: 14px; font-weight: 800; color: #0F172A; text-transform: uppercase; letter-spacing: 0.5px;">Collection Breakdown</h3>
-                            
+
                             <table width="100%" cellspacing="0" cellpadding="0" style="border-collapse: separate; border-spacing: 0; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden;">
                                 <tr style="background-color: #F8FAFC;">
                                     <td style="padding: 10px 14px; color: #64748B; font-size: 13px; border-bottom: 1px solid #E2E8F0;">Cash Collected:</td>
@@ -634,18 +639,22 @@ def build_daily_digest_html(
 """
 
 
-def send_tenant_daily_digest(db, tenant_id, force: bool = False) -> Dict[str, Any]:
+def send_tenant_daily_digest(db, tenant_id, force: bool = False) -> dict[str, Any]:
     """
     Computes today's financial metrics for a tenant and dispatches daily digest email
     to all active Organization Admins and Committee members.
     Includes daily deduplication guard to prevent duplicate email spamming.
     """
     from datetime import date as dt_date
-    from app.models.tenant import Tenant
-    from app.models.receipt import Receipt, ReceiptStatus, PaymentMode
-    from app.models.finance import Expense, ExpenseStatus
-    from app.models.user import User
+
     from app.models.email_log import EmailLog
+    from app.models.finance import Expense
+    from app.models.finance import ExpenseStatus
+    from app.models.receipt import PaymentMode
+    from app.models.receipt import Receipt
+    from app.models.receipt import ReceiptStatus
+    from app.models.tenant import Tenant
+    from app.models.user import User
 
     tenant = db.get(Tenant, tenant_id)
     if not tenant or not tenant.is_active:
@@ -724,7 +733,7 @@ def send_tenant_daily_digest(db, tenant_id, force: bool = False) -> Dict[str, An
 
         users = db.query(User).filter(
             User.tenant_id == tenant.id,
-            User.is_active == True,
+            User.is_active,
             User.email.isnot(None),
         ).all()
 
@@ -779,8 +788,8 @@ def build_donor_welcome_html(
     donor_name: str,
     donor_number: str,
     org_name: str,
-    org_city: Optional[str] = None,
-    org_logo_url: Optional[str] = None,
+    org_city: str | None = None,
+    org_logo_url: str | None = None,
 ) -> str:
     """
     Renders a premium HTML email card welcoming a new donor.
@@ -990,10 +999,10 @@ def send_donor_welcome_email(
     donor_name: str,
     donor_number: str,
     org_name: str,
-    org_city: Optional[str] = None,
-    org_logo_url: Optional[str] = None,
-    db: Optional[Session] = None,
-    tenant_id: Optional[UUID] = None,
+    org_city: str | None = None,
+    org_logo_url: str | None = None,
+    db: Session | None = None,
+    tenant_id: UUID | None = None,
 ) -> bool:
     """
     Sends the welcome email notification to a newly registered donor.
@@ -1028,8 +1037,8 @@ def send_donor_welcome_email(
 def build_report_email_html(
     report_title: str,
     org_name: str,
-    custom_message: Optional[str] = None,
-    org_logo_url: Optional[str] = None,
+    custom_message: str | None = None,
+    org_logo_url: str | None = None,
 ) -> str:
     """Renders a responsive HTML card for financial report email distribution."""
     logo_tag = ""
@@ -1095,18 +1104,18 @@ def build_report_email_html(
 
 
 def send_report_email(
-    to_emails: List[str],
+    to_emails: list[str],
     report_title: str,
     report_type: str,
     file_bytes: bytes,
     file_name: str,
     mime_type: str = "text/csv",
     org_name: str = "Hisob ERP",
-    custom_message: Optional[str] = None,
-    org_logo_url: Optional[str] = None,
-    db: Optional[Session] = None,
-    tenant_id: Optional[UUID] = None,
-) -> Dict[str, Any]:
+    custom_message: str | None = None,
+    org_logo_url: str | None = None,
+    db: Session | None = None,
+    tenant_id: UUID | None = None,
+) -> dict[str, Any]:
     """Sends financial report with attached document to a list of recipient emails."""
     html_content = build_report_email_html(
         report_title=report_title,
@@ -1153,9 +1162,9 @@ def send_report_email(
 
 def send_test_smtp_email(
     to_email: str,
-    db: Optional[Session] = None,
-    tenant_id: Optional[UUID] = None,
-) -> Dict[str, Any]:
+    db: Session | None = None,
+    tenant_id: UUID | None = None,
+) -> dict[str, Any]:
     """Tests SMTP server connection and dispatches a diagnostic test email with Tenant Branding & Logo."""
     if not settings.EMAIL_ENABLED:
         return {
@@ -1252,11 +1261,11 @@ def send_user_invitation_email(
     role_name: str,
     invite_url: str,
     expires_at_str: str,
-    custom_note: Optional[str] = None,
-    inviter_name: Optional[str] = None,
-    logo_url: Optional[str] = None,
-    db: Optional[Session] = None,
-    tenant_id: Optional[UUID] = None,
+    custom_note: str | None = None,
+    inviter_name: str | None = None,
+    logo_url: str | None = None,
+    db: Session | None = None,
+    tenant_id: UUID | None = None,
 ) -> bool:
     """Delivers executive team invitation email with join token link."""
     subject = f"✉️ Invitation to join {org_name} on Hisob ERP"
@@ -1287,7 +1296,7 @@ def send_user_invitation_email(
         <tr>
             <td align="center">
                 <div style="background-color: #FFFFFF; border-radius: 24px; overflow: hidden; box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.4), 0 0 1px rgba(255, 255, 255, 0.1); border: 1px solid #1E293B;">
-                    
+
                     <!-- Top Accent Glow Banner -->
                     <div style="height: 5px; background: linear-gradient(90deg, #6366F1 0%, #3B82F6 50%, #10B981 100%);"></div>
 
@@ -1307,7 +1316,7 @@ def send_user_invitation_email(
                         <p style="margin: 0 0 16px 0; color: #0F172A; font-size: 17px; font-weight: 600;">
                             Hello,
                         </p>
-                        
+
                         <p style="margin: 0 0 20px 0; color: #475569; font-size: 15px; line-height: 1.65;">
                             <strong>{inviter_name or 'An Administrator'}</strong> has invited you to join <strong>{org_name}</strong> as a <span style="background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; font-size: 13px; font-weight: 700; padding: 3px 10px; border-radius: 6px; display: inline-block;">{role_name.title()}</span> on Hisob ERP.
                         </p>
@@ -1366,9 +1375,9 @@ def send_digital_patrika_email(
     org_name: str,
     rsvp_url: str,
     vip_tier: str = "General Patron",
-    qr_code_url: Optional[str] = None,
-    db: Optional[Session] = None,
-    tenant_id: Optional[UUID] = None,
+    qr_code_url: str | None = None,
+    db: Session | None = None,
+    tenant_id: UUID | None = None,
 ) -> bool:
     """Delivers digital event patrika card invitation email with RSVP link."""
     subject = f"🌺 Cordial Invitation: {event_title} — {org_name}"
@@ -1437,10 +1446,10 @@ def send_user_welcome_email(
     user_name: str,
     org_name: str,
     role_name: str,
-    initial_password: Optional[str] = None,
+    initial_password: str | None = None,
     login_url: str = "https://hisob.in/login",
-    db: Optional[Session] = None,
-    tenant_id: Optional[UUID] = None,
+    db: Session | None = None,
+    tenant_id: UUID | None = None,
 ) -> bool:
     """Delivers executive account welcome and login credentials email to a newly created user."""
     subject = f"🎉 Welcome to {org_name} — Your Account Credentials"
@@ -1452,7 +1461,7 @@ def send_user_welcome_email(
             <div style="font-size: 11px; text-transform: uppercase; color: #475569; font-weight: 800; letter-spacing: 1px; margin-bottom: 14px;">
                 🔑 OFFICIAL ACCOUNT CREDENTIALS
             </div>
-            
+
             <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
                 <tr>
                     <td style="padding: 6px 0; font-size: 14px; color: #475569; width: 140px; font-weight: 600;">Email Address:</td>
@@ -1467,7 +1476,7 @@ def send_user_welcome_email(
                     </td>
                 </tr>
             </table>
-            
+
             <div style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed #CBD5E1; font-size: 12px; color: #64748B; line-height: 1.4;">
                 🔒 <strong>Security Notice:</strong> Please change your temporary password immediately after logging in.
             </div>
@@ -1486,7 +1495,7 @@ def send_user_welcome_email(
         <tr>
             <td align="center">
                 <div style="background-color: #FFFFFF; border-radius: 24px; overflow: hidden; box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.4), 0 0 1px rgba(255, 255, 255, 0.1); border: 1px solid #1E293B;">
-                    
+
                     <!-- Top Accent Glow Banner -->
                     <div style="height: 5px; background: linear-gradient(90deg, #6366F1 0%, #3B82F6 50%, #10B981 100%);"></div>
 
@@ -1505,7 +1514,7 @@ def send_user_welcome_email(
                         <p style="margin: 0 0 16px 0; color: #0F172A; font-size: 17px; font-weight: 600; line-height: 1.5;">
                             Hello <span style="color: #2563EB;">{user_name}</span>,
                         </p>
-                        
+
                         <p style="margin: 0 0 20px 0; color: #475569; font-size: 15px; line-height: 1.65;">
                             Welcome to <strong>{org_name}</strong>! Your official account has been created on Hisob ERP with access as <span style="background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; font-size: 13px; font-weight: 700; padding: 3px 10px; border-radius: 6px; display: inline-block;">{role_name.title()}</span>.
                         </p>
@@ -1578,8 +1587,8 @@ def send_user_welcome_email(
 def send_password_reset_email(
     to_email: str,
     reset_url: str,
-    db: Optional[Session] = None,
-    tenant_id: Optional[UUID] = None,
+    db: Session | None = None,
+    tenant_id: UUID | None = None,
 ) -> bool:
     """Delivers executive password reset link to user."""
     subject = "🔑 Password Reset Request — Hisob ERP"
@@ -1595,7 +1604,7 @@ def send_password_reset_email(
         <tr>
             <td align="center">
                 <div style="background-color: #FFFFFF; border-radius: 24px; overflow: hidden; box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.4), 0 0 1px rgba(255, 255, 255, 0.1); border: 1px solid #1E293B;">
-                    
+
                     <!-- Top Danger Glow Banner -->
                     <div style="height: 5px; background: linear-gradient(90deg, #EF4444 0%, #F59E0B 100%);"></div>
 
@@ -1614,7 +1623,7 @@ def send_password_reset_email(
                         <p style="margin: 0 0 16px 0; color: #0F172A; font-size: 17px; font-weight: 600;">
                             Hello,
                         </p>
-                        
+
                         <p style="margin: 0 0 24px 0; color: #475569; font-size: 15px; line-height: 1.65;">
                             We received a security request to reset the password for your Hisob ERP account. Click the button below to choose a new password:
                         </p>

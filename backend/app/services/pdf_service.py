@@ -1,12 +1,10 @@
 """
 PDF Generation Service — Generates Executive Luxury PDF Receipt documents with Devanagari Unicode support.
 """
-import os
-import io
 import logging
+import os
 import warnings
 from pathlib import Path
-from typing import Optional
 
 # Suppress false fpdf2 PyFPDF namespace warnings and fontTools subset verbosity
 warnings.filterwarnings("ignore", category=UserWarning, module="fpdf")
@@ -14,15 +12,16 @@ warnings.filterwarnings("ignore", message=".*PyFPDF.*")
 logging.getLogger("fontTools").setLevel(logging.ERROR)
 logging.getLogger("fontTools.subset").setLevel(logging.ERROR)
 
+import contextlib
+import locale
+
 import qrcode
 from fpdf import FPDF
+
 from app.core.config import settings
 
-import locale
-try:
+with contextlib.suppress(Exception):
     locale.getpreferredencoding = lambda do_setlocale=True: "utf-8"
-except Exception:
-    pass
 
 # Force UTF-8 mode for Windows font decoding
 os.environ["PYTHONUTF8"] = "1"
@@ -56,12 +55,12 @@ def generate_receipt_pdf_bytes(
     purpose: str,
     payment_mode: str,
     org_name: str,
-    org_city: Optional[str] = None,
-    org_pan: Optional[str] = None,
-    org_logo_url: Optional[str] = None,
-    pan_number: Optional[str] = None,
-    transaction_ref: Optional[str] = None,
-    receipt_id: Optional[str] = None,
+    org_city: str | None = None,
+    org_pan: str | None = None,
+    org_logo_url: str | None = None,
+    pan_number: str | None = None,
+    transaction_ref: str | None = None,
+    receipt_id: str | None = None,
 ) -> bytes:
     """
     Generates an executive, ultra-premium binary PDF Receipt with Devanagari text,
@@ -111,7 +110,7 @@ def generate_receipt_pdf_bytes(
         return any(ord(char) >= 0x0900 and ord(char) <= 0x097F for char in str(text))
 
     # Safe text helper
-    def safe_text(text: Optional[str]) -> str:
+    def safe_text(text: str | None) -> str:
         if not text:
             return ""
         s = str(text)
@@ -150,7 +149,7 @@ def generate_receipt_pdf_bytes(
     # Header Title
     pdf.set_xy(text_start_x, 15)
     pdf.set_text_color(255, 255, 255)
-    
+
     org_title = safe_text(org_name)
     use_font("B", 16 if len(org_title) < 25 else 13, is_marathi=is_devanagari(org_title))
     pdf.cell(180 - (text_start_x - 15), 7, org_title, align="L" if logo_file_path else "C", ln=True)
@@ -159,7 +158,7 @@ def generate_receipt_pdf_bytes(
     city_val = org_city or "Kolhapur, Maharashtra"
     pan_info = f" | PAN: {org_pan.strip()}" if (org_pan and org_pan.strip() and "1234A" not in org_pan) else ""
     sub_text = safe_text(f"{city_val}{pan_info}")
-    
+
     pdf.set_x(text_start_x)
     pdf.set_text_color(203, 213, 225)
     use_font("", 9, is_marathi=is_devanagari(sub_text))
@@ -263,10 +262,8 @@ def generate_receipt_pdf_bytes(
         logger.warning("Could not render QR code in PDF: %s", str(qr_ex))
     finally:
         if tmp_qr_path and os.path.exists(tmp_qr_path):
-            try:
+            with contextlib.suppress(Exception):
                 os.remove(tmp_qr_path)
-            except Exception:
-                pass
 
     pdf.set_xy(44, y_footer + 2)
     pdf.set_font("Helvetica", "B", 9)

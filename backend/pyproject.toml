@@ -31,4 +31,10 @@ dependencies = [
     "pypdf>=6.14.2",
 ]
 
+[dependency-groups]
+dev = [
+    "pytest-cov>=7.1.0",
+    "ruff>=0.16.1",
+]
+
 

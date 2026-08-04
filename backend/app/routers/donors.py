@@ -1,26 +1,34 @@
 """
 Donors & Areas Routers — Manage donors and collection areas.
 """
-from typing import List, Optional
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+
+from fastapi import APIRouter
+from fastapi import Depends
+from fastapi import HTTPException
+from fastapi import Query
+from fastapi import status
 from sqlalchemy.orm import Session
+
 from app.core.database import get_db
-from app.permissions.rbac import require
+from app.models.donor import Area
+from app.models.donor import Donor
 from app.models.user import User
-from app.models.donor import Donor, Area
-from app.repositories.donor import DonorRepository, AreaRepository
-from app.schemas.donor import (
-    DonorCreate, DonorUpdate, DonorResponse,
-    AreaCreate, AreaUpdate, AreaResponse
-)
+from app.permissions.rbac import require
+from app.repositories.donor import AreaRepository
+from app.repositories.donor import DonorRepository
+from app.schemas.donor import AreaCreate
+from app.schemas.donor import AreaResponse
+from app.schemas.donor import DonorCreate
+from app.schemas.donor import DonorResponse
+from app.schemas.donor import DonorUpdate
 
 router = APIRouter(prefix="/donors", tags=["Donors"])
 areas_router = APIRouter(prefix="/areas", tags=["Areas"])
 
 
 # ── Area Endpoints ──
-@areas_router.get("", response_model=List[AreaResponse], summary="List Areas")
+@areas_router.get("", response_model=list[AreaResponse], summary="List Areas")
 async def list_areas(
     current_user: User = Depends(require("areas", "view")),
     db: Session = Depends(get_db),
@@ -53,10 +61,10 @@ from app.auth.deps import get_current_active_user
 
 
 # ── Donor Endpoints ──
-@router.get("", response_model=List[DonorResponse], summary="List & Search Donors")
+@router.get("", response_model=list[DonorResponse], summary="List & Search Donors")
 async def list_donors(
-    q: Optional[str] = Query(None, description="Search by name, phone or donor number"),
-    area_id: Optional[UUID] = Query(None, description="Filter by area"),
+    q: str | None = Query(None, description="Search by name, phone or donor number"),
+    area_id: UUID | None = Query(None, description="Filter by area"),
     skip: int = 0,
     limit: int = 100,
     current_user: User = Depends(get_current_active_user),
@@ -68,13 +76,15 @@ async def list_donors(
     donors = repo.search_donors(current_user.tenant_id, query=q, area_id=area_id, skip=skip, limit=limit)
 
     # Active Financial Year
-    from app.models.financial_year import FinancialYear
-    from app.models.receipt import Receipt, ReceiptStatus
     from sqlalchemy import func
+
+    from app.models.financial_year import FinancialYear
+    from app.models.receipt import Receipt
+    from app.models.receipt import ReceiptStatus
 
     active_fy = db.query(FinancialYear).filter(
         FinancialYear.tenant_id == current_user.tenant_id,
-        FinancialYear.is_current == True
+        FinancialYear.is_current
     ).first()
 
     fy_donations_map = {}
@@ -105,12 +115,12 @@ async def list_donors(
     for d in donors:
         if d.id in lifetime_map:
             d.total_donations = lifetime_map[d.id]
-        setattr(d, 'this_year_donations', fy_donations_map.get(d.id, 0))
+        d.this_year_donations = fy_donations_map.get(d.id, 0)
 
     return donors
 
 
-def normalize_phone(phone: Optional[str]) -> Optional[str]:
+def normalize_phone(phone: str | None) -> str | None:
     """Cleans phone numbers into a 10-digit normalized string for comparison."""
     if not phone:
         return None
@@ -122,8 +132,14 @@ def normalize_phone(phone: Optional[str]) -> Optional[str]:
     return cleaned if len(cleaned) >= 10 else None
 
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
+from fastapi import APIRouter
+from fastapi import BackgroundTasks
+from fastapi import Depends
+from fastapi import Query
+from fastapi import status
+
 from app.models.tenant import Tenant
+
 
 @router.post("", response_model=DonorResponse, status_code=status.HTTP_201_CREATED, summary="Create Donor")
 async def create_donor(
@@ -141,7 +157,7 @@ async def create_donor(
         if norm_phone:
             existing_donors = db.query(Donor).filter(
                 Donor.tenant_id == current_user.tenant_id,
-                Donor.is_active == True,
+                Donor.is_active,
                 Donor.phone.isnot(None),
             ).all()
             for existing in existing_donors:
@@ -156,7 +172,7 @@ async def create_donor(
         clean_email = payload.email.strip().lower()
         existing_email_donor = db.query(Donor).filter(
             Donor.tenant_id == current_user.tenant_id,
-            Donor.is_active == True,
+            Donor.is_active,
             Donor.email.isnot(None),
         ).all()
         for existing in existing_email_donor:
@@ -223,8 +239,10 @@ async def get_donor_summary(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ):
-    from app.models.receipt import Receipt, ReceiptStatus, PaymentMode
-    from sqlalchemy import func
+
+    from app.models.receipt import PaymentMode
+    from app.models.receipt import Receipt
+    from app.models.receipt import ReceiptStatus
 
     repo = DonorRepository(db)
     donor = repo.get(donor_id)
@@ -314,7 +332,7 @@ async def update_donor(
             existing_donors = db.query(Donor).filter(
                 Donor.tenant_id == current_user.tenant_id,
                 Donor.id != donor_id,
-                Donor.is_active == True,
+                Donor.is_active,
                 Donor.phone.isnot(None),
             ).all()
             for existing in existing_donors:
@@ -329,7 +347,7 @@ async def update_donor(
         existing_email_donors = db.query(Donor).filter(
             Donor.tenant_id == current_user.tenant_id,
             Donor.id != donor_id,
-            Donor.is_active == True,
+            Donor.is_active,
             Donor.email.isnot(None),
         ).all()
         for existing in existing_email_donors:

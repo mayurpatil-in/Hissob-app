@@ -1,17 +1,28 @@
 """
 Festival model — links to financial year.
 """
-import uuid
 import enum
+import uuid
 from datetime import date
-from sqlalchemy import String, Boolean, ForeignKey, Date, Text, Numeric
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from sqlalchemy import Boolean
+from sqlalchemy import Date
+from sqlalchemy import ForeignKey
+from sqlalchemy import Numeric
+from sqlalchemy import String
+from sqlalchemy import Text
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import relationship
+
 from app.core.database import Base
-from app.models.base import UUIDMixin, TimestampMixin, TenantMixin
+from app.models.base import TenantMixin
+from app.models.base import TimestampMixin
+from app.models.base import UUIDMixin
 
 
-class FestivalStatus(str, enum.Enum):
+class FestivalStatus(enum.StrEnum):
     PLANNING = "planning"
     ACTIVE = "active"
     COMPLETED = "completed"
@@ -47,7 +58,7 @@ class Festival(Base, UUIDMixin, TimestampMixin, TenantMixin):
         # Avoid circular import at module level
         from app.models.receipt import ReceiptStatus
         return sum(
-            float(r.amount) 
-            for r in self.receipts 
+            float(r.amount)
+            for r in self.receipts
             if r.status != ReceiptStatus.CANCELLED
         )

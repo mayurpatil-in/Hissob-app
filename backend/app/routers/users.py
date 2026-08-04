@@ -1,18 +1,26 @@
 """
 Users Router — Manage tenant users, trustees, treasurers, collectors, and volunteers.
 """
-from typing import List, Optional
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
+
+from fastapi import APIRouter
+from fastapi import BackgroundTasks
+from fastapi import Depends
+from fastapi import HTTPException
+from fastapi import status
+from pydantic import BaseModel
+from pydantic import EmailStr
+from sqlalchemy import func
+from sqlalchemy import or_
+from sqlalchemy import select
 from sqlalchemy.orm import Session
-from sqlalchemy import select, func, or_
-from pydantic import BaseModel, EmailStr
-from app.core.database import get_db
+
 from app.auth.deps import get_current_active_user
+from app.core.database import get_db
 from app.core.security import hash_password
-from app.models.user import User
-from app.models.tenant import Tenant
 from app.models.rbac import Role
+from app.models.tenant import Tenant
+from app.models.user import User
 from app.services.email_service import send_user_welcome_email
 
 router = APIRouter(prefix="/users", tags=["Users Management"])
@@ -22,23 +30,23 @@ class UserCreateSchema(BaseModel):
     full_name: str
     email: EmailStr
     password: str
-    phone: Optional[str] = None
-    role_name: Optional[str] = "collector"
+    phone: str | None = None
+    role_name: str | None = "collector"
 
 
 class UserUpdateSchema(BaseModel):
-    full_name: Optional[str] = None
-    email: Optional[EmailStr] = None
-    phone: Optional[str] = None
-    is_active: Optional[bool] = None
-    role_name: Optional[str] = None
+    full_name: str | None = None
+    email: EmailStr | None = None
+    phone: str | None = None
+    is_active: bool | None = None
+    role_name: str | None = None
 
 
 class RoleOutSchema(BaseModel):
     id: UUID
     name: str
-    slug: Optional[str] = None
-    description: Optional[str] = None
+    slug: str | None = None
+    description: str | None = None
 
     class Config:
         from_attributes = True
@@ -48,20 +56,20 @@ class UserOutSchema(BaseModel):
     id: UUID
     full_name: str
     email: str
-    phone: Optional[str] = None
+    phone: str | None = None
     is_active: bool
     is_super_admin: bool
-    tenant_id: Optional[UUID] = None
-    roles: List[RoleOutSchema] = []
+    tenant_id: UUID | None = None
+    roles: list[RoleOutSchema] = []
 
     class Config:
         from_attributes = True
 
 
-def get_or_create_role(db: Session, tenant_id: Optional[UUID], role_name: str) -> Optional[Role]:
+def get_or_create_role(db: Session, tenant_id: UUID | None, role_name: str) -> Role | None:
     if not role_name:
         return None
-    
+
     clean_name = role_name.strip()
     clean_slug = clean_name.lower().replace(" ", "_")
 
@@ -73,10 +81,10 @@ def get_or_create_role(db: Session, tenant_id: Optional[UUID], role_name: str) -
             func.lower(Role.name) == clean_slug
         )
     )
-    
+
     if tenant_id:
-        stmt = stmt.where(or_(Role.tenant_id == tenant_id, Role.tenant_id == None))
-    
+        stmt = stmt.where(or_(Role.tenant_id == tenant_id, Role.tenant_id is None))
+
     role = db.scalars(stmt).first()
 
     if not role and tenant_id:
@@ -96,7 +104,7 @@ def get_or_create_role(db: Session, tenant_id: Optional[UUID], role_name: str) -
     return role
 
 
-@router.get("", response_model=List[UserOutSchema], summary="List Organization Users")
+@router.get("", response_model=list[UserOutSchema], summary="List Organization Users")
 def list_users(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
@@ -104,7 +112,7 @@ def list_users(
     stmt = select(User)
     if not current_user.is_super_admin and current_user.tenant_id:
         stmt = stmt.where(User.tenant_id == current_user.tenant_id)
-    
+
     users = db.scalars(stmt).all()
     return users
 
@@ -130,7 +138,7 @@ def create_user(
         is_active=True,
         is_super_admin=False,
     )
-    
+
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
@@ -170,7 +178,7 @@ def update_user(
     user = db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
+
     if not current_user.is_super_admin and user.tenant_id != current_user.tenant_id:
         raise HTTPException(status_code=403, detail="Permission denied")
 
@@ -202,7 +210,7 @@ def delete_user(
     user = db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
+
     if not current_user.is_super_admin and user.tenant_id != current_user.tenant_id:
         raise HTTPException(status_code=403, detail="Permission denied")
 

@@ -1,32 +1,50 @@
 """
 Auth router — login, logout, refresh, me.
 """
-from datetime import datetime, timedelta, timezone
-from fastapi import APIRouter, Depends, HTTPException, status, Request, BackgroundTasks
-from sqlalchemy.orm import Session
-from app.core.database import get_db
-from app.core.config import settings
-from app.core.security import verify_password, hash_password
-from app.auth.jwt import create_access_token, create_refresh_token, decode_token
-from app.auth.deps import get_current_active_user
-from app.repositories.user import UserRepository, RefreshTokenRepository
-from app.schemas.auth import (
-    LoginRequest, LoginResponse, RefreshRequest, TokenResponse, UserInfo,
-    TOTPSetupResponse, TOTPVerifyRequest, TOTPDisableRequest,
-    ForgotPasswordRequest, ResetPasswordRequest, ChangePasswordRequest
-)
-from app.schemas.common import SuccessResponse
-from app.permissions.rbac import get_user_permissions
-from app.models.user import User
-from app.services.email_service import send_password_reset_email
+import base64
+import io
+from datetime import UTC
+from datetime import datetime
+from datetime import timedelta
+
+import pyotp
+import qrcode
+from fastapi import APIRouter
+from fastapi import BackgroundTasks
+from fastapi import Depends
+from fastapi import HTTPException
+from fastapi import Request
+from fastapi import status
 from jose import jwt
 from slowapi import Limiter
 from slowapi.util import get_remote_address
-import uuid
-import pyotp
-import qrcode
-import io
-import base64
+from sqlalchemy.orm import Session
+
+from app.auth.deps import get_current_active_user
+from app.auth.jwt import create_access_token
+from app.auth.jwt import create_refresh_token
+from app.auth.jwt import decode_token
+from app.core.config import settings
+from app.core.database import get_db
+from app.core.security import hash_password
+from app.core.security import verify_password
+from app.models.user import User
+from app.permissions.rbac import get_user_permissions
+from app.repositories.user import RefreshTokenRepository
+from app.repositories.user import UserRepository
+from app.schemas.auth import ChangePasswordRequest
+from app.schemas.auth import ForgotPasswordRequest
+from app.schemas.auth import LoginRequest
+from app.schemas.auth import LoginResponse
+from app.schemas.auth import RefreshRequest
+from app.schemas.auth import ResetPasswordRequest
+from app.schemas.auth import TokenResponse
+from app.schemas.auth import TOTPDisableRequest
+from app.schemas.auth import TOTPSetupResponse
+from app.schemas.auth import TOTPVerifyRequest
+from app.schemas.auth import UserInfo
+from app.schemas.common import SuccessResponse
+from app.services.email_service import send_password_reset_email
 
 limiter = Limiter(key_func=get_remote_address)
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -52,13 +70,13 @@ async def login(
     lockout_info = _failed_logins.get(email_key)
     if lockout_info:
         locked_until = lockout_info.get("locked_until")
-        if locked_until and datetime.now(timezone.utc) < locked_until:
-            remaining = int((locked_until - datetime.now(timezone.utc)).total_seconds() // 60) + 1
+        if locked_until and datetime.now(UTC) < locked_until:
+            remaining = int((locked_until - datetime.now(UTC)).total_seconds() // 60) + 1
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail=f"Account temporarily locked due to {_MAX_FAILED_ATTEMPTS} failed login attempts. Try again in {remaining} minutes.",
             )
-        elif locked_until and datetime.now(timezone.utc) >= locked_until:
+        elif locked_until and datetime.now(UTC) >= locked_until:
             # Lockout expired — reset counter
             _failed_logins.pop(email_key, None)
 
@@ -71,7 +89,7 @@ async def login(
             _failed_logins[email_key] = {"count": 0, "locked_until": None}
         _failed_logins[email_key]["count"] += 1
         if _failed_logins[email_key]["count"] >= _MAX_FAILED_ATTEMPTS:
-            _failed_logins[email_key]["locked_until"] = datetime.now(timezone.utc) + timedelta(minutes=_LOCKOUT_DURATION_MINUTES)
+            _failed_logins[email_key]["locked_until"] = datetime.now(UTC) + timedelta(minutes=_LOCKOUT_DURATION_MINUTES)
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail=f"Account locked for {_LOCKOUT_DURATION_MINUTES} minutes after {_MAX_FAILED_ATTEMPTS} consecutive failed login attempts.",
@@ -119,7 +137,7 @@ async def login(
 
     # Store refresh token
     rt_repo = RefreshTokenRepository(db)
-    expires_at = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    expires_at = datetime.now(UTC) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     rt_repo.create_refresh_token(
         user_id=user.id,
         token=refresh_token_str,
@@ -130,7 +148,7 @@ async def login(
 
     # Update last login in background
     def _update_last_login():
-        user.last_login = datetime.now(timezone.utc)
+        user.last_login = datetime.now(UTC)
         db.commit()
         try:
             from app.services.audit_service import log_audit_event
@@ -190,7 +208,7 @@ async def refresh_token(
             detail="Refresh token has been revoked",
         )
 
-    if stored.expires_at < datetime.now(timezone.utc):
+    if stored.expires_at < datetime.now(UTC):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Refresh token expired",
@@ -207,7 +225,7 @@ async def refresh_token(
         data={"sub": str(user.id), "tenant_id": str(user.tenant_id) if user.tenant_id else None}
     )
     new_refresh = create_refresh_token(data={"sub": str(user.id)})
-    expires_at = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    expires_at = datetime.now(UTC) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     rt_repo.create_refresh_token(user.id, new_refresh, expires_at)
 
     return TokenResponse(
@@ -327,7 +345,7 @@ async def forgot_password(
 
     # Return success even if user not found to prevent user enumeration
     if user and user.is_active:
-        expire = datetime.now(timezone.utc) + timedelta(hours=1)  # 1-hour expiry for security
+        expire = datetime.now(UTC) + timedelta(hours=1)  # 1-hour expiry for security
         token = jwt.encode(
             {"sub": str(user.id), "email": user.email, "exp": expire, "type": "password_reset"},
             settings.JWT_SECRET_KEY,

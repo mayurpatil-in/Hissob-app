@@ -2,11 +2,23 @@
 Donor & Area models.
 """
 import uuid
-from sqlalchemy import String, Boolean, ForeignKey, Text, Date, Integer, Index
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from sqlalchemy import Boolean
+from sqlalchemy import ForeignKey
+from sqlalchemy import Index
+from sqlalchemy import Integer
+from sqlalchemy import String
+from sqlalchemy import Text
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import relationship
+
 from app.core.database import Base
-from app.models.base import UUIDMixin, TimestampMixin, TenantMixin, SoftDeleteMixin
+from app.models.base import SoftDeleteMixin
+from app.models.base import TenantMixin
+from app.models.base import TimestampMixin
+from app.models.base import UUIDMixin
 
 
 class Area(Base, UUIDMixin, TimestampMixin, TenantMixin):

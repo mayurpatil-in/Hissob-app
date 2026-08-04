@@ -1,26 +1,38 @@
 """
 Inventory & Physical Assets Router — Manage Mandal equipment, checkouts, returns & damages.
 """
-from typing import List, Optional
+from datetime import UTC
+from datetime import datetime
 from uuid import UUID
-from datetime import datetime, timezone, date
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
-from sqlalchemy import select, func
 
-from app.core.database import get_db
+from fastapi import APIRouter
+from fastapi import Depends
+from fastapi import HTTPException
+from fastapi import Query
+from fastapi import status
+from sqlalchemy import func
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
 from app.auth.deps import get_current_active_user
+from app.core.database import get_db
+from app.models.inventory import Asset
+from app.models.inventory import AssetCategory
+from app.models.inventory import AssetCheckout
+from app.models.inventory import AssetCondition
+from app.models.inventory import CheckoutAction
+from app.models.inventory import CheckoutStatus
 from app.models.user import User
-from app.models.inventory import (
-    AssetCategory, Asset, AssetCheckout,
-    AssetCondition, CheckoutAction, CheckoutStatus
-)
-from app.schemas.inventory import (
-    AssetCategoryCreate, AssetCategoryUpdate, AssetCategoryResponse,
-    AssetCreate, AssetUpdate, AssetResponse,
-    AssetCheckoutCreate, AssetReturnCreate, AssetCheckoutResponse,
-    InventorySummaryResponse
-)
+from app.schemas.inventory import AssetCategoryCreate
+from app.schemas.inventory import AssetCategoryResponse
+from app.schemas.inventory import AssetCategoryUpdate
+from app.schemas.inventory import AssetCheckoutCreate
+from app.schemas.inventory import AssetCheckoutResponse
+from app.schemas.inventory import AssetCreate
+from app.schemas.inventory import AssetResponse
+from app.schemas.inventory import AssetReturnCreate
+from app.schemas.inventory import AssetUpdate
+from app.schemas.inventory import InventorySummaryResponse
 from app.services.audit_service import log_audit_event
 
 router = APIRouter(prefix="/inventory", tags=["Inventory & Assets"])
@@ -35,7 +47,7 @@ def get_tenant_id(current_user: User) -> UUID:
 
 # ── 1. Asset Categories ──
 
-@router.get("/categories", response_model=List[AssetCategoryResponse], summary="List Asset Categories")
+@router.get("/categories", response_model=list[AssetCategoryResponse], summary="List Asset Categories")
 async def list_categories(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
@@ -43,7 +55,7 @@ async def list_categories(
     tenant_id = get_tenant_id(current_user)
     stmt = select(AssetCategory).where(
         AssetCategory.tenant_id == tenant_id,
-        AssetCategory.is_active == True
+        AssetCategory.is_active
     ).order_by(AssetCategory.name)
     return db.scalars(stmt).all()
 
@@ -100,19 +112,19 @@ async def update_category(
 
 # ── 2. Asset Items ──
 
-@router.get("/assets", response_model=List[AssetResponse], summary="List & Filter Equipment Assets")
+@router.get("/assets", response_model=list[AssetResponse], summary="List & Filter Equipment Assets")
 async def list_assets(
-    category_id: Optional[UUID] = Query(None),
-    festival_id: Optional[UUID] = Query(None),
-    condition: Optional[str] = Query(None),
-    search: Optional[str] = Query(None),
+    category_id: UUID | None = Query(None),
+    festival_id: UUID | None = Query(None),
+    condition: str | None = Query(None),
+    search: str | None = Query(None),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ):
     tenant_id = get_tenant_id(current_user)
     stmt = select(Asset).where(
         Asset.tenant_id == tenant_id,
-        Asset.is_active == True
+        Asset.is_active
     )
 
     if category_id:
@@ -253,7 +265,7 @@ async def checkout_asset(
         quantity=payload.quantity,
         issued_to_person=payload.issued_to_person,
         issued_by_user_id=current_user.id,
-        issued_at=datetime.now(timezone.utc),
+        issued_at=datetime.now(UTC),
         expected_return_at=payload.expected_return_at,
         damage_notes=payload.notes,
         status=CheckoutStatus.ISSUED,
@@ -291,7 +303,7 @@ async def return_asset(
     if not asset:
         raise HTTPException(status_code=404, detail="Associated asset not found")
 
-    checkout.returned_at = datetime.now(timezone.utc)
+    checkout.returned_at = datetime.now(UTC)
     checkout.returned_condition = payload.returned_condition
     checkout.damage_notes = payload.damage_notes
     checkout.damage_charge = payload.damage_charge
@@ -321,10 +333,10 @@ async def return_asset(
     return res
 
 
-@router.get("/checkouts", response_model=List[AssetCheckoutResponse], summary="List Checkout & Return Logs")
+@router.get("/checkouts", response_model=list[AssetCheckoutResponse], summary="List Checkout & Return Logs")
 async def list_checkouts(
-    asset_id: Optional[UUID] = Query(None),
-    status: Optional[str] = Query(None),
+    asset_id: UUID | None = Query(None),
+    status: str | None = Query(None),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ):
@@ -357,12 +369,12 @@ async def get_inventory_summary(
 ):
     tenant_id = get_tenant_id(current_user)
 
-    total_assets_count = db.scalar(select(func.count(Asset.id)).where(Asset.tenant_id == tenant_id, Asset.is_active == True)) or 0
-    total_items_quantity = db.scalar(select(func.sum(Asset.quantity_total)).where(Asset.tenant_id == tenant_id, Asset.is_active == True)) or 0
-    total_estimated_value = float(db.scalar(select(func.sum(Asset.estimated_value)).where(Asset.tenant_id == tenant_id, Asset.is_active == True)) or 0.0)
+    total_assets_count = db.scalar(select(func.count(Asset.id)).where(Asset.tenant_id == tenant_id, Asset.is_active)) or 0
+    total_items_quantity = db.scalar(select(func.sum(Asset.quantity_total)).where(Asset.tenant_id == tenant_id, Asset.is_active)) or 0
+    total_estimated_value = float(db.scalar(select(func.sum(Asset.estimated_value)).where(Asset.tenant_id == tenant_id, Asset.is_active)) or 0.0)
 
     active_checkouts_count = db.scalar(select(func.count(AssetCheckout.id)).where(AssetCheckout.tenant_id == tenant_id, AssetCheckout.status == CheckoutStatus.ISSUED)) or 0
-    damaged_repair_count = db.scalar(select(func.count(Asset.id)).where(Asset.tenant_id == tenant_id, Asset.is_active == True, Asset.condition.in_([AssetCondition.DAMAGED, AssetCondition.UNDER_REPAIR]))) or 0
+    damaged_repair_count = db.scalar(select(func.count(Asset.id)).where(Asset.tenant_id == tenant_id, Asset.is_active, Asset.condition.in_([AssetCondition.DAMAGED, AssetCondition.UNDER_REPAIR]))) or 0
 
     return InventorySummaryResponse(
         total_assets_count=total_assets_count,

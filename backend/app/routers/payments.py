@@ -10,25 +10,31 @@ Security Hardening:
   - Razorpay Webhook endpoint for server-to-server payment confirmation
   - Consistent key_secret fallback handling
 """
-import uuid
-import hmac
 import hashlib
-import logging
+import hmac
 import json
+import logging
+import uuid
 from datetime import date
-from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Request, status
-from pydantic import BaseModel, field_validator
-from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
-import httpx
 
-from app.core.database import get_db
+import httpx
+from fastapi import APIRouter
+from fastapi import Depends
+from fastapi import HTTPException
+from fastapi import Request
+from pydantic import BaseModel
+from pydantic import field_validator
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+
 from app.core.config import settings
-from app.models.tenant import Tenant
-from app.models.financial_year import FinancialYear
+from app.core.database import get_db
 from app.models.donor import Donor
-from app.models.receipt import Receipt, ReceiptStatus, PaymentMode
+from app.models.financial_year import FinancialYear
+from app.models.receipt import PaymentMode
+from app.models.receipt import Receipt
+from app.models.receipt import ReceiptStatus
+from app.models.tenant import Tenant
 from app.models.user import User
 
 logger = logging.getLogger(__name__)
@@ -36,6 +42,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/payments", tags=["Online Payments"])
 
 
+import contextlib
 from urllib.parse import quote
 
 # ─── Constants ───────────────────────────────────────────────────────
@@ -57,7 +64,7 @@ def _is_mock_payment(payment_id: str) -> bool:
     return payment_id.startswith("pay_demo_") or payment_id.startswith("mock_")
 
 
-def _resolve_tenant(slug_or_id: Optional[str], db: Session) -> Optional[Tenant]:
+def _resolve_tenant(slug_or_id: str | None, db: Session) -> Tenant | None:
     """Resolve tenant by slug or UUID. Falls back to first tenant."""
     tenant = None
     if slug_or_id:
@@ -118,11 +125,11 @@ def _generate_receipt_number_with_retry(tenant_id: uuid.UUID, db: Session, max_r
 class CreateOrderRequest(BaseModel):
     amount: float
     currency: str = "INR"
-    donor_name: Optional[str] = "Donor"
-    donor_phone: Optional[str] = None
-    donor_email: Optional[str] = None
-    purpose: Optional[str] = "General Donation"
-    slug_or_id: Optional[str] = None
+    donor_name: str | None = "Donor"
+    donor_phone: str | None = None
+    donor_email: str | None = None
+    purpose: str | None = "General Donation"
+    slug_or_id: str | None = None
 
     @field_validator("amount")
     @classmethod
@@ -136,12 +143,12 @@ class CreateOrderRequest(BaseModel):
 
 class CreatePaymentLinkRequest(BaseModel):
     amount: float
-    donor_name: Optional[str] = None
-    donor_phone: Optional[str] = None
-    donor_email: Optional[str] = None
-    purpose: Optional[str] = "General Donation"
-    description: Optional[str] = None
-    slug_or_id: Optional[str] = None
+    donor_name: str | None = None
+    donor_phone: str | None = None
+    donor_email: str | None = None
+    purpose: str | None = "General Donation"
+    description: str | None = None
+    slug_or_id: str | None = None
 
     @field_validator("amount")
     @classmethod
@@ -155,23 +162,23 @@ class CreatePaymentLinkRequest(BaseModel):
 
 class CreateRefundRequest(BaseModel):
     receipt_id: str
-    amount: Optional[float] = None
-    reason: Optional[str] = "Donor requested cancellation"
+    amount: float | None = None
+    reason: str | None = "Donor requested cancellation"
 
 
 class VerifyPaymentRequest(BaseModel):
     razorpay_order_id: str
     razorpay_payment_id: str
     razorpay_signature: str
-    slug_or_id: Optional[str] = None
+    slug_or_id: str | None = None
     full_name: str
     phone: str
-    email: Optional[str] = None
-    pan_number: Optional[str] = None
-    city: Optional[str] = None
+    email: str | None = None
+    pan_number: str | None = None
+    city: str | None = None
     amount: float
-    purpose: Optional[str] = "General Donation"
-    notes: Optional[str] = None
+    purpose: str | None = "General Donation"
+    notes: str | None = None
 
 
 # ─── Endpoints ───────────────────────────────────────────────────────
@@ -223,13 +230,11 @@ async def create_razorpay_order(req: CreateOrderRequest, db: Session = Depends(g
                 }
             else:
                 err_json = {}
-                try:
+                with contextlib.suppress(Exception):
                     err_json = resp.json()
-                except Exception:
-                    pass
                 err_desc = err_json.get("error", {}).get("description", resp.text)
                 logger.error(f"Razorpay API Error ({resp.status_code}): {err_desc}")
-                
+
                 # If real Razorpay keys were provided, raise descriptive error
                 if not is_demo:
                     raise HTTPException(
@@ -348,12 +353,12 @@ def _create_receipt_for_payment(
     full_name: str,
     phone: str,
     amount: float,
-    purpose: Optional[str] = "General Donation",
-    email: Optional[str] = None,
-    pan_number: Optional[str] = None,
-    city: Optional[str] = None,
-    notes: Optional[str] = None,
-    payment_method: Optional[str] = None,
+    purpose: str | None = "General Donation",
+    email: str | None = None,
+    pan_number: str | None = None,
+    city: str | None = None,
+    notes: str | None = None,
+    payment_method: str | None = None,
 ) -> dict:
     """Shared logic to create a receipt for a verified payment.
     Used by both verify-payment endpoint and webhook handler.
@@ -386,7 +391,7 @@ def _create_receipt_for_payment(
     # ── Get active financial year ──
     fy = db.query(FinancialYear).filter(
         FinancialYear.tenant_id == tenant.id,
-        FinancialYear.is_current == True
+        FinancialYear.is_current
     ).first()
     if not fy:
         fy = db.query(FinancialYear).filter(FinancialYear.tenant_id == tenant.id).order_by(FinancialYear.start_date.desc()).first()
@@ -506,7 +511,7 @@ def _create_receipt_for_payment(
 @router.post("/razorpay/verify-payment")
 async def verify_razorpay_payment(req: VerifyPaymentRequest, db: Session = Depends(get_db)):
     """Verifies Razorpay HMAC signature and generates an official donor receipt.
-    
+
     Security:
       - HMAC-SHA256 signature verification
       - Idempotency: duplicate payment_id returns existing receipt
@@ -595,7 +600,7 @@ async def verify_razorpay_payment(req: VerifyPaymentRequest, db: Session = Depen
 @router.post("/razorpay/refund")
 async def initiate_razorpay_refund(req: CreateRefundRequest, db: Session = Depends(get_db)):
     """Initiates a full or partial online refund via Razorpay REST API and updates receipt status.
-    
+
     Fix: Only marks receipt as CANCELLED when Razorpay API confirms the refund.
     """
     try:
@@ -740,14 +745,14 @@ async def fetch_razorpay_payment_status(payment_id: str, db: Session = Depends(g
 @router.post("/razorpay/webhook")
 async def razorpay_webhook(request: Request, db: Session = Depends(get_db)):
     """Razorpay server-to-server webhook handler.
-    
+
     Handles events:
       - payment.captured: Creates a receipt if one doesn't already exist
       - refund.processed: Marks receipt as cancelled if refunded externally
-    
+
     Configure this URL in Razorpay Dashboard → Settings → Webhooks:
       https://your-domain.com/api/v1/payments/razorpay/webhook
-    
+
     Security: Validates webhook signature using RAZORPAY_KEY_SECRET.
     """
     _, key_secret, _ = _get_razorpay_keys()

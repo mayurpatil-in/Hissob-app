@@ -1,17 +1,20 @@
 """
 Notifications Router — In-app real-time notification API.
 """
-from typing import List, Optional
+from datetime import UTC
+from datetime import datetime
 from uuid import UUID
-from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from pydantic import BaseModel
 
-from app.core.database import get_db
+from fastapi import APIRouter
+from fastapi import Depends
+from fastapi import HTTPException
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
+
 from app.auth.deps import get_current_active_user
-from app.models.user import User
+from app.core.database import get_db
 from app.models.notification import Notification
+from app.models.user import User
 
 router = APIRouter(prefix="/notifications", tags=["Notifications"])
 
@@ -21,8 +24,8 @@ class NotificationResponse(BaseModel):
     title: str
     message: str
     notification_type: str
-    related_module: Optional[str] = None
-    related_id: Optional[str] = None
+    related_module: str | None = None
+    related_id: str | None = None
     is_read: bool
     created_at: datetime
 
@@ -32,7 +35,7 @@ class NotificationResponse(BaseModel):
 
 class NotificationCountResponse(BaseModel):
     unread_count: int
-    notifications: List[NotificationResponse]
+    notifications: list[NotificationResponse]
 
 
 @router.get("", response_model=NotificationCountResponse, summary="Get Notifications")
@@ -52,7 +55,7 @@ async def get_notifications(
 
     unread_count = (
         db.query(Notification)
-        .filter(Notification.user_id == current_user.id, Notification.is_read == False)
+        .filter(Notification.user_id == current_user.id, not Notification.is_read)
         .count()
     )
 
@@ -73,7 +76,7 @@ async def mark_notification_read(
         raise HTTPException(status_code=404, detail="Notification not found")
 
     notif.is_read = True
-    notif.read_at = datetime.now(timezone.utc)
+    notif.read_at = datetime.now(UTC)
     db.commit()
     db.refresh(notif)
     return notif
@@ -86,7 +89,7 @@ async def mark_all_read(
 ):
     db.query(Notification).filter(
         Notification.user_id == current_user.id,
-        Notification.is_read == False,
-    ).update({"is_read": True, "read_at": datetime.now(timezone.utc)})
+        not Notification.is_read,
+    ).update({"is_read": True, "read_at": datetime.now(UTC)})
     db.commit()
     return {"message": "All notifications marked as read"}

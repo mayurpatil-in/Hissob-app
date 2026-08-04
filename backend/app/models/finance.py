@@ -1,17 +1,32 @@
 """
 Cash Settlement model — Collector → Treasurer → Settled → CashBook workflow.
 """
-import uuid
 import enum
-from datetime import date, datetime
-from sqlalchemy import String, ForeignKey, Date, Text, Numeric, Integer, DateTime, Index
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+import uuid
+from datetime import date
+from datetime import datetime
+
+from sqlalchemy import Date
+from sqlalchemy import DateTime
+from sqlalchemy import ForeignKey
+from sqlalchemy import Index
+from sqlalchemy import Integer
+from sqlalchemy import Numeric
+from sqlalchemy import String
+from sqlalchemy import Text
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import relationship
+
 from app.core.database import Base
-from app.models.base import UUIDMixin, TimestampMixin, TenantMixin, SoftDeleteMixin
+from app.models.base import SoftDeleteMixin
+from app.models.base import TenantMixin
+from app.models.base import TimestampMixin
+from app.models.base import UUIDMixin
 
 
-class SettlementStatus(str, enum.Enum):
+class SettlementStatus(enum.StrEnum):
     PENDING = "pending"
     SUBMITTED = "submitted"
     VERIFIED = "verified"
@@ -49,7 +64,7 @@ class CashSettlement(Base, UUIDMixin, TimestampMixin, TenantMixin):
         return f"<CashSettlement {self.settlement_number}>"
 
 
-class ExpenseStatus(str, enum.Enum):
+class ExpenseStatus(enum.StrEnum):
     PENDING = "pending"
     APPROVED = "approved"
     PAID = "paid"

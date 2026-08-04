@@ -2,8 +2,10 @@
 Password hashing using bcrypt directly (bypasses passlib's strict 72-byte limit
 and avoids the __about__ version detection warning on newer bcrypt versions).
 """
+from datetime import UTC
+from datetime import datetime
+
 import bcrypt
-from datetime import datetime, timezone
 
 
 def hash_password(password: str) -> str:
@@ -26,4 +28,4 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 def utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)

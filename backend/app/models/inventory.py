@@ -1,17 +1,31 @@
 """
 Mandal Equipment & Physical Asset Inventory Models.
 """
-import uuid
 import enum
-from datetime import date, datetime
-from sqlalchemy import String, Boolean, ForeignKey, Date, DateTime, Text, Numeric, Integer
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+import uuid
+from datetime import date
+from datetime import datetime
+
+from sqlalchemy import Boolean
+from sqlalchemy import Date
+from sqlalchemy import DateTime
+from sqlalchemy import ForeignKey
+from sqlalchemy import Integer
+from sqlalchemy import Numeric
+from sqlalchemy import String
+from sqlalchemy import Text
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import relationship
+
 from app.core.database import Base
-from app.models.base import UUIDMixin, TimestampMixin, TenantMixin
+from app.models.base import TenantMixin
+from app.models.base import TimestampMixin
+from app.models.base import UUIDMixin
 
 
-class AssetCondition(str, enum.Enum):
+class AssetCondition(enum.StrEnum):
     NEW = "new"
     GOOD = "good"
     FAIR = "fair"
@@ -19,14 +33,14 @@ class AssetCondition(str, enum.Enum):
     UNDER_REPAIR = "under_repair"
 
 
-class CheckoutAction(str, enum.Enum):
+class CheckoutAction(enum.StrEnum):
     CHECKOUT = "checkout"
     RETURN = "return"
     MAINTENANCE = "maintenance"
     DAMAGE_REPORT = "damage_report"
 
 
-class CheckoutStatus(str, enum.Enum):
+class CheckoutStatus(enum.StrEnum):
     ISSUED = "issued"
     RETURNED = "returned"
     OVERDUE = "overdue"

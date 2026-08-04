@@ -1,17 +1,27 @@
 """
 Financial Year model — manages fiscal year lifecycle.
 """
-import uuid
 import enum
+import uuid
 from datetime import date
-from sqlalchemy import String, Boolean, ForeignKey, Date, Text, Numeric
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from sqlalchemy import Boolean
+from sqlalchemy import Date
+from sqlalchemy import ForeignKey
+from sqlalchemy import Numeric
+from sqlalchemy import String
+from sqlalchemy import Text
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import relationship
+
 from app.core.database import Base
-from app.models.base import UUIDMixin, TimestampMixin
+from app.models.base import TimestampMixin
+from app.models.base import UUIDMixin
 
 
-class FYStatus(str, enum.Enum):
+class FYStatus(enum.StrEnum):
     OPEN = "open"
     ACTIVE = "active"
     CLOSED = "closed"

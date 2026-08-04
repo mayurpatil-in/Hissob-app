@@ -1,30 +1,37 @@
 """
 Cash Settlement Router — Collector submit $\rightarrow$ Treasurer verify & approve.
 """
-from typing import List, Optional
+from datetime import UTC
+from datetime import date
+from datetime import datetime
 from uuid import UUID
-from datetime import date, datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+
+from fastapi import APIRouter
+from fastapi import Depends
+from fastapi import HTTPException
+from fastapi import Query
+from fastapi import status
 from sqlalchemy.orm import Session
+
 from app.core.database import get_db
-from app.permissions.rbac import require
+from app.models.finance import CashSettlement
+from app.models.finance import SettlementStatus
+from app.models.receipt import Receipt
+from app.models.receipt import ReceiptStatus
 from app.models.user import User
-from app.models.receipt import Receipt, ReceiptStatus
-from app.models.finance import CashSettlement, SettlementStatus
-from app.repositories.receipt import CashSettlementRepository, ReceiptRepository
-from app.schemas.receipt import (
-    CashSettlementCreate,
-    CashSettlementVerify,
-    CashSettlementResponse,
-)
+from app.permissions.rbac import require
+from app.repositories.receipt import CashSettlementRepository
+from app.schemas.receipt import CashSettlementCreate
+from app.schemas.receipt import CashSettlementResponse
+from app.schemas.receipt import CashSettlementVerify
 
 router = APIRouter(prefix="/settlements", tags=["Cash Settlements"])
 
 
-@router.get("", response_model=List[CashSettlementResponse], summary="List Cash Settlements")
+@router.get("", response_model=list[CashSettlementResponse], summary="List Cash Settlements")
 async def list_settlements(
-    status: Optional[str] = Query(None),
-    collector_id: Optional[UUID] = Query(None),
+    status: str | None = Query(None),
+    collector_id: UUID | None = Query(None),
     skip: int = 0,
     limit: int = 100,
     current_user: User = Depends(require("cash_settlement", "view")),
@@ -64,7 +71,7 @@ async def submit_settlement(
         Receipt.tenant_id == current_user.tenant_id,
         Receipt.status.in_([ReceiptStatus.ISSUED, ReceiptStatus.PENDING_SETTLEMENT]),
         Receipt.settlement_id.is_(None),
-        Receipt.is_deleted == False,
+        not Receipt.is_deleted,
     ).with_for_update()
     if not is_privileged:
         query = query.filter(Receipt.collector_id == current_user.id)
@@ -84,7 +91,7 @@ async def submit_settlement(
         from app.models.financial_year import FinancialYear
         active_fy = db.query(FinancialYear).filter(
             FinancialYear.tenant_id == current_user.tenant_id,
-            FinancialYear.is_current == True
+            FinancialYear.is_current
         ).first()
         if active_fy:
             fy_id = active_fy.id
@@ -106,7 +113,7 @@ async def submit_settlement(
         total_amount=total_amount,
         receipt_count=len(receipts),
         status=SettlementStatus.SUBMITTED,
-        submitted_at=datetime.now(timezone.utc),
+        submitted_at=datetime.now(UTC),
         notes=payload.notes,
     )
     created = repo.create(settlement)
@@ -160,7 +167,7 @@ async def verify_settlement(
     if settlement.status not in [SettlementStatus.SUBMITTED, SettlementStatus.PENDING]:
         raise HTTPException(status_code=400, detail="Settlement already processed")
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     receipts = db.query(Receipt).filter(Receipt.settlement_id == settlement.id).all()
 
     if payload.action == "approve":

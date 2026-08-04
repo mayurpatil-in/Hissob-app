@@ -1,27 +1,29 @@
 """
 Financial Year Router — Lifecycle management for fiscal years.
 """
-from typing import List
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status
+
+from fastapi import APIRouter
+from fastapi import Depends
+from fastapi import HTTPException
+from fastapi import status
 from sqlalchemy.orm import Session
-from app.core.database import get_db
+
 from app.auth.deps import get_current_active_user
-from app.permissions.rbac import require
+from app.core.database import get_db
+from app.models.financial_year import FinancialYear
+from app.models.financial_year import FYStatus
 from app.models.user import User
-from app.models.financial_year import FinancialYear, FYStatus
+from app.permissions.rbac import require
 from app.repositories.financial import FinancialYearRepository
-from app.schemas.financial_year import (
-    FinancialYearCreate,
-    FinancialYearUpdate,
-    FinancialYearResponse,
-)
-from app.schemas.common import SuccessResponse
+from app.schemas.financial_year import FinancialYearCreate
+from app.schemas.financial_year import FinancialYearResponse
+from app.schemas.financial_year import FinancialYearUpdate
 
 router = APIRouter(prefix="/financial-years", tags=["Financial Year"])
 
 
-@router.get("", response_model=List[FinancialYearResponse], summary="List Financial Years")
+@router.get("", response_model=list[FinancialYearResponse], summary="List Financial Years")
 async def list_financial_years(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),

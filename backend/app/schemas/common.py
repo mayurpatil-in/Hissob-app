@@ -1,8 +1,9 @@
 """
 Common response schemas.
 """
+from typing import TypeVar
+
 from pydantic import BaseModel
-from typing import Generic, TypeVar, Optional, List
 
 T = TypeVar("T")
 
@@ -12,8 +13,8 @@ class SuccessResponse(BaseModel):
     message: str
 
 
-class PaginatedResponse(BaseModel, Generic[T]):
-    items: List[T]
+class PaginatedResponse[T](BaseModel):
+    items: list[T]
     total: int
     page: int
     page_size: int
@@ -21,11 +22,11 @@ class PaginatedResponse(BaseModel, Generic[T]):
 
 
 class ErrorDetail(BaseModel):
-    field: Optional[str] = None
+    field: str | None = None
     message: str
 
 
 class ErrorResponse(BaseModel):
     success: bool = False
     message: str
-    errors: Optional[List[ErrorDetail]] = None
+    errors: list[ErrorDetail] | None = None

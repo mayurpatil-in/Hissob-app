@@ -1,6 +1,8 @@
 import logging
 from uuid import UUID
+
 from sqlalchemy.orm import Session
+
 from app.models.notification import Notification
 from app.models.user import User
 
@@ -47,8 +49,10 @@ def notify_role(
 ) -> None:
     """Send a notification to all users with a specific role in the tenant."""
     try:
-        from app.models.rbac import Role, user_roles
         from sqlalchemy import select
+
+        from app.models.rbac import Role
+        from app.models.rbac import user_roles
 
         # Find all users with the given role in this tenant
         role = db.execute(

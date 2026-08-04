@@ -1,33 +1,39 @@
 """
 Email Logs & Diagnostic SMTP Test Router.
 """
-from typing import List, Optional, Dict, Any
+from typing import Any
 from uuid import UUID
-from pydantic import BaseModel, Field
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+
+from fastapi import APIRouter
+from fastapi import Depends
+from fastapi import HTTPException
+from fastapi import Query
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
+
 from app.core.database import get_db
-from app.permissions.rbac import require
-from app.models.user import User
 from app.models.email_log import EmailLog
-from app.services.email_service import send_test_smtp_email, send_raw_email
+from app.models.user import User
+from app.permissions.rbac import require
+from app.services.email_service import send_raw_email
+from app.services.email_service import send_test_smtp_email
 
 router = APIRouter(prefix="/email-logs", tags=["Email Logs & SMTP Diagnostics"])
 
 
 class TestSmtpRequest(BaseModel):
-    target_email: Optional[str] = None
+    target_email: str | None = None
 
 
 class EmailLogOut(BaseModel):
     id: UUID
-    tenant_id: Optional[UUID] = None
+    tenant_id: UUID | None = None
     recipient: str
     subject: str
     email_type: str
     status: str
-    error_message: Optional[str] = None
-    metadata_json: Optional[Dict[str, Any]] = None
+    error_message: str | None = None
+    metadata_json: dict[str, Any] | None = None
     sent_at: Any
 
     class Config:
@@ -36,7 +42,7 @@ class EmailLogOut(BaseModel):
 
 @router.post("/test-smtp", summary="Run Diagnostic SMTP Test Email")
 async def test_smtp_connection(
-    payload: Optional[TestSmtpRequest] = None,
+    payload: TestSmtpRequest | None = None,
     current_user: User = Depends(require("settings", "update")),
     db: Session = Depends(get_db),
 ):
@@ -50,10 +56,10 @@ async def test_smtp_connection(
     return send_test_smtp_email(to_email=target, db=db, tenant_id=current_user.tenant_id)
 
 
-@router.get("", response_model=List[EmailLogOut], summary="Get Email Dispatch Logs")
+@router.get("", response_model=list[EmailLogOut], summary="Get Email Dispatch Logs")
 async def list_email_logs(
-    email_type: Optional[str] = Query(None),
-    status_filter: Optional[str] = Query(None, alias="status"),
+    email_type: str | None = Query(None),
+    status_filter: str | None = Query(None, alias="status"),
     limit: int = Query(50, ge=1, le=200),
     current_user: User = Depends(require("audit", "view")),
     db: Session = Depends(get_db),

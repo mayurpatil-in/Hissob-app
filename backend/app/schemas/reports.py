@@ -1,19 +1,21 @@
 """
 Pydantic schemas for Reports Engine.
 """
-from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
-from uuid import UUID
 from datetime import date
+from typing import Any
+from uuid import UUID
+
+from pydantic import BaseModel
+from pydantic import Field
 
 
 class ReportFilter(BaseModel):
-    financial_year_id: Optional[UUID] = None
-    festival_id: Optional[UUID] = None
-    start_date: Optional[date] = None
-    end_date: Optional[date] = None
-    collector_id: Optional[UUID] = None
-    category: Optional[str] = None
+    financial_year_id: UUID | None = None
+    festival_id: UUID | None = None
+    start_date: date | None = None
+    end_date: date | None = None
+    collector_id: UUID | None = None
+    category: str | None = None
     format: str = Field("json", pattern="^(json|csv|excel|pdf)$")
 
 
@@ -40,45 +42,45 @@ class CashBookEntry(BaseModel):
 class FinancialReportSummary(BaseModel):
     report_title: str
     generated_at: str
-    financial_year: Optional[str] = None
+    financial_year: str | None = None
     total_income: float
     total_expenses: float
     net_surplus_deficit: float
-    entries: List[Dict[str, Any]]
+    entries: list[dict[str, Any]]
 
 
 class CustomReportRequest(BaseModel):
     entity: str = Field("receipts", pattern="^(receipts|expenses|donors)$")
-    dimensions: List[str] = []  # date, month, festival, collector, payment_mode, category
-    metrics: List[str] = ["total_amount", "count"]  # total_amount, count, avg_amount, max_amount
-    date_from: Optional[date] = None
-    date_to: Optional[date] = None
-    festival_id: Optional[UUID] = None
-    payment_mode: Optional[str] = None
-    min_amount: Optional[float] = None
-    max_amount: Optional[float] = None
-    sort_by: Optional[str] = None
+    dimensions: list[str] = []  # date, month, festival, collector, payment_mode, category
+    metrics: list[str] = ["total_amount", "count"]  # total_amount, count, avg_amount, max_amount
+    date_from: date | None = None
+    date_to: date | None = None
+    festival_id: UUID | None = None
+    payment_mode: str | None = None
+    min_amount: float | None = None
+    max_amount: float | None = None
+    sort_by: str | None = None
     sort_order: str = "desc"
 
 
 class CustomReportResponse(BaseModel):
     entity: str
-    dimensions: List[str]
-    metrics: List[str]
+    dimensions: list[str]
+    metrics: list[str]
     total_records: int
     grand_total_amount: float
-    data: List[Dict[str, Any]]
+    data: list[dict[str, Any]]
 
 
 class EmailReportRequest(BaseModel):
-    recipients: List[str]
+    recipients: list[str]
     report_title: str
     report_type: str = "custom"  # daily_collection, cash_book, income_expense, custom
-    custom_message: Optional[str] = None
-    custom_report_request: Optional[CustomReportRequest] = None
-    start_date: Optional[date] = None
-    end_date: Optional[date] = None
-    fy_id: Optional[UUID] = None
+    custom_message: str | None = None
+    custom_report_request: CustomReportRequest | None = None
+    start_date: date | None = None
+    end_date: date | None = None
+    fy_id: UUID | None = None
 
 
 class EmailReportResponse(BaseModel):

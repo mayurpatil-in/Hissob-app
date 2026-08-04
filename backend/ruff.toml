@@ -1,0 +1,39 @@
+# Ruff — Python Linter & Formatter Configuration
+# https://docs.astral.sh/ruff/
+
+# Match the Python version used in production
+target-version = "py312"
+line-length = 120
+
+[lint]
+# Enable rules: pyflakes (F), pycodestyle (E/W), isort (I), bugbear (B), simplify (SIM)
+select = ["E", "F", "W", "I", "B", "SIM", "UP"]
+ignore = [
+    "E501",   # Line too long — handled by formatter
+    "E402",   # Module level import not at top — intentional in pdf_service.py (imports after env/warning setup)
+    "B008",   # Do not perform function calls in default arguments (FastAPI Depends pattern)
+    "B904",   # Allow raise inside except without 'from' (common in FastAPI routers)
+    "SIM108", # Use ternary operator — too opinionated for FastAPI patterns
+    "UP007",  # Use X | Y for union types — breaks Python 3.9 compatibility
+]
+
+# Allow unused variables when their name starts with underscore
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+_*))$"
+
+[lint.per-file-ignores]
+# Ignore import order in __init__.py files (model registration order matters)
+"app/models/__init__.py" = ["F401", "I001"]
+# Allow star imports in migration files
+"alembic/versions/*.py" = ["F401", "F811"]
+# Test files can use longer lines and assert statements
+"tests/*.py" = ["E501", "B011"]
+
+[lint.isort]
+known-first-party = ["app"]
+force-single-line = true
+
+[format]
+# Use double quotes for strings (consistency with existing code)
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false

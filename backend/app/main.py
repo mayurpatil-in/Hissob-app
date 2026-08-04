@@ -6,8 +6,8 @@ import os
 # Enable UTF-8 mode globally for font parsing & file I/O
 os.environ["PYTHONUTF8"] = "1"
 import logging
-import warnings
 import traceback
+import warnings
 
 # Suppress false fpdf2 PyFPDF namespace warnings and fontTools subset verbosity
 warnings.filterwarnings("ignore", category=UserWarning, module="fpdf")
@@ -15,20 +15,21 @@ warnings.filterwarnings("ignore", message=".*PyFPDF.*")
 logging.getLogger("fontTools").setLevel(logging.ERROR)
 logging.getLogger("fontTools.subset").setLevel(logging.ERROR)
 
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI
+from fastapi import Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.openapi.utils import get_openapi
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
+from slowapi import Limiter
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
-from app.core.config import settings
-from app.middleware.audit import AuditMiddleware, TenantMiddleware
-from app.routers import auth as auth_router
 from app.api.v1 import router as api_v1_router
+from app.core.config import settings
+from app.middleware.audit import AuditMiddleware
+from app.middleware.audit import TenantMiddleware
 
 # ─── Rate Limiter ──────────────────────────────────────────────
 limiter = Limiter(key_func=get_remote_address, default_limits=[f"{settings.RATE_LIMIT_PER_MINUTE}/minute"])
@@ -46,7 +47,8 @@ def create_app() -> FastAPI:
     # Ensure all models are registered and database tables created if missing
     try:
         import app.models
-        from app.core.database import engine, Base
+        from app.core.database import Base
+        from app.core.database import engine
         Base.metadata.create_all(bind=engine)
     except Exception as e:
         logging.getLogger("hisob.db").warning("Auto table creation check: %s", str(e))
@@ -104,8 +106,9 @@ def create_app() -> FastAPI:
     async def health():
         db_status = "unhealthy"
         try:
-            from app.core.database import SessionLocal
             from sqlalchemy import text
+
+            from app.core.database import SessionLocal
             db = SessionLocal()
             try:
                 db.execute(text("SELECT 1"))

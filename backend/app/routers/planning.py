@@ -1,32 +1,41 @@
 """
 Planning Router — Manage Festival Tasks, Category Budgets, Volunteer Shifts, and Event Schedules.
 """
-from typing import List, Optional
 from uuid import UUID
-from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
-from sqlalchemy import select, func
 
-from app.core.database import get_db
+from fastapi import APIRouter
+from fastapi import Depends
+from fastapi import HTTPException
+from fastapi import Query
+from fastapi import status
+from sqlalchemy import func
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
 from app.auth.deps import get_current_active_user
-from app.models.user import User
-from app.models.tenant import Tenant
+from app.core.database import get_db
 from app.models.festival import Festival
 from app.models.finance import Expense
-from app.models.planning import (
-    FestivalTask, TaskPriority, TaskStatus,
-    FestivalBudgetAllocation,
-    VolunteerShift, ShiftStatus,
-    FestivalEventSchedule, EventType
-)
-from app.schemas.planning import (
-    FestivalTaskCreate, FestivalTaskUpdate, FestivalTaskResponse,
-    FestivalBudgetAllocationCreate, FestivalBudgetAllocationUpdate, FestivalBudgetAllocationResponse,
-    VolunteerShiftCreate, VolunteerShiftUpdate, VolunteerShiftResponse,
-    FestivalEventScheduleCreate, FestivalEventScheduleUpdate, FestivalEventScheduleResponse,
-    PlanningSummaryResponse
-)
+from app.models.planning import FestivalBudgetAllocation
+from app.models.planning import FestivalEventSchedule
+from app.models.planning import FestivalTask
+from app.models.planning import TaskStatus
+from app.models.planning import VolunteerShift
+from app.models.tenant import Tenant
+from app.models.user import User
+from app.schemas.planning import FestivalBudgetAllocationCreate
+from app.schemas.planning import FestivalBudgetAllocationResponse
+from app.schemas.planning import FestivalBudgetAllocationUpdate
+from app.schemas.planning import FestivalEventScheduleCreate
+from app.schemas.planning import FestivalEventScheduleResponse
+from app.schemas.planning import FestivalEventScheduleUpdate
+from app.schemas.planning import FestivalTaskCreate
+from app.schemas.planning import FestivalTaskResponse
+from app.schemas.planning import FestivalTaskUpdate
+from app.schemas.planning import PlanningSummaryResponse
+from app.schemas.planning import VolunteerShiftCreate
+from app.schemas.planning import VolunteerShiftResponse
+from app.schemas.planning import VolunteerShiftUpdate
 from app.services.audit_service import log_audit_event
 
 router = APIRouter(prefix="/planning", tags=["Festival Planning & Execution"])
@@ -56,7 +65,7 @@ async def get_planning_summary(
     task_pct = (completed_tasks / total_tasks * 100.0) if total_tasks > 0 else 0.0
 
     total_allocated_budget = float(db.scalar(select(func.coalesce(func.sum(FestivalBudgetAllocation.allocated_amount), 0.0)).where(FestivalBudgetAllocation.festival_id == festival_id, FestivalBudgetAllocation.tenant_id == tenant_id)) or 0.0)
-    
+
     # Calculate actual expenses paid for this festival
     total_spent_budget = float(db.scalar(select(func.coalesce(func.sum(Expense.amount), 0.0)).where(Expense.festival_id == festival_id, Expense.tenant_id == tenant_id, Expense.status == "paid")) or 0.0)
     budget_pct = (total_spent_budget / total_allocated_budget * 100.0) if total_allocated_budget > 0 else 0.0
@@ -83,12 +92,12 @@ async def get_planning_summary(
 
 # ── 2. Festival Tasks Endpoints ──
 
-@router.get("/tasks", response_model=List[FestivalTaskResponse], summary="List Festival Tasks")
+@router.get("/tasks", response_model=list[FestivalTaskResponse], summary="List Festival Tasks")
 async def list_tasks(
     festival_id: UUID = Query(...),
-    status: Optional[str] = Query(None),
-    priority: Optional[str] = Query(None),
-    category: Optional[str] = Query(None),
+    status: str | None = Query(None),
+    priority: str | None = Query(None),
+    category: str | None = Query(None),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ):
@@ -192,7 +201,7 @@ async def delete_task(
 
 # ── 3. Category Budget Allocations Endpoints ──
 
-@router.get("/budgets", response_model=List[FestivalBudgetAllocationResponse], summary="List Category Budget Allocations")
+@router.get("/budgets", response_model=list[FestivalBudgetAllocationResponse], summary="List Category Budget Allocations")
 async def list_budgets(
     festival_id: UUID = Query(...),
     current_user: User = Depends(get_current_active_user),
@@ -203,7 +212,7 @@ async def list_budgets(
         FestivalBudgetAllocation.festival_id == festival_id,
         FestivalBudgetAllocation.tenant_id == tenant_id
     ).order_by(FestivalBudgetAllocation.allocated_amount.desc())
-    
+
     allocations = db.scalars(stmt).all()
     results = []
 
@@ -304,11 +313,11 @@ async def delete_budget(
 
 # ── 4. Volunteer Shifts Endpoints ──
 
-@router.get("/shifts", response_model=List[VolunteerShiftResponse], summary="List Volunteer Shifts")
+@router.get("/shifts", response_model=list[VolunteerShiftResponse], summary="List Volunteer Shifts")
 async def list_shifts(
     festival_id: UUID = Query(...),
-    duty_zone: Optional[str] = Query(None),
-    status: Optional[str] = Query(None),
+    duty_zone: str | None = Query(None),
+    status: str | None = Query(None),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ):
@@ -410,10 +419,10 @@ async def delete_shift(
 
 # ── 5. Event & Ritual Schedule Endpoints ──
 
-@router.get("/schedules", response_model=List[FestivalEventScheduleResponse], summary="List Festival Event Schedules")
+@router.get("/schedules", response_model=list[FestivalEventScheduleResponse], summary="List Festival Event Schedules")
 async def list_schedules(
     festival_id: UUID = Query(...),
-    event_type: Optional[str] = Query(None),
+    event_type: str | None = Query(None),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ):

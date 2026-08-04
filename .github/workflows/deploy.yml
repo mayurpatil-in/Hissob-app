@@ -1,116 +1,229 @@
-name: CI/CD Deployment to WebHostMost
+name: CD — Deploy to Production (WebHostMost)
 
+# ─── Triggers ────────────────────────────────────────────────────────────────
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      skip_backend:
+        description: "Skip backend deployment"
+        required: false
+        default: "false"
+        type: boolean
+      skip_frontend:
+        description: "Skip frontend deployment"
+        required: false
+        default: "false"
+        type: boolean
+
+# Only one deployment at a time — prevent overlapping deploys
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
 
 jobs:
-  # ─────────────────────────────────────────────────────────────
-  # JOB 1: Deploy Backend & Trigger Alembic Migrations + Passenger Restart
-  # ─────────────────────────────────────────────────────────────
+  # ───────────────────────────────────────────────────────────────────────────
+  # JOB 1: Deploy Backend (SCP + SSH: pip install + alembic + Passenger restart)
+  # ───────────────────────────────────────────────────────────────────────────
   deploy-backend:
-    name: Deploy Backend & Restart App
+    name: Deploy Backend & Run Migrations
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: ${{ github.event.inputs.skip_backend != 'true' }}
+
+    environment:
+      name: production
+      url: https://api.hisob.in/health
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Deploy Backend Files to WebHostMost via SCP/SFTP
+      - name: Detect Changed Files
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+              - 'passenger_wsgi.py'
+              - 'alembic.ini'
+
+      - name: Deploy Backend Files via SCP
+        if: steps.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.SSH_HOST || 'server3.webhostmost.com' }}
-          username: ${{ secrets.SSH_USER || 'qhmwlequ' }}
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
           password: ${{ secrets.SSH_PASSWORD }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT || 2323 }}
-          source: "backend/*,passenger_wsgi.py,alembic.ini"
-          target: "/home/qhmwlequ/domains/api.hisob.in/Hissob-app/backend/"
+          source: "backend/app/**,backend/alembic/**,backend/requirements.txt,backend/pyproject.toml,passenger_wsgi.py"
+          target: "/home/${{ secrets.SSH_USER }}/domains/api.hisob.in/Hissob-app/backend/"
           strip_components: 1
 
-      - name: Run Remote SSH Commands (Dependencies, Migrations & Passenger Restart)
+      - name: Install Dependencies, Run Migrations & Restart App
+        if: steps.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.SSH_HOST || 'server3.webhostmost.com' }}
-          username: ${{ secrets.SSH_USER || 'qhmwlequ' }}
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
           password: ${{ secrets.SSH_PASSWORD }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT || 2323 }}
           script: |
-            echo "Activating virtualenv and upgrading Python packages..."
-            source /home/qhmwlequ/virtualenv/domains/api.hisob.in/Hissob-app/backend/3.12/bin/activate
-            cd /home/qhmwlequ/domains/api.hisob.in/Hissob-app/backend
-            pip install --upgrade pip
-            pip install -r requirements.txt
+            set -euo pipefail
 
-            echo "Cleaning up redundant nested backend folder if present..."
-            rm -rf backend
+            echo "=== [1/4] Activating virtualenv ==="
+            source /home/${{ secrets.SSH_USER }}/virtualenv/domains/api.hisob.in/Hissob-app/backend/3.12/bin/activate
 
-            echo "Running database migrations..."
+            echo "=== [2/4] Installing Python packages ==="
+            cd /home/${{ secrets.SSH_USER }}/domains/api.hisob.in/Hissob-app/backend
+            pip install --upgrade pip --quiet
+            pip install -r requirements.txt --quiet
+
+            echo "=== [3/4] Running Alembic migrations ==="
             alembic upgrade head
 
-            echo "Triggering Phusion Passenger restart..."
-            mkdir -p tmp
-            touch tmp/restart.txt
+            echo "=== [4/4] Restarting Passenger app server ==="
+            mkdir -p tmp && touch tmp/restart.txt
+
             echo "Backend deployment completed successfully!"
 
-  # ─────────────────────────────────────────────────────────────
-  # JOB 2: Build & Deploy Frontend (React/Vite) to public_html
-  # ─────────────────────────────────────────────────────────────
+      - name: Health Check — Verify API is Responding
+        if: steps.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
+        run: |
+          echo "Waiting 15 seconds for Passenger to restart..."
+          sleep 15
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://api.hisob.in/health --max-time 30)
+          echo "API Health Status: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "Health check FAILED! API returned $STATUS"
+            exit 1
+          fi
+          echo "API is healthy!"
+
+      - name: Notify on Backend Deploy Success
+        if: success()
+        run: |
+          echo "Backend deployed successfully at $(date)"
+
+      - name: Notify on Backend Deploy Failure
+        if: failure()
+        run: |
+          echo "::error::Backend deployment FAILED at $(date). Check logs above."
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # JOB 2: Build & Deploy Frontend (React/Vite → public_html)
+  # ───────────────────────────────────────────────────────────────────────────
   deploy-frontend:
     name: Build & Deploy Frontend
-    needs: deploy-backend
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: deploy-backend
+    if: ${{ always() && !cancelled() && github.event.inputs.skip_frontend != 'true' }}
+
+    environment:
+      name: production
+      url: https://hisob.in
+
+    defaults:
+      run:
+        working-directory: frontend
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Detect Changed Frontend Files
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            frontend:
+              - 'frontend/**'
+
+      - name: Setup Node.js 22
+        if: steps.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'npm'
+          cache: "npm"
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install Frontend Dependencies
-        run: |
-          cd frontend
-          npm ci
+        if: steps.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
+        run: npm ci
 
-      - name: Build & Compress Frontend Production Bundle
+      - name: Build Production Bundle
+        if: steps.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
         env:
-          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL || 'https://api.hisob.in/api/v1' }}
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
           VITE_APP_TITLE: "Hisob ERP"
         run: |
-          cd frontend
           npm run build
-          cd dist
-          tar -czf ../../frontend.tar.gz .
+          echo "Build size summary:"
+          du -sh dist/
+          ls -la dist/assets/ | tail -10
 
-      - name: Fast Upload Frontend Archive via SCP/SFTP
+      - name: Compress Build for Fast Transfer
+        if: steps.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
+        working-directory: .
+        run: |
+          cd frontend/dist
+          tar -czf ../../frontend.tar.gz .
+          echo "Archive size: $(du -sh ../../frontend.tar.gz | cut -f1)"
+
+      - name: Upload Frontend Archive via SCP
+        if: steps.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.SSH_HOST || 'server3.webhostmost.com' }}
-          username: ${{ secrets.SSH_USER || 'qhmwlequ' }}
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
           password: ${{ secrets.SSH_PASSWORD }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT || 2323 }}
           source: "frontend.tar.gz"
-          target: "/home/qhmwlequ/domains/hisob.in/public_html/"
+          target: "/home/${{ secrets.SSH_USER }}/domains/hisob.in/public_html/"
 
-      - name: Extract Frontend Build & Cleanup
+      - name: Extract Build & Cleanup Old Assets
+        if: steps.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.SSH_HOST || 'server3.webhostmost.com' }}
-          username: ${{ secrets.SSH_USER || 'qhmwlequ' }}
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
           password: ${{ secrets.SSH_PASSWORD }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT || 2323 }}
           script: |
-            echo "Extracting frontend static assets directly in public_html..."
-            cd /home/qhmwlequ/domains/hisob.in/public_html
+            set -euo pipefail
+            cd /home/${{ secrets.SSH_USER }}/domains/hisob.in/public_html
+
+            echo "=== Extracting new build ==="
             tar -xzf frontend.tar.gz
             rm -f frontend.tar.gz
-            echo "Frontend deployment completed in seconds!"
+
+            echo "=== Cleaning old hashed JS/CSS chunks ==="
+            # Remove stale versioned chunk files older than 2 days that aren't in new build
+            find assets/ -name "*.js" -mtime +2 -delete 2>/dev/null || true
+            find assets/ -name "*.css" -mtime +2 -delete 2>/dev/null || true
+
+            echo "Frontend deployment completed!"
+            echo "Deployed at: $(date)"
+
+      - name: Frontend Health Check
+        if: steps.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
+        run: |
+          sleep 5
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://hisob.in --max-time 30)
+          echo "Frontend Status: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "::warning::Frontend returned $STATUS — may need manual check"
+          else
+            echo "Frontend is live!"
+          fi
+
+      - name: Skipped — No Frontend Changes
+        if: steps.changes.outputs.frontend == 'false' && github.event_name != 'workflow_dispatch'
+        run: echo "No frontend files changed. Skipping frontend deployment."

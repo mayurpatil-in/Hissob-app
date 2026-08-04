@@ -1,12 +1,16 @@
 """
 Repositories for Donor and Area modules.
 """
-from typing import Optional, List
 from uuid import UUID
-from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import select, or_, func
+
+from sqlalchemy import or_
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+from sqlalchemy.orm import joinedload
+
+from app.models.donor import Area
+from app.models.donor import Donor
 from app.models.tenant import Tenant
-from app.models.donor import Donor, Area
 from app.repositories.base import BaseRepository
 
 
@@ -14,10 +18,10 @@ class AreaRepository(BaseRepository[Area]):
     def __init__(self, db: Session):
         super().__init__(Area, db)
 
-    def get_active_by_tenant(self, tenant_id: UUID) -> List[Area]:
+    def get_active_by_tenant(self, tenant_id: UUID) -> list[Area]:
         stmt = (
             select(Area)
-            .where(Area.tenant_id == tenant_id, Area.is_active == True)
+            .where(Area.tenant_id == tenant_id, Area.is_active)
             .order_by(Area.name.asc())
         )
         return list(self.db.execute(stmt).scalars().all())
@@ -29,11 +33,11 @@ class DonorRepository(BaseRepository[Donor]):
 
     def search_donors(
         self, tenant_id: UUID, query: str = None, area_id: UUID = None, skip: int = 0, limit: int = 100
-    ) -> List[Donor]:
+    ) -> list[Donor]:
         stmt = (
             select(Donor)
             .options(joinedload(Donor.area))
-            .where(Donor.tenant_id == tenant_id, Donor.is_active == True, Donor.is_deleted == False)
+            .where(Donor.tenant_id == tenant_id, Donor.is_active, not Donor.is_deleted)
         )
         if query:
             q = f"%{query.strip()}%"

@@ -1,30 +1,40 @@
 """
 AI Service — Smart Financial Insights Generator, LLM Chatbot, Audit Engine, and Natural Language Receipt Parser.
 """
-import re
-import json
 import base64
 import io
-import pypdf
+import json
 import logging
-import httpx
-from typing import List, Optional, Dict, Any
+import re
+from datetime import UTC
+from datetime import datetime
+from datetime import timedelta
+from typing import Any
 from uuid import UUID
-from datetime import datetime, timezone, timedelta
+
+import httpx
+import pypdf
+from sqlalchemy import desc
+from sqlalchemy import func
+from sqlalchemy import select
 from sqlalchemy.orm import Session
-from sqlalchemy import select, func, desc
-from collections import Counter
 
 from app.core.config import settings
-from app.models.receipt import Receipt, ReceiptStatus, PaymentMode
-from app.models.finance import Expense
 from app.models.donor import Donor
-from app.models.tenant import Tenant
 from app.models.festival import Festival
-from app.schemas.ai import (
-    AIInsight, AIInsightsResponse, ParsedReceiptOutput, AIChatResponse,
-    AuditFinding, AIAuditResponse, AIReportResponse, ParsedBillOutput,
-)
+from app.models.finance import Expense
+from app.models.receipt import PaymentMode
+from app.models.receipt import Receipt
+from app.models.receipt import ReceiptStatus
+from app.models.tenant import Tenant
+from app.schemas.ai import AIAuditResponse
+from app.schemas.ai import AIChatResponse
+from app.schemas.ai import AIInsight
+from app.schemas.ai import AIInsightsResponse
+from app.schemas.ai import AIReportResponse
+from app.schemas.ai import AuditFinding
+from app.schemas.ai import ParsedBillOutput
+from app.schemas.ai import ParsedReceiptOutput
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +43,7 @@ class AIService:
     def __init__(self, db: Session):
         self.db = db
 
-    def _call_gemini_api(self, prompt: str, system_instruction: str = "", history: Optional[List[Dict[str, str]]] = None) -> Optional[str]:
+    def _call_gemini_api(self, prompt: str, system_instruction: str = "", history: list[dict[str, str]] | None = None) -> str | None:
         """
         Calls Google Gemini REST API (gemini-2.0-flash).
         Supports multi-turn conversation history.
@@ -44,7 +54,7 @@ class AIService:
             return None
 
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{settings.GEMINI_MODEL_NAME}:generateContent?key={api_key}"
-        
+
         contents = []
         if history:
             for item in history:
@@ -55,7 +65,7 @@ class AIService:
 
         contents.append({"role": "user", "parts": [{"text": prompt}]})
 
-        payload: Dict[str, Any] = {
+        payload: dict[str, Any] = {
             "contents": contents
         }
         if system_instruction:
@@ -80,7 +90,7 @@ class AIService:
 
         return None
 
-    def _call_openai_api(self, prompt: str, system_instruction: str = "", history: Optional[List[Dict[str, str]]] = None) -> Optional[str]:
+    def _call_openai_api(self, prompt: str, system_instruction: str = "", history: list[dict[str, str]] | None = None) -> str | None:
         """
         Calls OpenAI REST API (gpt-4o-mini).
         Supports multi-turn conversation history.
@@ -98,7 +108,7 @@ class AIService:
         messages = []
         if system_instruction:
             messages.append({"role": "system", "content": system_instruction})
-        
+
         if history:
             for item in history:
                 role = "assistant" if item.get("role") in ["assistant", "ai", "model"] else "user"
@@ -129,7 +139,7 @@ class AIService:
 
         return None
 
-    def _call_llm(self, prompt: str, system_instruction: str = "", tenant_id: Optional[UUID] = None, history: Optional[List[Dict[str, str]]] = None) -> Optional[str]:
+    def _call_llm(self, prompt: str, system_instruction: str = "", tenant_id: UUID | None = None, history: list[dict[str, str]] | None = None) -> str | None:
         """
         Dispatches LLM calls to OpenAI or Gemini depending on the tenant's configured ai_provider setting.
         """
@@ -153,7 +163,7 @@ class AIService:
             return self._call_openai_api(prompt, system_instruction, history=history)
 
 
-    def _build_tenant_financial_context(self, tenant_id: Optional[UUID]) -> Dict[str, Any]:
+    def _build_tenant_financial_context(self, tenant_id: UUID | None) -> dict[str, Any]:
         """
         Aggregates real-time financial stats and summary data for the LLM prompt context.
         """
@@ -232,7 +242,7 @@ class AIService:
         ).scalar() or 0
 
         vip_donors = self.db.execute(
-            select(func.count(Donor.id)).where(donor_tenant_filter, Donor.is_vip == True)
+            select(func.count(Donor.id)).where(donor_tenant_filter, Donor.is_vip)
         ).scalar() or 0
 
         top_donors_raw = self.db.scalars(
@@ -290,7 +300,7 @@ class AIService:
             "festivals": festivals,
         }
 
-    def chat_with_ai(self, question: str, tenant_id: Optional[UUID], history: Optional[List[Dict[str, str]]] = None) -> AIChatResponse:
+    def chat_with_ai(self, question: str, tenant_id: UUID | None, history: list[dict[str, str]] | None = None) -> AIChatResponse:
         """
         Context-aware financial Q&A chatbot using Gemini/OpenAI LLM with multi-turn conversation history.
         """
@@ -377,7 +387,7 @@ class AIService:
             question=question,
             answer=llm_response,
             suggested_followups=followups,
-            generated_at=datetime.now(timezone.utc).isoformat(),
+            generated_at=datetime.now(UTC).isoformat(),
             is_llm_powered=is_llm,
             ai_provider=provider_name,
         )
@@ -406,7 +416,7 @@ class AIService:
                 donor_name = parsed.get("donor_name")
                 mode = str(parsed.get("payment_mode", "cash")).lower()
                 purpose = parsed.get("purpose") or "Festival Donation"
-                
+
                 return ParsedReceiptOutput(
                     amount=amount,
                     donor_name=donor_name,
@@ -473,9 +483,9 @@ class AIService:
             },
         )
 
-    def generate_smart_insights(self, tenant_id: Optional[UUID]) -> AIInsightsResponse:
+    def generate_smart_insights(self, tenant_id: UUID | None) -> AIInsightsResponse:
         """Generates AI-powered financial health insights and recommendations."""
-        insights: List[AIInsight] = []
+        insights: list[AIInsight] = []
         ctx = self._build_tenant_financial_context(tenant_id)
         tenant_name = ctx.get("tenant_name", "Hisob Platform")
 
@@ -552,7 +562,7 @@ class AIService:
                 )
 
             # ── Enhanced: Stale Unsettled Cash (>7 days) ──
-            stale_cutoff = datetime.now(timezone.utc) - timedelta(days=7)
+            stale_cutoff = datetime.now(UTC) - timedelta(days=7)
             stale_count = self.db.query(func.count(Receipt.id)).filter(
                 Receipt.tenant_id == tenant_id,
                 Receipt.payment_mode == "cash",
@@ -596,7 +606,7 @@ class AIService:
             )
 
         return AIInsightsResponse(
-            generated_at=datetime.now(timezone.utc).isoformat(),
+            generated_at=datetime.now(UTC).isoformat(),
             tenant_name=tenant_name,
             insights=insights,
         )
@@ -605,9 +615,9 @@ class AIService:
     #  AI FINANCIAL AUDIT SCAN
     # ════════════════════════════════════════════════════════════════
 
-    def run_financial_audit(self, tenant_id: Optional[UUID]) -> AIAuditResponse:
+    def run_financial_audit(self, tenant_id: UUID | None) -> AIAuditResponse:
         """Runs a comprehensive AI-driven financial audit scan with 8 detection rules."""
-        findings: List[AuditFinding] = []
+        findings: list[AuditFinding] = []
         tenant_name = "Hisob Platform"
         if tenant_id:
             tenant = self.db.get(Tenant, tenant_id)
@@ -616,7 +626,7 @@ class AIService:
 
         if not tenant_id:
             return AIAuditResponse(
-                generated_at=datetime.now(timezone.utc).isoformat(),
+                generated_at=datetime.now(UTC).isoformat(),
                 tenant_name=tenant_name,
                 findings=[],
             )
@@ -666,7 +676,7 @@ class AIService:
                 ))
 
         # ── 3. Stale Unsettled Cash (> 7 days) ──
-        stale_cutoff = datetime.now(timezone.utc) - timedelta(days=7)
+        stale_cutoff = datetime.now(UTC) - timedelta(days=7)
         stale_receipts = self.db.query(Receipt).filter(
             t_filter,
             Receipt.payment_mode == "cash",
@@ -730,9 +740,9 @@ class AIService:
                     ))
 
         # ── 6. Inactive VIP Donors (no donations in 90 days) ──
-        ninety_days_ago = datetime.now(timezone.utc) - timedelta(days=90)
+        ninety_days_ago = datetime.now(UTC) - timedelta(days=90)
         vip_donors = self.db.query(Donor).filter(
-            Donor.tenant_id == tenant_id, Donor.is_vip == True
+            Donor.tenant_id == tenant_id, Donor.is_vip
         ).all()
         for d in vip_donors:
             recent = self.db.query(func.count(Receipt.id)).filter(
@@ -795,7 +805,7 @@ class AIService:
         score = max(0, 100 - (high_count * 15) - (medium_count * 5) - (info_count * 1))
 
         return AIAuditResponse(
-            generated_at=datetime.now(timezone.utc).isoformat(),
+            generated_at=datetime.now(UTC).isoformat(),
             tenant_name=tenant_name,
             total_findings=len(findings),
             high_count=high_count,
@@ -809,7 +819,7 @@ class AIService:
     #  AI EXECUTIVE SUMMARY REPORT
     # ════════════════════════════════════════════════════════════════
 
-    def generate_executive_report(self, tenant_id: Optional[UUID]) -> AIReportResponse:
+    def generate_executive_report(self, tenant_id: UUID | None) -> AIReportResponse:
         """Generates an LLM-powered executive financial summary report."""
         ctx = self._build_tenant_financial_context(tenant_id)
         audit = self.run_financial_audit(tenant_id)
@@ -892,7 +902,7 @@ class AIService:
 
             llm_response = (
                 f"# Executive Financial Summary — {tenant_name}\n\n"
-                f"**Report Generated:** {datetime.now(timezone.utc).strftime('%d %b %Y, %H:%M UTC')}\n\n"
+                f"**Report Generated:** {datetime.now(UTC).strftime('%d %b %Y, %H:%M UTC')}\n\n"
                 f"---\n\n"
                 f"## Financial Overview\n\n"
                 f"- **Total Collections:** ₹ {tc:,.2f} ({ctx.get('total_receipts_count', 0)} receipts)\n"
@@ -920,14 +930,14 @@ class AIService:
             )
 
         return AIReportResponse(
-            generated_at=datetime.now(timezone.utc).isoformat(),
+            generated_at=datetime.now(UTC).isoformat(),
             tenant_name=tenant_name,
             report_text=llm_response,
             ai_provider=provider_name,
             is_llm_powered=is_llm,
         )
 
-    def _call_gemini_vision_api(self, image_bytes: bytes, mime_type: str, prompt: str) -> Optional[str]:
+    def _call_gemini_vision_api(self, image_bytes: bytes, mime_type: str, prompt: str) -> str | None:
         """
         Calls Google Gemini Vision REST API (gemini-2.0-flash) with inline image base64 data.
         """
@@ -939,7 +949,7 @@ class AIService:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{settings.GEMINI_MODEL_NAME}:generateContent?key={api_key}"
         base64_str = base64.b64encode(image_bytes).decode("utf-8")
 
-        payload: Dict[str, Any] = {
+        payload: dict[str, Any] = {
             "contents": [
                 {
                     "parts": [
@@ -974,7 +984,7 @@ class AIService:
 
         return None
 
-    def _call_openai_vision_api(self, image_bytes: bytes, mime_type: str, prompt: str) -> Optional[str]:
+    def _call_openai_vision_api(self, image_bytes: bytes, mime_type: str, prompt: str) -> str | None:
         """
         Calls OpenAI Vision REST API (gpt-4o-mini) with inline base64 image URL data.
         """
@@ -1020,7 +1030,7 @@ class AIService:
 
         return None
 
-    def _call_vision_llm(self, image_bytes: bytes, mime_type: str, prompt: str, tenant_id: Optional[UUID] = None) -> Optional[str]:
+    def _call_vision_llm(self, image_bytes: bytes, mime_type: str, prompt: str, tenant_id: UUID | None = None) -> str | None:
         """
         Dispatches vision OCR calls to OpenAI or Gemini depending on tenant's ai_provider setting.
         """
@@ -1042,7 +1052,7 @@ class AIService:
             return self._call_openai_vision_api(image_bytes, mime_type, prompt)
 
     @staticmethod
-    def _safe_parse_json(raw_text: str) -> Optional[Dict[str, Any]]:
+    def _safe_parse_json(raw_text: str) -> dict[str, Any] | None:
         try:
             json_str = raw_text
             if "```json" in raw_text:
@@ -1053,7 +1063,7 @@ class AIService:
         except Exception:
             return None
 
-    def parse_vendor_bill_ocr(self, image_bytes: bytes, mime_type: str, bill_url: Optional[str] = None, tenant_id: Optional[UUID] = None) -> ParsedBillOutput:
+    def parse_vendor_bill_ocr(self, image_bytes: bytes, mime_type: str, bill_url: str | None = None, tenant_id: UUID | None = None) -> ParsedBillOutput:
         """
         Parses vendor invoice photo or PDF using Gemini / OpenAI Vision AI & pypdf text extraction.
         Extracts vendor name, total amount, category, invoice date, reference number, and summary line items.

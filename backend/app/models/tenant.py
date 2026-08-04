@@ -1,16 +1,25 @@
 """
 Tenant (Organization) model — top-level multi-tenant isolation entity.
 """
-import uuid
 import enum
-from sqlalchemy import String, Boolean, Text, Enum as SAEnum, Integer
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+import uuid
+
+from sqlalchemy import Boolean
+from sqlalchemy import Enum as SAEnum
+from sqlalchemy import Integer
+from sqlalchemy import String
+from sqlalchemy import Text
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import relationship
+
 from app.core.database import Base
-from app.models.base import UUIDMixin, TimestampMixin
+from app.models.base import TimestampMixin
+from app.models.base import UUIDMixin
 
 
-class TenantStatus(str, enum.Enum):
+class TenantStatus(enum.StrEnum):
     ACTIVE = "active"
     SUSPENDED = "suspended"
     TRIAL = "trial"

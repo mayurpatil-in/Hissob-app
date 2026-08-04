@@ -1,17 +1,26 @@
 """
 User model — supports all 8 hierarchy roles.
 """
-import uuid
 import enum
-from sqlalchemy import String, Boolean, ForeignKey, Text, DateTime
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+import uuid
+
+from sqlalchemy import Boolean
+from sqlalchemy import DateTime
+from sqlalchemy import ForeignKey
+from sqlalchemy import String
+from sqlalchemy import Text
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import relationship
+
 from app.core.database import Base
-from app.models.base import UUIDMixin, TimestampMixin
+from app.models.base import TimestampMixin
+from app.models.base import UUIDMixin
 from app.models.rbac import user_roles
 
 
-class UserStatus(str, enum.Enum):
+class UserStatus(enum.StrEnum):
     ACTIVE = "active"
     INACTIVE = "inactive"
     SUSPENDED = "suspended"

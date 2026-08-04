@@ -1,27 +1,32 @@
 """
 Audit Log Router — View system mutations and security trail.
 """
-from typing import List, Optional
-from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
-from sqlalchemy import select
-from app.core.database import get_db
-from app.auth.deps import get_current_active_user
-from app.permissions.rbac import require
-from app.models.user import User
-from app.models.audit import AuditLog
-from datetime import datetime, timezone
 import math
-from app.schemas.audit import AuditLogResponse, ActivityFeedItem
+from datetime import UTC
+from datetime import datetime
+
+from fastapi import APIRouter
+from fastapi import Depends
+from fastapi import HTTPException
+from fastapi import Query
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from app.auth.deps import get_current_active_user
+from app.core.database import get_db
+from app.models.audit import AuditLog
+from app.models.user import User
+from app.permissions.rbac import require
+from app.schemas.audit import ActivityFeedItem
+from app.schemas.audit import AuditLogResponse
 
 router = APIRouter(prefix="/audit", tags=["Audit Log"])
 
 
 def _format_time_ago(dt: datetime) -> str:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
+        dt = dt.replace(tzinfo=UTC)
     diff = max(0, (now - dt).total_seconds())
     if diff < 60:
         return "Just now"
@@ -36,7 +41,7 @@ def _format_time_ago(dt: datetime) -> str:
         return f"{days} day{'s' if days > 1 else ''} ago"
 
 
-def _format_story(action: str, module: str, label: str, notes: Optional[str]) -> str:
+def _format_story(action: str, module: str, label: str, notes: str | None) -> str:
     lbl = label or "record"
     note_str = f" • {notes}" if notes else ""
     act = (action or "").lower()
@@ -79,10 +84,10 @@ def _format_story(action: str, module: str, label: str, notes: Optional[str]) ->
     return f"{act} {mod.replace('_', ' ')}: {lbl}{note_str}"
 
 
-@router.get("", response_model=List[AuditLogResponse], summary="List & Filter Audit Logs")
+@router.get("", response_model=list[AuditLogResponse], summary="List & Filter Audit Logs")
 async def list_audit_logs(
-    module: Optional[str] = Query(None),
-    action: Optional[str] = Query(None),
+    module: str | None = Query(None),
+    action: str | None = Query(None),
     skip: int = 0,
     limit: int = 100,
     current_user: User = Depends(require("audit", "view")),
@@ -103,9 +108,9 @@ async def list_audit_logs(
     return list(db.execute(stmt).scalars().all())
 
 
-@router.get("/feed", response_model=List[ActivityFeedItem], summary="Get Human-Readable Activity Feed")
+@router.get("/feed", response_model=list[ActivityFeedItem], summary="Get Human-Readable Activity Feed")
 async def get_activity_feed(
-    module: Optional[str] = Query(None),
+    module: str | None = Query(None),
     limit: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),

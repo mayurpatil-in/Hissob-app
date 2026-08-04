@@ -3,26 +3,39 @@ Expense Router — Expense requests & approvals.
 """
 import os
 import uuid
-from typing import List, Optional
+from datetime import UTC
+from datetime import date
+from datetime import datetime
 from uuid import UUID
-from datetime import date, datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, Body
-from sqlalchemy.orm import Session
+
+from fastapi import APIRouter
+from fastapi import Body
+from fastapi import Depends
+from fastapi import File
+from fastapi import HTTPException
+from fastapi import Query
+from fastapi import UploadFile
+from fastapi import status
 from sqlalchemy import select
-from app.core.database import get_db
-from app.core.config import settings
+from sqlalchemy.orm import Session
+
 from app.auth.deps import get_current_active_user
-from app.permissions.rbac import require
-from app.models.user import User
+from app.core.config import settings
+from app.core.database import get_db
 from app.models.finance import Expense
 from app.models.financial_year import FinancialYear
+from app.models.user import User
+from app.permissions.rbac import require
 from app.repositories.expense import ExpenseRepository
-from app.schemas.expense import ExpenseCreate, ExpenseUpdate, ExpenseApproval, ExpenseResponse
+from app.schemas.expense import ExpenseApproval
+from app.schemas.expense import ExpenseCreate
+from app.schemas.expense import ExpenseResponse
+from app.schemas.expense import ExpenseUpdate
 
 router = APIRouter(prefix="/expenses", tags=["Expenses"])
 
 
-def delete_attached_file(bill_url: Optional[str]):
+def delete_attached_file(bill_url: str | None):
     """Removes the associated bill image/PDF document from physical disk when an expense is deleted or replaced."""
     if not bill_url:
         return
@@ -37,11 +50,11 @@ def delete_attached_file(bill_url: Optional[str]):
         pass
 
 
-@router.get("", response_model=List[ExpenseResponse], summary="List & Filter Expenses")
+@router.get("", response_model=list[ExpenseResponse], summary="List & Filter Expenses")
 async def list_expenses(
-    status: Optional[str] = Query(None),
-    fy_id: Optional[UUID] = Query(None),
-    category: Optional[str] = Query(None),
+    status: str | None = Query(None),
+    fy_id: UUID | None = Query(None),
+    category: str | None = Query(None),
     skip: int = 0,
     limit: int = 100,
     current_user: User = Depends(get_current_active_user),
@@ -84,7 +97,7 @@ async def create_expense(
         fy = db.execute(
             select(FinancialYear).where(
                 FinancialYear.tenant_id == current_user.tenant_id,
-                FinancialYear.is_current == True
+                FinancialYear.is_current
             )
         ).scalar_one_or_none()
         if fy:
@@ -146,7 +159,7 @@ async def approve_expense(
     if not expense or (expense.tenant_id != current_user.tenant_id and not current_user.is_super_admin):
         raise HTTPException(status_code=404, detail="Expense not found")
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     if payload.action == "approve":
         expense.status = "approved"

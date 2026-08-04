@@ -1,26 +1,30 @@
 """
 Event Invitations Router — Digital Patrika Cards & VIP Guest RSVP Tracker.
 """
+import contextlib
 import secrets
-from datetime import datetime, timezone
-from typing import List, Optional
+from datetime import UTC
+from datetime import datetime
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
-from sqlalchemy import select
 
-from app.core.database import get_db
+from fastapi import APIRouter
+from fastapi import Depends
+from fastapi import HTTPException
+from fastapi import Query
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
 from app.auth.deps import get_current_active_user
-from app.models.user import User
-from app.models.tenant import Tenant
+from app.core.database import get_db
+from app.models.event_invitation import EventInvitation
+from app.models.event_invitation import RsvpStatus
 from app.models.festival import Festival
-from app.models.event_invitation import EventInvitation, RsvpStatus
-from app.schemas.invitation import (
-    EventInviteCreateSchema,
-    BulkEventInviteSchema,
-    EventRsvpSubmitSchema,
-    EventInviteOutSchema,
-)
+from app.models.tenant import Tenant
+from app.models.user import User
+from app.schemas.invitation import BulkEventInviteSchema
+from app.schemas.invitation import EventInviteCreateSchema
+from app.schemas.invitation import EventInviteOutSchema
+from app.schemas.invitation import EventRsvpSubmitSchema
 from app.services.email_service import send_digital_patrika_email
 
 router = APIRouter(prefix="/events/invitations", tags=["Digital Event Patrika & RSVP"])
@@ -71,7 +75,7 @@ def create_event_invitation(
     # Dispatch email if guest email provided
     rsvp_url = f"https://hisob.in/rsvp?token={token}"
     if data.guest_email:
-        try:
+        with contextlib.suppress(Exception):
             send_digital_patrika_email(
                 to_email=data.guest_email.lower(),
                 guest_name=data.guest_name,
@@ -82,13 +86,11 @@ def create_event_invitation(
                 db=db,
                 tenant_id=tenant.id,
             )
-        except Exception:
-            pass
 
     return _format_event_invite_out(invite, tenant.name)
 
 
-@router.post("/bulk", response_model=List[EventInviteOutSchema])
+@router.post("/bulk", response_model=list[EventInviteOutSchema])
 def bulk_create_event_invitations(
     data: BulkEventInviteSchema,
     db: Session = Depends(get_db),
@@ -113,10 +115,10 @@ def bulk_create_event_invitations(
     return results
 
 
-@router.get("", response_model=List[EventInviteOutSchema])
+@router.get("", response_model=list[EventInviteOutSchema])
 def list_event_invitations(
-    festival_id: Optional[UUID] = Query(None),
-    rsvp_status: Optional[RsvpStatus] = Query(None),
+    festival_id: UUID | None = Query(None),
+    rsvp_status: RsvpStatus | None = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -226,7 +228,7 @@ def check_in_guest(
         }
 
     invite.checked_in = True
-    invite.checked_in_at = datetime.now(timezone.utc)
+    invite.checked_in_at = datetime.now(UTC)
     db.commit()
 
     return {

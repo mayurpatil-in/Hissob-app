@@ -4,9 +4,15 @@ Upload Router for saving static files (like logos, qr codes, receipts).
 import os
 import shutil
 import uuid
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
-from app.core.config import settings
+
+from fastapi import APIRouter
+from fastapi import Depends
+from fastapi import File
+from fastapi import HTTPException
+from fastapi import UploadFile
+
 from app.auth.deps import get_current_active_user
+from app.core.config import settings
 from app.models.user import User
 
 router = APIRouter(prefix="/upload", tags=["Uploads"])
@@ -22,7 +28,7 @@ async def upload_file(
     """
     if not file.filename:
         raise HTTPException(status_code=400, detail="No file uploaded")
-    
+
     # Generate unique filename
     ext = os.path.splitext(file.filename)[1].lower()
     if ext not in [".jpg", ".jpeg", ".png", ".gif", ".svg", ".webp", ".pdf"]:

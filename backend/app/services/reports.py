@@ -1,19 +1,25 @@
 """
 Reports Generator Service — Calculates financial statements & ledger summaries.
 """
-from typing import List, Dict, Any, Optional
+from datetime import UTC
+from datetime import date
+from datetime import datetime
+from typing import Any
 from uuid import UUID
-from datetime import date, datetime, timezone
+
+from sqlalchemy import and_
+from sqlalchemy import func
+from sqlalchemy import select
 from sqlalchemy.orm import Session
-from sqlalchemy import select, func, and_
-from app.models.receipt import Receipt, ReceiptStatus, PaymentMode
-from app.models.finance import Expense, CashSettlement, SettlementStatus
+
+from app.models.finance import Expense
 from app.models.financial_year import FinancialYear
-from app.schemas.reports import (
-    DailyCollectionSummary,
-    CashBookEntry,
-    FinancialReportSummary,
-)
+from app.models.receipt import PaymentMode
+from app.models.receipt import Receipt
+from app.models.receipt import ReceiptStatus
+from app.schemas.reports import CashBookEntry
+from app.schemas.reports import DailyCollectionSummary
+from app.schemas.reports import FinancialReportSummary
 
 
 class ReportsService:
@@ -21,8 +27,8 @@ class ReportsService:
         self.db = db
 
     def get_daily_collection_report(
-        self, tenant_id: UUID, start_date: Optional[date] = None, end_date: Optional[date] = None
-    ) -> List[DailyCollectionSummary]:
+        self, tenant_id: UUID, start_date: date | None = None, end_date: date | None = None
+    ) -> list[DailyCollectionSummary]:
         stmt = (
             select(
                 Receipt.receipt_date,
@@ -67,8 +73,8 @@ class ReportsService:
         return results
 
     def get_cash_book_report(
-        self, tenant_id: UUID, fy_id: Optional[UUID] = None
-    ) -> List[CashBookEntry]:
+        self, tenant_id: UUID, fy_id: UUID | None = None
+    ) -> list[CashBookEntry]:
         opening_balance = 0.0
         if fy_id:
             fy = self.db.get(FinancialYear, fy_id)
@@ -135,7 +141,7 @@ class ReportsService:
         return entries
 
     def get_income_expense_statement(
-        self, tenant_id: UUID, fy_id: Optional[UUID] = None
+        self, tenant_id: UUID, fy_id: UUID | None = None
     ) -> FinancialReportSummary:
         # Total income from all non-cancelled receipts
         r_stmt = select(func.sum(Receipt.amount)).where(
@@ -163,7 +169,7 @@ class ReportsService:
 
         return FinancialReportSummary(
             report_title="Income & Expenditure Statement",
-            generated_at=datetime.now(timezone.utc).isoformat(),
+            generated_at=datetime.now(UTC).isoformat(),
             financial_year=fy_name,
             total_income=total_income,
             total_expenses=total_expenses,
@@ -174,7 +180,7 @@ class ReportsService:
             ],
         )
 
-    def run_custom_report(self, tenant_id: Optional[UUID], req: Any) -> Any:
+    def run_custom_report(self, tenant_id: UUID | None, req: Any) -> Any:
         from app.models.donor import Donor
         from app.models.festival import Festival
         from app.models.user import User

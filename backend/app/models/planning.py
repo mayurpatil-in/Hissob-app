@@ -1,39 +1,49 @@
 """
 Planning models — Tasks, Category Budget Allocations, Volunteer Shifts, and Event Schedules for Festivals.
 """
-import uuid
 import enum
-from datetime import date, datetime
-from typing import Optional
-from sqlalchemy import String, Boolean, ForeignKey, Date, DateTime, Text, Numeric
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+import uuid
+from datetime import date
+from datetime import datetime
+
+from sqlalchemy import Date
+from sqlalchemy import DateTime
+from sqlalchemy import ForeignKey
+from sqlalchemy import Numeric
+from sqlalchemy import String
+from sqlalchemy import Text
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import relationship
 
 from app.core.database import Base
-from app.models.base import UUIDMixin, TimestampMixin, TenantMixin
+from app.models.base import TenantMixin
+from app.models.base import TimestampMixin
+from app.models.base import UUIDMixin
 
 
-class TaskPriority(str, enum.Enum):
+class TaskPriority(enum.StrEnum):
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
     URGENT = "urgent"
 
 
-class TaskStatus(str, enum.Enum):
+class TaskStatus(enum.StrEnum):
     TODO = "todo"
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
     CANCELLED = "cancelled"
 
 
-class ShiftStatus(str, enum.Enum):
+class ShiftStatus(enum.StrEnum):
     SCHEDULED = "scheduled"
     COMPLETED = "completed"
     CANCELLED = "cancelled"
 
 
-class EventType(str, enum.Enum):
+class EventType(enum.StrEnum):
     AARTI = "aarti"
     POOJA = "pooja"
     CULTURAL = "cultural"
@@ -50,11 +60,11 @@ class FestivalTask(Base, UUIDMixin, TimestampMixin, TenantMixin):
     )
     title: Mapped[str] = mapped_column(String(250), nullable=False)
     category: Mapped[str] = mapped_column(String(100), default="General", index=True)
-    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
     priority: Mapped[TaskPriority] = mapped_column(String(20), default=TaskPriority.MEDIUM)
     status: Mapped[TaskStatus] = mapped_column(String(20), default=TaskStatus.TODO, index=True)
-    due_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
-    assigned_to_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    due_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    assigned_to_user_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
 
@@ -70,7 +80,7 @@ class FestivalBudgetAllocation(Base, UUIDMixin, TimestampMixin, TenantMixin):
     )
     category_name: Mapped[str] = mapped_column(String(150), nullable=False)
     allocated_amount: Mapped[float] = mapped_column(Numeric(15, 2), default=0.0, nullable=False)
-    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
 class VolunteerShift(Base, UUIDMixin, TimestampMixin, TenantMixin):
@@ -83,11 +93,11 @@ class VolunteerShift(Base, UUIDMixin, TimestampMixin, TenantMixin):
     duty_zone: Mapped[str] = mapped_column(String(100), default="Main Stage")
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    assigned_user_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    assigned_user_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
     status: Mapped[ShiftStatus] = mapped_column(String(20), default=ShiftStatus.SCHEDULED)
-    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Relationships
     assigned_user = relationship("User", foreign_keys=[assigned_user_id])
@@ -102,8 +112,8 @@ class FestivalEventSchedule(Base, UUIDMixin, TimestampMixin, TenantMixin):
     title: Mapped[str] = mapped_column(String(250), nullable=False)
     event_type: Mapped[EventType] = mapped_column(String(30), default=EventType.AARTI)
     event_date: Mapped[date] = mapped_column(Date, nullable=False)
-    start_time: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
-    end_time: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
-    yajman_name: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
-    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    location: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    start_time: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    end_time: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    yajman_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    location: Mapped[str | None] = mapped_column(String(200), nullable=True)

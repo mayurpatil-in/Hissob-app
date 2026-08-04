@@ -1,16 +1,22 @@
 """
 Festival Router — Create, view, and manage festivals.
 """
-from typing import List
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status
+
+from fastapi import APIRouter
+from fastapi import Depends
+from fastapi import HTTPException
+from fastapi import status
 from sqlalchemy.orm import Session
+
 from app.core.database import get_db
-from app.permissions.rbac import require
-from app.models.user import User
 from app.models.festival import Festival
+from app.models.user import User
+from app.permissions.rbac import require
 from app.repositories.financial import FestivalRepository
-from app.schemas.festival import FestivalCreate, FestivalUpdate, FestivalResponse
+from app.schemas.festival import FestivalCreate
+from app.schemas.festival import FestivalResponse
+from app.schemas.festival import FestivalUpdate
 
 router = APIRouter(prefix="/festivals", tags=["Festivals"])
 
@@ -18,7 +24,7 @@ router = APIRouter(prefix="/festivals", tags=["Festivals"])
 from app.auth.deps import get_current_active_user
 
 
-@router.get("", response_model=List[FestivalResponse], summary="List Festivals")
+@router.get("", response_model=list[FestivalResponse], summary="List Festivals")
 async def list_festivals(
     fy_id: UUID = None,
     current_user: User = Depends(get_current_active_user),

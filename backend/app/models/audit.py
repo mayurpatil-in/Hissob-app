@@ -3,9 +3,15 @@ Audit Log model — every mutation is recorded.
 """
 import uuid
 from datetime import datetime
-from sqlalchemy import String, ForeignKey, Text, DateTime, JSON
-from sqlalchemy.orm import Mapped, mapped_column
+
+from sqlalchemy import JSON
+from sqlalchemy import DateTime
+from sqlalchemy import String
+from sqlalchemy import Text
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import mapped_column
+
 from app.core.database import Base
 from app.models.base import UUIDMixin
 

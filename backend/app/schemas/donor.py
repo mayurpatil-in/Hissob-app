@@ -1,17 +1,19 @@
 """
 Pydantic schemas for Donor and Area modules.
 """
-from pydantic import BaseModel, EmailStr, Field
-from typing import Optional
-from uuid import UUID
 from datetime import datetime
+from uuid import UUID
+
+from pydantic import BaseModel
+from pydantic import EmailStr
+from pydantic import Field
 
 
 # ── Area Schemas ──
 class AreaBase(BaseModel):
     name: str = Field(..., min_length=2, max_length=200)
-    code: Optional[str] = None
-    description: Optional[str] = None
+    code: str | None = None
+    description: str | None = None
 
 
 class AreaCreate(AreaBase):
@@ -19,10 +21,10 @@ class AreaCreate(AreaBase):
 
 
 class AreaUpdate(BaseModel):
-    name: Optional[str] = None
-    code: Optional[str] = None
-    description: Optional[str] = None
-    is_active: Optional[bool] = None
+    name: str | None = None
+    code: str | None = None
+    description: str | None = None
+    is_active: bool | None = None
 
 
 class AreaResponse(AreaBase):
@@ -37,47 +39,47 @@ class AreaResponse(AreaBase):
 
 # ── Donor Schemas ──
 class DonorBase(BaseModel):
-    area_id: Optional[UUID] = None
+    area_id: UUID | None = None
     full_name: str = Field(..., min_length=2, max_length=200)
-    phone: Optional[str] = None
-    email: Optional[EmailStr] = None
-    address: Optional[str] = None
-    city: Optional[str] = None
-    pincode: Optional[str] = None
-    pan_number: Optional[str] = None
+    phone: str | None = None
+    email: EmailStr | None = None
+    address: str | None = None
+    city: str | None = None
+    pincode: str | None = None
+    pan_number: str | None = None
     is_80g_eligible: bool = False
     is_vip: bool = False
-    notes: Optional[str] = None
+    notes: str | None = None
 
 
 class DonorCreate(DonorBase):
-    donor_number: Optional[str] = None
+    donor_number: str | None = None
 
 
 class DonorUpdate(BaseModel):
-    area_id: Optional[UUID] = None
-    full_name: Optional[str] = None
-    phone: Optional[str] = None
-    email: Optional[EmailStr] = None
-    address: Optional[str] = None
-    city: Optional[str] = None
-    pincode: Optional[str] = None
-    pan_number: Optional[str] = None
-    is_80g_eligible: Optional[bool] = None
-    is_vip: Optional[bool] = None
-    notes: Optional[str] = None
-    is_active: Optional[bool] = None
+    area_id: UUID | None = None
+    full_name: str | None = None
+    phone: str | None = None
+    email: EmailStr | None = None
+    address: str | None = None
+    city: str | None = None
+    pincode: str | None = None
+    pan_number: str | None = None
+    is_80g_eligible: bool | None = None
+    is_vip: bool | None = None
+    notes: str | None = None
+    is_active: bool | None = None
 
 
 class DonorResponse(DonorBase):
     id: UUID
     tenant_id: UUID
-    donor_number: Optional[str] = None
+    donor_number: str | None = None
     total_donations: int
-    this_year_donations: Optional[int] = 0
+    this_year_donations: int | None = 0
     is_active: bool
     created_at: datetime
     updated_at: datetime
-    area: Optional[AreaResponse] = None
+    area: AreaResponse | None = None
 
     model_config = {"from_attributes": True}

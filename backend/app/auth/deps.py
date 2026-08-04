@@ -1,15 +1,20 @@
 """
 Auth dependencies — current user resolution from JWT.
 """
-from typing import Optional
+import contextlib
 from uuid import UUID
-from fastapi import Depends, HTTPException, Header, status
+
+from fastapi import Depends
+from fastapi import Header
+from fastapi import HTTPException
+from fastapi import status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from app.core.database import get_db
+
 from app.auth.jwt import decode_token
-from app.repositories.user import UserRepository
+from app.core.database import get_db
 from app.models.user import User
+from app.repositories.user import UserRepository
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
@@ -41,16 +46,14 @@ def get_current_user(
 
 def get_current_active_user(
     current_user: User = Depends(get_current_user),
-    x_tenant_id: Optional[str] = Header(None),
+    x_tenant_id: str | None = Header(None),
 ) -> User:
     if not current_user.is_active:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user")
 
     if current_user.is_super_admin and x_tenant_id:
-        try:
+        with contextlib.suppress(ValueError, TypeError):
             current_user.tenant_id = UUID(x_tenant_id)
-        except (ValueError, TypeError):
-            pass
 
     return current_user
 

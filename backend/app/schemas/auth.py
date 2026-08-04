@@ -2,9 +2,12 @@
 Auth schemas — login, token response, refresh.
 """
 import re
-from pydantic import BaseModel, EmailStr, Field, field_validator
-from typing import Optional
 from uuid import UUID
+
+from pydantic import BaseModel
+from pydantic import EmailStr
+from pydantic import Field
+from pydantic import field_validator
 
 
 # ─── Password Complexity Validator ──────────────────────────────
@@ -26,7 +29,7 @@ def _validate_password_strength(password: str) -> str:
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str = Field(min_length=6)
-    totp_code: Optional[str] = None
+    totp_code: str | None = None
 
 
 class TokenResponse(BaseModel):
@@ -43,7 +46,7 @@ class RefreshRequest(BaseModel):
 class RoleInfo(BaseModel):
     id: UUID
     name: str
-    slug: Optional[str] = None
+    slug: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -53,8 +56,8 @@ class UserInfo(BaseModel):
     email: str
     full_name: str
     is_super_admin: bool
-    tenant_id: Optional[UUID]
-    avatar_url: Optional[str]
+    tenant_id: UUID | None
+    avatar_url: str | None
     permissions: dict[str, list[str]]
     roles: list[RoleInfo] = []
     totp_enabled: bool = False
@@ -63,11 +66,11 @@ class UserInfo(BaseModel):
 
 
 class LoginResponse(BaseModel):
-    access_token: Optional[str] = None
-    refresh_token: Optional[str] = None
+    access_token: str | None = None
+    refresh_token: str | None = None
     token_type: str = "bearer"
-    expires_in: Optional[int] = None
-    user: Optional[UserInfo] = None
+    expires_in: int | None = None
+    user: UserInfo | None = None
     requires_2fa: bool = False
 
 

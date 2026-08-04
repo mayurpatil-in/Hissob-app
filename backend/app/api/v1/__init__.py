@@ -2,30 +2,31 @@
 API v1 router aggregator — includes Phase 1, Phase 2, Phase 3, and Phase 4 AI module routers.
 """
 from fastapi import APIRouter
-from app.routers.auth import router as auth_router
-from app.routers.organizations import router as organizations_router
-from app.routers.financial_years import router as financial_years_router
-from app.routers.festivals import router as festivals_router
-from app.routers.donors import router as donors_router, areas_router
-from app.routers.receipts import router as receipts_router
-from app.routers.settlements import router as settlements_router
-from app.routers.expenses import router as expenses_router
-from app.routers.reports import router as reports_router
-from app.routers.audit import router as audit_router
-from app.routers.super_admin import router as super_admin_router
-from app.routers.ai import router as ai_router
-from app.routers.users import router as users_router
-from app.routers.dashboard import router as dashboard_router
-from app.routers.notifications import router as notifications_router
 
-from app.routers.upload import router as upload_router
+from app.routers.ai import router as ai_router
+from app.routers.audit import router as audit_router
+from app.routers.auth import router as auth_router
 from app.routers.cron import router as cron_router
+from app.routers.dashboard import router as dashboard_router
+from app.routers.donors import areas_router
+from app.routers.donors import router as donors_router
 from app.routers.email_logs import router as email_logs_router
-from app.routers.inventory import router as inventory_router
-from app.routers.planning import router as planning_router
-from app.routers.invitations import router as invitations_router
 from app.routers.event_invitations import router as event_invitations_router
+from app.routers.expenses import router as expenses_router
+from app.routers.festivals import router as festivals_router
+from app.routers.financial_years import router as financial_years_router
+from app.routers.inventory import router as inventory_router
+from app.routers.invitations import router as invitations_router
+from app.routers.notifications import router as notifications_router
+from app.routers.organizations import router as organizations_router
 from app.routers.payments import router as payments_router
+from app.routers.planning import router as planning_router
+from app.routers.receipts import router as receipts_router
+from app.routers.reports import router as reports_router
+from app.routers.settlements import router as settlements_router
+from app.routers.super_admin import router as super_admin_router
+from app.routers.upload import router as upload_router
+from app.routers.users import router as users_router
 
 router = APIRouter()
 router.include_router(auth_router)

@@ -2,9 +2,17 @@
 Notification model — In-app notification system for settlement, expense, and system events.
 """
 import uuid
-from datetime import datetime, timezone
-from sqlalchemy import Column, String, Boolean, DateTime, Text, ForeignKey
+from datetime import UTC
+from datetime import datetime
+
+from sqlalchemy import Boolean
+from sqlalchemy import Column
+from sqlalchemy import DateTime
+from sqlalchemy import ForeignKey
+from sqlalchemy import String
+from sqlalchemy import Text
 from sqlalchemy.dialects.postgresql import UUID
+
 from app.core.database import Base
 
 
@@ -28,5 +36,5 @@ class Notification(Base):
     # State
     is_read = Column(Boolean, default=False, nullable=False, index=True)
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False)
     read_at = Column(DateTime(timezone=True), nullable=True)

@@ -1,33 +1,35 @@
 """
 Reports Router — Generate Daily Collection, Cash Book, and Income/Expense reports.
 """
-from typing import List, Optional
-from uuid import UUID
-from datetime import date
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
-from app.core.database import get_db
-from app.permissions.rbac import require
-from app.models.user import User
-from app.services.reports import ReportsService
-import io
 import csv
+import io
+from datetime import date
+from uuid import UUID
+
+from fastapi import APIRouter
+from fastapi import Depends
+from fastapi import HTTPException
+from fastapi import Query
 from fastapi.responses import StreamingResponse
-from app.schemas.reports import (
-    DailyCollectionSummary,
-    CashBookEntry,
-    FinancialReportSummary,
-    CustomReportRequest,
-    CustomReportResponse,
-)
+from sqlalchemy.orm import Session
+
+from app.core.database import get_db
+from app.models.user import User
+from app.permissions.rbac import require
+from app.schemas.reports import CashBookEntry
+from app.schemas.reports import CustomReportRequest
+from app.schemas.reports import CustomReportResponse
+from app.schemas.reports import DailyCollectionSummary
+from app.schemas.reports import FinancialReportSummary
+from app.services.reports import ReportsService
 
 router = APIRouter(prefix="/reports", tags=["Reports"])
 
 
-@router.get("/daily-collection", response_model=List[DailyCollectionSummary], summary="Daily Collection Summary Report")
+@router.get("/daily-collection", response_model=list[DailyCollectionSummary], summary="Daily Collection Summary Report")
 async def daily_collection_report(
-    start_date: Optional[date] = Query(None),
-    end_date: Optional[date] = Query(None),
+    start_date: date | None = Query(None),
+    end_date: date | None = Query(None),
     current_user: User = Depends(require("reports", "view")),
     db: Session = Depends(get_db),
 ):
@@ -37,9 +39,9 @@ async def daily_collection_report(
     return service.get_daily_collection_report(current_user.tenant_id, start_date=start_date, end_date=end_date)
 
 
-@router.get("/cash-book", response_model=List[CashBookEntry], summary="Cash Book Ledger Report")
+@router.get("/cash-book", response_model=list[CashBookEntry], summary="Cash Book Ledger Report")
 async def cash_book_report(
-    fy_id: Optional[UUID] = Query(None),
+    fy_id: UUID | None = Query(None),
     current_user: User = Depends(require("reports", "view")),
     db: Session = Depends(get_db),
 ):
@@ -51,7 +53,7 @@ async def cash_book_report(
 
 @router.get("/income-expense", response_model=FinancialReportSummary, summary="Income & Expense Financial Statement")
 async def income_expense_report(
-    fy_id: Optional[UUID] = Query(None),
+    fy_id: UUID | None = Query(None),
     current_user: User = Depends(require("reports", "view")),
     db: Session = Depends(get_db),
 ):
@@ -111,8 +113,9 @@ async def export_custom_report(
     )
 
 
-from app.schemas.reports import EmailReportRequest, EmailReportResponse
 from app.models.tenant import Tenant
+from app.schemas.reports import EmailReportRequest
+from app.schemas.reports import EmailReportResponse
 from app.services.email_service import send_report_email
 
 

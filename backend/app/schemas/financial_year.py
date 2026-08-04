@@ -1,10 +1,13 @@
 """
 Pydantic schemas for Financial Year.
 """
-from pydantic import BaseModel, Field
-from typing import Optional
+from datetime import date
+from datetime import datetime
 from uuid import UUID
-from datetime import date, datetime
+
+from pydantic import BaseModel
+from pydantic import Field
+
 from app.models.financial_year import FYStatus
 
 
@@ -13,7 +16,7 @@ class FinancialYearBase(BaseModel):
     start_date: date
     end_date: date
     opening_balance: float = 0.0
-    notes: Optional[str] = None
+    notes: str | None = None
 
 
 class FinancialYearCreate(FinancialYearBase):
@@ -21,15 +24,15 @@ class FinancialYearCreate(FinancialYearBase):
 
 
 class FinancialYearUpdate(BaseModel):
-    name: Optional[str] = None
-    start_date: Optional[date] = None
-    end_date: Optional[date] = None
-    status: Optional[FYStatus] = None
-    is_current: Optional[bool] = None
-    opening_balance: Optional[float] = None
-    closing_balance: Optional[float] = None
-    carry_forward_amount: Optional[float] = None
-    notes: Optional[str] = None
+    name: str | None = None
+    start_date: date | None = None
+    end_date: date | None = None
+    status: FYStatus | None = None
+    is_current: bool | None = None
+    opening_balance: float | None = None
+    closing_balance: float | None = None
+    carry_forward_amount: float | None = None
+    notes: str | None = None
 
 
 class FinancialYearResponse(FinancialYearBase):
@@ -39,8 +42,8 @@ class FinancialYearResponse(FinancialYearBase):
     is_current: bool
     closing_balance: float
     carry_forward_amount: float
-    closed_by: Optional[UUID] = None
-    locked_by: Optional[UUID] = None
+    closed_by: UUID | None = None
+    locked_by: UUID | None = None
     created_at: datetime
     updated_at: datetime
 

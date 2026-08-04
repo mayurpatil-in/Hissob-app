@@ -1,17 +1,30 @@
 """
 Receipt model — core financial collection document.
 """
-import uuid
 import enum
+import uuid
 from datetime import date
-from sqlalchemy import String, Boolean, ForeignKey, Date, Text, Numeric, Integer, Index, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from sqlalchemy import Date
+from sqlalchemy import ForeignKey
+from sqlalchemy import Index
+from sqlalchemy import Numeric
+from sqlalchemy import String
+from sqlalchemy import Text
+from sqlalchemy import UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import relationship
+
 from app.core.database import Base
-from app.models.base import UUIDMixin, TimestampMixin, TenantMixin, SoftDeleteMixin
+from app.models.base import SoftDeleteMixin
+from app.models.base import TenantMixin
+from app.models.base import TimestampMixin
+from app.models.base import UUIDMixin
 
 
-class PaymentMode(str, enum.Enum):
+class PaymentMode(enum.StrEnum):
     CASH = "cash"
     UPI = "upi"
     CHEQUE = "cheque"
@@ -22,7 +35,7 @@ class PaymentMode(str, enum.Enum):
     OTHER = "other"
 
 
-class ReceiptStatus(str, enum.Enum):
+class ReceiptStatus(enum.StrEnum):
     DRAFT = "draft"
     ISSUED = "issued"
     PENDING_SETTLEMENT = "pending_settlement"

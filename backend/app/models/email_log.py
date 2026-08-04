@@ -2,12 +2,20 @@
 Email Log Model — Track all transactional and report email dispatches.
 """
 import uuid
-from datetime import datetime, timezone
-from sqlalchemy import String, Text, DateTime, JSON
-from sqlalchemy.orm import Mapped, mapped_column
+from datetime import UTC
+from datetime import datetime
+
+from sqlalchemy import JSON
+from sqlalchemy import DateTime
+from sqlalchemy import String
+from sqlalchemy import Text
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import mapped_column
+
 from app.core.database import Base
-from app.models.base import UUIDMixin, TimestampMixin
+from app.models.base import TimestampMixin
+from app.models.base import UUIDMixin
 
 
 class EmailLog(Base, UUIDMixin, TimestampMixin):
@@ -22,20 +30,20 @@ class EmailLog(Base, UUIDMixin, TimestampMixin):
     metadata_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     sent_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
         nullable=False,
         index=True
     )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
         nullable=False,
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
         nullable=False,
     )
 

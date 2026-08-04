@@ -1,26 +1,35 @@
 """
 Organizations / Tenants Router — Super Admin & Org Admin profile management.
 """
-from typing import List
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
+
+from fastapi import APIRouter
+from fastapi import BackgroundTasks
+from fastapi import Depends
+from fastapi import HTTPException
+from fastapi import status
 from sqlalchemy.orm import Session
+
+from app.auth.deps import get_current_active_user
+from app.auth.deps import get_super_admin
 from app.core.database import get_db
-from app.auth.deps import get_current_active_user, get_super_admin
 from app.core.security import hash_password
-from app.permissions.rbac import require
-from app.models.user import User
-from app.models.tenant import Tenant, TenantStatus
 from app.models.rbac import Role
+from app.models.tenant import Tenant
+from app.models.tenant import TenantStatus
+from app.models.user import User
+from app.permissions.rbac import require
 from app.repositories.financial import TenantRepository
 from app.repositories.user import UserRepository
-from app.schemas.tenant import TenantCreate, TenantUpdate, TenantResponse
+from app.schemas.tenant import TenantCreate
+from app.schemas.tenant import TenantResponse
+from app.schemas.tenant import TenantUpdate
 from app.services.email_service import send_user_welcome_email
 
 router = APIRouter(prefix="/organizations", tags=["Organizations"])
 
 
-@router.get("", response_model=List[TenantResponse], summary="List Organizations (Super Admin)")
+@router.get("", response_model=list[TenantResponse], summary="List Organizations (Super Admin)")
 async def list_organizations(
     current_user: User = Depends(get_super_admin),
     db: Session = Depends(get_db),
@@ -113,7 +122,7 @@ async def get_my_organization(
 
     if not tenant_id:
         raise HTTPException(status_code=404, detail="No organization linked to user")
-        
+
     tenant = repo.get(tenant_id)
     if not tenant:
         raise HTTPException(status_code=404, detail="Organization not found")
@@ -167,7 +176,7 @@ async def update_organization(
 async def get_public_organization_info(
     db: Session = Depends(get_db),
 ):
-    first_tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
+    first_tenant = db.query(Tenant).filter(Tenant.is_active).first()
     if not first_tenant:
         raise HTTPException(status_code=404, detail="No active organization found")
     return first_tenant
@@ -187,7 +196,7 @@ async def get_public_organization_by_identifier(
             pass
 
     if not tenant:
-        tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
+        tenant = db.query(Tenant).filter(Tenant.is_active).first()
 
     if not tenant:
         raise HTTPException(status_code=404, detail="Organization not found")

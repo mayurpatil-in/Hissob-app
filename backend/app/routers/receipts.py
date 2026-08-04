@@ -1,41 +1,56 @@
 """
 Receipts Router — Create receipt, list receipts, cancel receipt.
 """
-from typing import List, Optional
+from datetime import UTC
+from datetime import date
+from datetime import datetime
 from uuid import UUID
-from datetime import date, datetime, timezone
-from pydantic import BaseModel, Field
-from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
+
+from fastapi import APIRouter
+from fastapi import BackgroundTasks
+from fastapi import Depends
+from fastapi import HTTPException
+from fastapi import Query
+from fastapi import status
+from pydantic import BaseModel
+from pydantic import Field
 from sqlalchemy.orm import Session
+
 from app.core.database import get_db
-from app.permissions.rbac import require
-from app.models.user import User
-from app.models.tenant import Tenant
-from app.models.receipt import Receipt, ReceiptStatus, PaymentMode
 from app.models.donor import Donor
 from app.models.financial_year import FinancialYear
-from app.repositories.receipt import ReceiptRepository
+from app.models.receipt import PaymentMode
+from app.models.receipt import Receipt
+from app.models.receipt import ReceiptStatus
+from app.models.tenant import Tenant
+from app.models.user import User
+from app.permissions.rbac import require
 from app.repositories.donor import DonorRepository
-from app.schemas.receipt import ReceiptCreate, ReceiptCancel, ReceiptUpdate, ReceiptResponse, PublicReceiptVerificationResponse
+from app.repositories.receipt import ReceiptRepository
+from app.schemas.receipt import PublicReceiptVerificationResponse
+from app.schemas.receipt import ReceiptCancel
+from app.schemas.receipt import ReceiptCreate
+from app.schemas.receipt import ReceiptResponse
+from app.schemas.receipt import ReceiptUpdate
 
 router = APIRouter(prefix="/receipts", tags=["Receipts"])
 
 
 class PublicDonorLookupResponse(BaseModel):
     exists: bool
-    donor_number: Optional[str] = None
-    full_name: Optional[str] = None
-    email: Optional[str] = None
-    pan_number: Optional[str] = None
-    city: Optional[str] = None
-    total_donations: Optional[int] = 0
-    is_80g_eligible: Optional[bool] = False
+    donor_number: str | None = None
+    full_name: str | None = None
+    email: str | None = None
+    pan_number: str | None = None
+    city: str | None = None
+    total_donations: int | None = 0
+    is_80g_eligible: bool | None = False
 
 
 @router.get("/public-donor-lookup", response_model=PublicDonorLookupResponse, summary="Public Lookup Donor by Phone")
 async def public_donor_lookup(
-    phone: Optional[str] = Query(None),
-    slug_or_id: Optional[str] = Query(None),
+    phone: str | None = Query(None),
+    slug_or_id: str | None = Query(None),
     db: Session = Depends(get_db),
 ):
     if not phone or len(phone.strip()) < 10:
@@ -51,7 +66,7 @@ async def public_donor_lookup(
                 pass
 
     if not tenant:
-        tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
+        tenant = db.query(Tenant).filter(Tenant.is_active).first()
 
     if not tenant:
         return PublicDonorLookupResponse(exists=False)
@@ -75,12 +90,12 @@ async def public_donor_lookup(
 from app.auth.deps import get_current_active_user
 
 
-@router.get("", response_model=List[ReceiptResponse], summary="List & Filter Receipts")
+@router.get("", response_model=list[ReceiptResponse], summary="List & Filter Receipts")
 async def list_receipts(
-    fy_id: Optional[UUID] = Query(None),
-    status: Optional[str] = Query(None),
-    collector_id: Optional[UUID] = Query(None),
-    donor_id: Optional[UUID] = Query(None),
+    fy_id: UUID | None = Query(None),
+    status: str | None = Query(None),
+    collector_id: UUID | None = Query(None),
+    donor_id: UUID | None = Query(None),
     skip: int = 0,
     limit: int = 100,
     current_user: User = Depends(get_current_active_user),
@@ -114,8 +129,8 @@ async def list_receipts(
 
 @router.get("/daily-summary", summary="Collector Daily Collection & Handover Summary")
 async def get_collector_daily_summary(
-    target_date: Optional[date] = Query(None),
-    collector_id: Optional[UUID] = Query(None),
+    target_date: date | None = Query(None),
+    collector_id: UUID | None = Query(None),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db),
 ):
@@ -204,15 +219,15 @@ async def create_receipt(
     fy = None
     if payload.financial_year_id:
         fy = db.get(FinancialYear, payload.financial_year_id)
-    
+
     if not fy:
         fy = db.execute(
             select(FinancialYear).where(
                 FinancialYear.tenant_id == current_user.tenant_id,
-                FinancialYear.is_current == True
+                FinancialYear.is_current
             )
         ).scalar_one_or_none()
-    
+
     if not fy:
         fy = db.execute(
             select(FinancialYear).where(FinancialYear.tenant_id == current_user.tenant_id)
@@ -368,7 +383,7 @@ async def update_receipt(
 @router.post("/{receipt_id}/cancel", response_model=ReceiptResponse, summary="Cancel Receipt")
 async def cancel_receipt(
     receipt_id: UUID,
-    payload: Optional[ReceiptCancel] = None,
+    payload: ReceiptCancel | None = None,
     current_user: User = Depends(require("receipts", "cancel")),
     db: Session = Depends(get_db),
 ):
@@ -413,16 +428,16 @@ async def cancel_receipt(
 
 
 class ReceiptSettlePayload(BaseModel):
-    upi_reference: Optional[str] = None
-    transaction_ref: Optional[str] = None
-    bank_name: Optional[str] = None
-    notes: Optional[str] = None
+    upi_reference: str | None = None
+    transaction_ref: str | None = None
+    bank_name: str | None = None
+    notes: str | None = None
 
 
 @router.post("/{receipt_id}/settle", response_model=ReceiptResponse, summary="Settle Receipt (Bank / Digital Reconciliation)")
 async def settle_receipt(
     receipt_id: UUID,
-    payload: Optional[ReceiptSettlePayload] = None,
+    payload: ReceiptSettlePayload | None = None,
     current_user: User = Depends(require("receipts", "create")),
     db: Session = Depends(get_db),
 ):
@@ -553,23 +568,23 @@ async def verify_receipt_public(
         transaction_ref=receipt.transaction_ref or receipt.upi_reference or receipt.cheque_number,
         org_name=tenant.name if tenant else "Unknown Organization",
         org_logo_url=tenant.logo_url if tenant else None,
-        verified_at=datetime.now(timezone.utc)
+        verified_at=datetime.now(UTC)
     )
 
 
 class PublicDonationPayload(BaseModel):
-    slug_or_id: Optional[str] = None
+    slug_or_id: str | None = None
     full_name: str = Field(..., min_length=2, max_length=200)
-    phone: Optional[str] = None
-    email: Optional[str] = None
-    pan_number: Optional[str] = None
-    city: Optional[str] = None
+    phone: str | None = None
+    email: str | None = None
+    pan_number: str | None = None
+    city: str | None = None
     amount: float = Field(..., gt=0)
     payment_mode: str = "upi"
-    upi_reference: Optional[str] = None
-    transaction_ref: Optional[str] = None
-    purpose: Optional[str] = "General Donation"
-    notes: Optional[str] = None
+    upi_reference: str | None = None
+    transaction_ref: str | None = None
+    purpose: str | None = "General Donation"
+    notes: str | None = None
 
 
 @router.post("/public-donate", response_model=ReceiptResponse, status_code=status.HTTP_201_CREATED, summary="Public Donor Submit UPI Donation")
@@ -589,7 +604,7 @@ async def create_public_donation_receipt(
                 pass
 
     if not tenant:
-        tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
+        tenant = db.query(Tenant).filter(Tenant.is_active).first()
 
     if not tenant:
         raise HTTPException(status_code=404, detail="Organization not found")
@@ -625,10 +640,11 @@ async def create_public_donation_receipt(
         db.commit()
         db.refresh(donor)
 
-    from app.models.financial_year import FinancialYear, FYStatus
+    from app.models.financial_year import FinancialYear
+    from app.models.financial_year import FYStatus
     active_fy = db.query(FinancialYear).filter(
         FinancialYear.tenant_id == tenant.id,
-        FinancialYear.is_current == True
+        FinancialYear.is_current
     ).first()
 
     # Auto-create financial year if none exists (critical for public donations)

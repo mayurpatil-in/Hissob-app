@@ -1,13 +1,17 @@
 """
 Repositories for Receipts and Cash Settlements.
 """
-from typing import Optional, List
 from uuid import UUID
-from datetime import date
-from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import select, func, and_
-from app.models.receipt import Receipt, ReceiptStatus, PaymentMode
-from app.models.finance import CashSettlement, SettlementStatus
+
+from sqlalchemy import func
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+from sqlalchemy.orm import joinedload
+
+from app.models.finance import CashSettlement
+from app.models.receipt import PaymentMode
+from app.models.receipt import Receipt
+from app.models.receipt import ReceiptStatus
 from app.repositories.base import BaseRepository
 
 
@@ -23,17 +27,17 @@ class ReceiptRepository(BaseRepository[Receipt]):
     def get_by_tenant(
         self,
         tenant_id: UUID,
-        collector_id: Optional[UUID] = None,
-        donor_id: Optional[UUID] = None,
-        fy_id: Optional[UUID] = None,
-        status: Optional[str] = None,
+        collector_id: UUID | None = None,
+        donor_id: UUID | None = None,
+        fy_id: UUID | None = None,
+        status: str | None = None,
         skip: int = 0,
         limit: int = 100,
-    ) -> List[Receipt]:
+    ) -> list[Receipt]:
         stmt = (
             select(Receipt)
             .options(joinedload(Receipt.donor))
-            .where(Receipt.tenant_id == tenant_id, Receipt.is_deleted == False)
+            .where(Receipt.tenant_id == tenant_id, not Receipt.is_deleted)
         )
         if collector_id:
             stmt = stmt.where(Receipt.collector_id == collector_id)
@@ -47,7 +51,7 @@ class ReceiptRepository(BaseRepository[Receipt]):
         stmt = stmt.order_by(Receipt.created_at.desc()).offset(skip).limit(limit)
         return list(self.db.execute(stmt).scalars().all())
 
-    def get_unsettled_for_collector(self, tenant_id: UUID, collector_id: UUID) -> List[Receipt]:
+    def get_unsettled_for_collector(self, tenant_id: UUID, collector_id: UUID) -> list[Receipt]:
         stmt = (
             select(Receipt)
             .where(
@@ -55,7 +59,7 @@ class ReceiptRepository(BaseRepository[Receipt]):
                 Receipt.collector_id == collector_id,
                 Receipt.payment_mode == PaymentMode.CASH,
                 Receipt.status.in_([ReceiptStatus.ISSUED, ReceiptStatus.PENDING_SETTLEMENT]),
-                Receipt.is_deleted == False,
+                not Receipt.is_deleted,
             )
             .order_by(Receipt.receipt_date.asc())
         )
@@ -78,11 +82,11 @@ class CashSettlementRepository(BaseRepository[CashSettlement]):
     def get_by_tenant(
         self,
         tenant_id: UUID,
-        status: Optional[str] = None,
-        collector_id: Optional[UUID] = None,
+        status: str | None = None,
+        collector_id: UUID | None = None,
         skip: int = 0,
         limit: int = 100,
-    ) -> List[CashSettlement]:
+    ) -> list[CashSettlement]:
         stmt = select(CashSettlement).where(CashSettlement.tenant_id == tenant_id)
         if status:
             stmt = stmt.where(CashSettlement.status == status)

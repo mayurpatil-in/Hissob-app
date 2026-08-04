@@ -1,25 +1,27 @@
 """
 User repository — auth-specific queries.
 """
-from typing import Optional
-from uuid import UUID
-from sqlalchemy.orm import Session
-from sqlalchemy import select
-from app.models.user import User, RefreshToken
-from app.repositories.base import BaseRepository
 import hashlib
+from uuid import UUID
+
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from app.models.user import RefreshToken
+from app.models.user import User
+from app.repositories.base import BaseRepository
 
 
 class UserRepository(BaseRepository[User]):
     def __init__(self, db: Session):
         super().__init__(User, db)
 
-    def get_by_email(self, email: str) -> Optional[User]:
+    def get_by_email(self, email: str) -> User | None:
         stmt = select(User).where(User.email == email.lower().strip())
         return self.db.execute(stmt).scalar_one_or_none()
 
     def get_active_by_tenant(self, tenant_id: UUID) -> list[User]:
-        stmt = select(User).where(User.tenant_id == tenant_id, User.is_active == True)
+        stmt = select(User).where(User.tenant_id == tenant_id, User.is_active)
         return list(self.db.execute(stmt).scalars().all())
 
     def email_exists(self, email: str) -> bool:
@@ -47,11 +49,11 @@ class RefreshTokenRepository(BaseRepository[RefreshToken]):
         )
         return self.create(rt)
 
-    def get_by_token(self, token: str) -> Optional[RefreshToken]:
+    def get_by_token(self, token: str) -> RefreshToken | None:
         token_hash = self._hash_token(token)
         stmt = select(RefreshToken).where(
             RefreshToken.token_hash == token_hash,
-            RefreshToken.is_revoked == False,
+            not RefreshToken.is_revoked,
         )
         return self.db.execute(stmt).scalar_one_or_none()
 
@@ -64,7 +66,7 @@ class RefreshTokenRepository(BaseRepository[RefreshToken]):
     def revoke_all_for_user(self, user_id: UUID) -> None:
         stmt = select(RefreshToken).where(
             RefreshToken.user_id == user_id,
-            RefreshToken.is_revoked == False,
+            not RefreshToken.is_revoked,
         )
         tokens = self.db.execute(stmt).scalars().all()
         for t in tokens:
