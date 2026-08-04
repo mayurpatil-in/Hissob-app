@@ -3,9 +3,10 @@ name: CI — Quality Gates
 # ─── Triggers ────────────────────────────────────────────────────────────────
 on:
   push:
-    branches: [main, develop]
+    branches: ['**']     # Run CI on ALL branches
   pull_request:
     branches: [main, develop]
+  workflow_dispatch:     # Allow manual trigger from GitHub UI
 
 # Cancel in-flight runs for the same branch/PR to save runner minutes
 concurrency:
