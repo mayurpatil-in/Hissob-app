@@ -710,6 +710,13 @@ export const createRazorpayPaymentLink = async (payload: {
   is_mock?: boolean;
 }>('/payments/razorpay/create-payment-link', payload)).data;
 
+export const syncRazorpayPayments = async (slug_or_id?: string) =>
+  (await apiClient.post<{
+    message: string;
+    synced_count: number;
+    new_receipts: any[];
+  }>('/payments/razorpay/sync-payments', null, { params: { slug_or_id } })).data;
+
 export const initiateRazorpayRefund = async (payload: {
   receipt_id: string;
   amount?: number;

@@ -5,13 +5,13 @@ import {
 } from 'antd';
 import {
   PlusOutlined, PrinterOutlined, RobotOutlined, CheckCircleOutlined, WhatsAppOutlined, DownloadOutlined, RocketOutlined,
-  AppstoreOutlined, UnorderedListOutlined, DollarOutlined, EditOutlined, DeleteOutlined, CloseOutlined, LinkOutlined, ReloadOutlined, EyeOutlined
+  AppstoreOutlined, UnorderedListOutlined, DollarOutlined, EditOutlined, DeleteOutlined, CloseOutlined, LinkOutlined, ReloadOutlined, EyeOutlined, SyncOutlined
 } from '@ant-design/icons';
 import { PaymentLinkModal } from '../payments/PaymentLinkModal';
 import { RefundModal } from './RefundModal';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { getReceipts, createReceipt, updateReceipt, cancelReceipt, deleteReceipt, settleReceipt, getDonors, getFinancialYears, getFestivals, getMyOrganization, getRazorpayPaymentStatus, formatErrorMessage } from '../../api/services';
+import { getReceipts, createReceipt, updateReceipt, cancelReceipt, deleteReceipt, settleReceipt, getDonors, getFinancialYears, getFestivals, getMyOrganization, getRazorpayPaymentStatus, syncRazorpayPayments, formatErrorMessage } from '../../api/services';
 import { useAuthStore } from '../../store/authStore';
 import { generateWhatsAppReceiptLink } from '../../utils/whatsapp';
 import { printReceiptWindow, shareReceiptViaWhatsApp, downloadReceiptImage, isReceiptBlobCached, preloadReceiptFonts } from '../../utils/printReceipt';
@@ -103,6 +103,24 @@ const ReceiptsPage: React.FC = () => {
     typeof window !== 'undefined' && window.innerWidth <= 768 ? 'grid' : 'table'
   );
   const [actionLoadingKey, setActionLoadingKey] = useState<string | null>(null);
+  const [isSyncingRazorpay, setIsSyncingRazorpay] = useState(false);
+
+  const handleSyncRazorpayPayments = async () => {
+    setIsSyncingRazorpay(true);
+    try {
+      const res = await syncRazorpayPayments(myOrg?.slug);
+      if (res.synced_count > 0) {
+        message.success(res.message);
+        queryClient.invalidateQueries({ queryKey: ['receipts'] });
+      } else {
+        message.info(res.message || 'All Razorpay payments are already up to date.');
+      }
+    } catch (err: any) {
+      message.error(formatErrorMessage(err?.response?.data?.detail, 'Failed to sync Razorpay payments'));
+    } finally {
+      setIsSyncingRazorpay(false);
+    }
+  };
 
   const handleFetchRazorpayStatus = async (paymentId: string) => {
     setFetchingStatus(true);
@@ -551,6 +569,15 @@ const ReceiptsPage: React.FC = () => {
             style={{ fontWeight: 600, borderRadius: 8, flex: '1 1 auto' }}
           >
             Payment Link
+          </Button>
+          <Button
+            icon={<SyncOutlined spin={isSyncingRazorpay} style={{ color: '#0284C7' }} />}
+            size="large"
+            loading={isSyncingRazorpay}
+            onClick={handleSyncRazorpayPayments}
+            style={{ fontWeight: 600, borderRadius: 8, flex: '1 1 auto', borderColor: '#38BDF8', color: '#0284C7' }}
+          >
+            Sync Razorpay
           </Button>
           <Button
             type="primary"

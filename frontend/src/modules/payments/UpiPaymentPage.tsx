@@ -8,7 +8,7 @@ import {
   CreditCardOutlined, QrcodeOutlined,
   SafetyOutlined, CheckCircleOutlined,
   CopyOutlined, HeartFilled,
-  DollarOutlined, LockOutlined
+  DollarOutlined, LockOutlined, WhatsAppOutlined
 } from '@ant-design/icons';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import {
@@ -605,6 +605,19 @@ const UpiPaymentPage: React.FC = () => {
             title={<span style={{ color: '#0F172A', fontWeight: 900 }}>Donation Submitted Successfully!</span>}
             subTitle={`Official Receipt #${completedReceipt.receipt_number} generated for ${completedReceipt.donor?.full_name || 'Donor'} (₹${completedReceipt.amount})`}
             extra={[
+              completedReceipt.whatsapp_link && (
+                <Button
+                  key="whatsapp"
+                  type="primary"
+                  icon={<WhatsAppOutlined />}
+                  href={completedReceipt.whatsapp_link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ background: '#22C55E', borderColor: '#22C55E', borderRadius: 8, fontWeight: 700 }}
+                >
+                  Share Receipt on WhatsApp
+                </Button>
+              ),
               <Button
                 key="verify"
                 type="primary"
@@ -612,7 +625,7 @@ const UpiPaymentPage: React.FC = () => {
                 onClick={() => navigate(`/verify/${completedReceipt.id}`)}
                 style={{ background: '#0B2347', borderColor: '#0B2347', borderRadius: 8 }}
               >
-                View Online Digital Receipt
+                View Digital Receipt
               </Button>,
               <Button
                 key="new"

@@ -18,6 +18,7 @@ import uuid
 from datetime import UTC
 from datetime import date
 from datetime import datetime
+from urllib.parse import quote
 
 import httpx
 from fastapi import APIRouter
@@ -49,7 +50,6 @@ router = APIRouter(prefix="/payments", tags=["Online Payments"])
 
 
 import contextlib
-from urllib.parse import quote
 
 # ─── Constants ───────────────────────────────────────────────────────
 MAX_DONATION_AMOUNT = 500000.0  # ₹5,00,000 max per single online transaction
@@ -518,6 +518,32 @@ def _create_receipt_for_payment(
         db.commit()
         db.refresh(receipt)
 
+    # ── Auto-Email PDF Receipt to Donor (100% FREE via SMTP) ──
+    target_email = donor.email or email
+    if target_email:
+        try:
+            from app.services.email_service import send_receipt_email
+            send_receipt_email(db, receipt.id, recipient_email=target_email)
+            logger.info(f"Auto-dispatched PDF receipt #{receipt.receipt_number} to {target_email}")
+        except Exception as e:
+            logger.warning(f"Auto-receipt email dispatch failed for {receipt.receipt_number}: {e}")
+
+    # ── Instant Pre-filled WhatsApp Share Link (100% FREE) ──
+    phone_clean = (donor.phone or phone or "").replace("+", "").replace(" ", "").strip()
+    if len(phone_clean) == 10:
+        phone_clean = "91" + phone_clean
+
+    wa_msg = (
+        f"Namaste {donor.full_name} ji! 🙏\n\n"
+        f"Thank you for your generous online contribution of *₹{amount:,.2f}* to *{tenant.name}* ({purpose or 'General Donation'}).\n\n"
+        f"Official Receipt No: *{receipt.receipt_number}*\n"
+        f"Payment Ref: {razorpay_payment_id}\n\n"
+        f"Verify & download your official receipt anytime here:\n"
+        f"👉 https://hisob.in/verify-receipt/{receipt.receipt_number}\n\n"
+        f"May Lord Ganesha bless you and your family! 🌺"
+    )
+    wa_url = f"https://wa.me/{phone_clean}?text={quote(wa_msg)}" if phone_clean else f"https://wa.me/?text={quote(wa_msg)}"
+
     return {
         "id": str(receipt.id),
         "receipt_number": receipt.receipt_number,
@@ -526,6 +552,7 @@ def _create_receipt_for_payment(
         "payment_mode": receipt.payment_mode,
         "transaction_ref": receipt.transaction_ref,
         "purpose": receipt.purpose,
+        "whatsapp_link": wa_url,
         "donor": {
             "full_name": donor.full_name,
             "phone": donor.phone,
@@ -621,6 +648,86 @@ async def verify_razorpay_payment(req: VerifyPaymentRequest, db: Session = Depen
     )
 
     return result
+
+
+@router.post("/razorpay/sync-payments", summary="1-Click Sync Recent Razorpay Payments")
+async def sync_razorpay_payments(
+    slug_or_id: str | None = None,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """Fetches recent captured payments from Razorpay API and auto-generates official receipts for any un-synced transactions."""
+    tenant = None
+    if slug_or_id:
+        tenant = _resolve_tenant(slug_or_id, db)
+    elif current_user.tenant_id:
+        tenant = db.query(Tenant).filter(Tenant.id == current_user.tenant_id).first()
+
+    if not tenant:
+        raise HTTPException(status_code=400, detail="Tenant context required")
+
+    key_id, key_secret, is_demo = _get_razorpay_keys(tenant)
+    if is_demo:
+        return {"message": "Razorpay keys not configured. Running in demo mode.", "synced_count": 0, "new_receipts": []}
+
+    synced_receipts = []
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.get(
+                "https://api.razorpay.com/v1/payments?count=50",
+                auth=(key_id, key_secret),
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                payments_list = data.get("items", [])
+                for item in payments_list:
+                    if item.get("status") != "captured":
+                        continue
+
+                    p_id = item.get("id")
+                    order_id = item.get("order_id") or f"ord_sync_{p_id}"
+                    p_amount = float(item.get("amount", 0)) / 100.0
+
+                    if p_amount <= 0:
+                        continue
+
+                    notes_data = item.get("notes", {}) or {}
+                    donor_name = item.get("contact_name") or notes_data.get("donor_name") or item.get("email") or "Online Donor"
+                    donor_phone = item.get("contact") or notes_data.get("donor_phone") or ""
+                    donor_email = item.get("email") or notes_data.get("donor_email") or ""
+                    purpose = notes_data.get("purpose") or item.get("description") or "Online Donation"
+
+                    # Idempotency check: skip if already synced
+                    existing = db.query(Receipt).filter(
+                        Receipt.transaction_ref == p_id,
+                        Receipt.tenant_id == tenant.id,
+                    ).first()
+                    if existing:
+                        continue
+
+                    receipt_dict = _create_receipt_for_payment(
+                        db=db,
+                        tenant=tenant,
+                        razorpay_order_id=order_id,
+                        razorpay_payment_id=p_id,
+                        full_name=donor_name,
+                        phone=donor_phone,
+                        amount=p_amount,
+                        purpose=purpose,
+                        email=donor_email,
+                        payment_method=item.get("method"),
+                    )
+                    synced_receipts.append(receipt_dict)
+            else:
+                logger.warning(f"Razorpay sync API failed with status {resp.status_code}: {resp.text}")
+    except Exception as e:
+        logger.error(f"Error syncing Razorpay payments: {e}")
+
+    return {
+        "message": f"Successfully synced {len(synced_receipts)} new Razorpay online payments",
+        "synced_count": len(synced_receipts),
+        "new_receipts": synced_receipts,
+    }
 
 
 @router.post("/razorpay/refund")
