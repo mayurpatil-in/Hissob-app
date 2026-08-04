@@ -96,7 +96,7 @@ const SettlementsPage: React.FC = () => {
 
   // Mutations
   const syncRazorpayMutation = useMutation({
-    mutationFn: syncRazorpaySettlements,
+    mutationFn: (slug?: string) => syncRazorpaySettlements(slug),
     onSuccess: (res) => {
       message.success(res.message);
       queryClient.invalidateQueries({ queryKey: ['razorpaySettlements'] });
@@ -678,7 +678,7 @@ const SettlementsPage: React.FC = () => {
               type="primary"
               icon={<SyncOutlined spin={syncRazorpayMutation.isPending} />}
               loading={syncRazorpayMutation.isPending}
-              onClick={() => syncRazorpayMutation.mutate()}
+              onClick={() => syncRazorpayMutation.mutate(undefined)}
               style={{ background: '#0284C7', borderColor: '#0284C7', borderRadius: 8, fontWeight: 700 }}
             >
               Sync Razorpay Settlements
