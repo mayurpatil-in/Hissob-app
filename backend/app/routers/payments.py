@@ -1,5 +1,6 @@
 """
 Payments Router — Online Payment Gateway Integration (Razorpay & UPI).
+Includes: Create Order, Verify Payment, Sync Payments, Refund, Payment Links, Settlements.
 
 Security Hardening:
   - Duplicate payment idempotency guard (transaction_ref uniqueness check)
