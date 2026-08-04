@@ -50,18 +50,25 @@ jobs:
               - 'passenger_wsgi.py'
               - 'alembic.ini'
 
-      - name: Deploy Backend Files via SCP
+      - name: Deploy Backend Files via Native SCP
         if: steps.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          password: ${{ secrets.SSH_PASSWORD }}
-          key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT || 2323 }}
-          source: "backend/app/**,backend/alembic/**,backend/requirements.txt,backend/pyproject.toml,passenger_wsgi.py"
-          target: "/home/${{ secrets.SSH_USER }}/domains/api.hisob.in/Hissob-app/backend/"
-          strip_components: 1
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ secrets.SSH_PORT || 2323 }}
+          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          tar -czf backend.tar.gz backend/app backend/alembic backend/requirements.txt backend/pyproject.toml passenger_wsgi.py alembic.ini
+          if [ -n "$SSH_KEY" ]; then
+            echo "$SSH_KEY" > ~/.ssh/id_rsa
+            chmod 600 ~/.ssh/id_rsa
+            scp -P $SSH_PORT -o StrictHostKeyChecking=no backend.tar.gz $SSH_USER@$SSH_HOST:/home/$SSH_USER/domains/api.hisob.in/Hissob-app/backend/
+          else
+            sudo apt-get update -qq && sudo apt-get install -y -qq sshpass
+            sshpass -p "$SSH_PASSWORD" scp -P $SSH_PORT -o StrictHostKeyChecking=no backend.tar.gz $SSH_USER@$SSH_HOST:/home/$SSH_USER/domains/api.hisob.in/Hissob-app/backend/
+          fi
 
       - name: Install Dependencies, Run Migrations & Restart App
         if: steps.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
@@ -80,6 +87,13 @@ jobs:
 
             echo "=== [2/4] Installing Python packages ==="
             cd /home/${{ secrets.SSH_USER }}/domains/api.hisob.in/Hissob-app/backend
+            if [ -f backend.tar.gz ]; then
+              echo "=== Extracting backend archive ==="
+              tar -xzf backend.tar.gz
+              rm -f backend.tar.gz
+            fi
+
+            echo "=== [2/4] Installing Python packages ==="
             pip install --upgrade pip --quiet
             pip install -r requirements.txt --quiet
 
@@ -175,17 +189,25 @@ jobs:
           tar -czf ../../frontend.tar.gz .
           echo "Archive size: $(du -sh ../../frontend.tar.gz | cut -f1)"
 
-      - name: Upload Frontend Archive via SCP
+      - name: Upload Frontend Archive via Native SCP
         if: steps.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          password: ${{ secrets.SSH_PASSWORD }}
-          key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT || 2323 }}
-          source: "frontend.tar.gz"
-          target: "/home/${{ secrets.SSH_USER }}/domains/hisob.in/public_html/"
+        working-directory: .
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ secrets.SSH_PORT || 2323 }}
+          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          if [ -n "$SSH_KEY" ]; then
+            echo "$SSH_KEY" > ~/.ssh/id_rsa
+            chmod 600 ~/.ssh/id_rsa
+            scp -P $SSH_PORT -o StrictHostKeyChecking=no frontend.tar.gz $SSH_USER@$SSH_HOST:/home/$SSH_USER/domains/hisob.in/public_html/
+          else
+            sudo apt-get update -qq && sudo apt-get install -y -qq sshpass
+            sshpass -p "$SSH_PASSWORD" scp -P $SSH_PORT -o StrictHostKeyChecking=no frontend.tar.gz $SSH_USER@$SSH_HOST:/home/$SSH_USER/domains/hisob.in/public_html/
+          fi
 
       - name: Extract Build & Cleanup Old Assets
         if: steps.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
