@@ -1164,7 +1164,7 @@ class AIService:
         # Extract first non-trivial line as vendor name if available
         vendor_name = "Vendor / Supplier"
         if clean_text:
-            lines = [l.strip() for l in clean_text.splitlines() if len(l.strip()) > 3 and not re.match(r'^\d+$', l.strip())]
+            lines = [line.strip() for line in clean_text.splitlines() if len(line.strip()) > 3 and not re.match(r'^\d+$', line.strip())]
             if lines:
                 vendor_name = lines[0][:100]
 

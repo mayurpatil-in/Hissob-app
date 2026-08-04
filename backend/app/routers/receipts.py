@@ -14,6 +14,7 @@ from fastapi import Query
 from fastapi import status
 from pydantic import BaseModel
 from pydantic import Field
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db

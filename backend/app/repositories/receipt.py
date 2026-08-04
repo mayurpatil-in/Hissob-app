@@ -37,7 +37,7 @@ class ReceiptRepository(BaseRepository[Receipt]):
         stmt = (
             select(Receipt)
             .options(joinedload(Receipt.donor))
-            .where(Receipt.tenant_id == tenant_id, not Receipt.is_deleted)
+            .where(Receipt.tenant_id == tenant_id, Receipt.is_deleted == False)
         )
         if collector_id:
             stmt = stmt.where(Receipt.collector_id == collector_id)
@@ -59,7 +59,7 @@ class ReceiptRepository(BaseRepository[Receipt]):
                 Receipt.collector_id == collector_id,
                 Receipt.payment_mode == PaymentMode.CASH,
                 Receipt.status.in_([ReceiptStatus.ISSUED, ReceiptStatus.PENDING_SETTLEMENT]),
-                not Receipt.is_deleted,
+                Receipt.is_deleted == False,
             )
             .order_by(Receipt.receipt_date.asc())
         )

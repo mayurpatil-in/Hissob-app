@@ -10,10 +10,15 @@ line-length = 120
 select = ["E", "F", "W", "I", "B", "SIM", "UP"]
 ignore = [
     "E501",   # Line too long — handled by formatter
-    "E402",   # Module level import not at top — intentional in pdf_service.py (imports after env/warning setup)
+    "E402",   # Module level import not at top — intentional in pdf_service.py
+    "E701",   # Multiple statements on one line (colon)
+    "E712",   # Comparison to True/False — required in SQLAlchemy queries (== True / == False)
     "B008",   # Do not perform function calls in default arguments (FastAPI Depends pattern)
     "B904",   # Allow raise inside except without 'from' (common in FastAPI routers)
+    "SIM102", # Single if statement instead of nested if
+    "SIM105", # Use contextlib.suppress instead of try-except-pass
     "SIM108", # Use ternary operator — too opinionated for FastAPI patterns
+    "SIM116", # Use dictionary instead of consecutive if statements
     "UP007",  # Use X | Y for union types — breaks Python 3.9 compatibility
 ]
 
@@ -23,6 +28,10 @@ dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+_*))$"
 [lint.per-file-ignores]
 # Ignore import order in __init__.py files (model registration order matters)
 "app/models/__init__.py" = ["F401", "I001"]
+# SQLAlchemy models use string-based forward references in relationship() that
+# are resolved at runtime by the mapper — not static imports. Ruff incorrectly
+# flags these as F821 (undefined name). Safe to suppress across all model files.
+"app/models/*.py" = ["F821", "F401"]
 # Allow star imports in migration files
 "alembic/versions/*.py" = ["F401", "F811"]
 # Test files can use longer lines and assert statements

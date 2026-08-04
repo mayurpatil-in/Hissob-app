@@ -69,9 +69,9 @@ async def submit_settlement(
     query = db.query(Receipt).filter(
         Receipt.id.in_(payload.receipt_ids),
         Receipt.tenant_id == current_user.tenant_id,
-        Receipt.status.in_([ReceiptStatus.ISSUED, ReceiptStatus.PENDING_SETTLEMENT]),
+        Receipt.status.in_([ReceiptStatus.ISSUED, ReceiptStatus.PENDING_SETTLEMENT, "issued", "pending_settlement"]),
         Receipt.settlement_id.is_(None),
-        not Receipt.is_deleted,
+        Receipt.is_deleted == False,
     ).with_for_update()
     if not is_privileged:
         query = query.filter(Receipt.collector_id == current_user.id)
