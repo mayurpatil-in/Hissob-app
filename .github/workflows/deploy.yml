@@ -60,7 +60,7 @@ jobs:
           SSH_KEY: ${{ secrets.SSH_KEY }}
         run: |
           mkdir -p ~/.ssh
-          tar -czf backend.tar.gz backend/app backend/alembic backend/requirements.txt backend/pyproject.toml backend/alembic.ini passenger_wsgi.py
+          cd backend && tar -czf ../backend.tar.gz app alembic requirements.txt pyproject.toml alembic.ini ../passenger_wsgi.py && cd ..
           if [ -n "$SSH_KEY" ]; then
             echo "$SSH_KEY" > ~/.ssh/id_rsa
             chmod 600 ~/.ssh/id_rsa
@@ -91,6 +91,7 @@ jobs:
               echo "=== Extracting backend archive ==="
               tar -xzf backend.tar.gz
               rm -f backend.tar.gz
+              rm -rf backend
             fi
 
             echo "=== [2/4] Installing Python packages ==="
