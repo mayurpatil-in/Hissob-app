@@ -12,8 +12,14 @@
   z-index: 100;
   background: var(--color-navy) !important;
   box-shadow: 2px 0 8px rgba(0,0,0,0.15);
+}
+
+.app-sidebar .ant-layout-sider-children {
   display: flex;
   flex-direction: column;
+  height: 100%;
+  max-height: 100vh;
+  overflow: hidden;
 }
 
 .sidebar-logo {
@@ -50,8 +56,9 @@
 }
 
 .sidebar-menu {
-  flex: 1;
-  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0 !important;
+  overflow-y: auto !important;
   overflow-x: hidden;
   padding: 8px 8px !important;
   border-right: none !important;
