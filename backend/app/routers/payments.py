@@ -50,7 +50,6 @@ router = APIRouter(prefix="/payments", tags=["Online Payments"])
 
 
 import contextlib
-from urllib.parse import quote
 
 # ─── Constants ───────────────────────────────────────────────────────
 MAX_DONATION_AMOUNT = 500000.0  # ₹5,00,000 max per single online transaction

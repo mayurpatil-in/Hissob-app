@@ -60,7 +60,7 @@ jobs:
           SSH_KEY: ${{ secrets.SSH_KEY }}
         run: |
           mkdir -p ~/.ssh
-          tar -czf backend.tar.gz backend/app backend/alembic backend/requirements.txt backend/pyproject.toml passenger_wsgi.py alembic.ini
+          tar -czf backend.tar.gz backend/app backend/alembic backend/requirements.txt backend/pyproject.toml backend/alembic.ini passenger_wsgi.py
           if [ -n "$SSH_KEY" ]; then
             echo "$SSH_KEY" > ~/.ssh/id_rsa
             chmod 600 ~/.ssh/id_rsa
