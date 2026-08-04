@@ -6,11 +6,12 @@ import {
   CheckOutlined, CloseOutlined, PlusOutlined,
   CheckCircleOutlined, ClockCircleOutlined, RightOutlined, BankOutlined,
   PrinterOutlined, CalculatorOutlined, UnorderedListOutlined, AppstoreOutlined,
-  SearchOutlined, DownloadOutlined, AuditOutlined
+  SearchOutlined, DownloadOutlined, AuditOutlined, SyncOutlined, CreditCardOutlined
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  getSettlements, submitSettlement, verifySettlement, getReceipts, getFinancialYears, settleReceipt, getMyOrganization
+  getSettlements, submitSettlement, verifySettlement, getReceipts, getFinancialYears, settleReceipt, getMyOrganization,
+  getRazorpaySettlements, syncRazorpaySettlements
 } from '../../api/services';
 import { useAuthStore } from '../../store/authStore';
 import CashDenominationModal from './CashDenominationModal';
@@ -88,7 +89,24 @@ const SettlementsPage: React.FC = () => {
     queryFn: getMyOrganization,
   });
 
+  const { data: razorpayData, isLoading: isRazorpaySettlementsLoading } = useQuery({
+    queryKey: ['razorpaySettlements'],
+    queryFn: () => getRazorpaySettlements(),
+  });
+
   // Mutations
+  const syncRazorpayMutation = useMutation({
+    mutationFn: syncRazorpaySettlements,
+    onSuccess: (res) => {
+      message.success(res.message);
+      queryClient.invalidateQueries({ queryKey: ['razorpaySettlements'] });
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+    },
+    onError: (err: any) => {
+      message.error(err?.response?.data?.detail || 'Failed to sync Razorpay settlements');
+    },
+  });
+
   const submitMutation = useMutation({
     mutationFn: submitSettlement,
     onSuccess: () => {
@@ -640,6 +658,122 @@ const SettlementsPage: React.FC = () => {
               })}
             </Row>
           )}
+        </Card>
+      ),
+    },
+    {
+      key: 'razorpay_settlements',
+      label: <span><CreditCardOutlined /> Razorpay Bank Payouts ({razorpayData?.summary?.settlement_count || 0})</span>,
+      children: (
+        <Card className="hissob-card" style={{ borderRadius: 14, boxShadow: '0 4px 16px rgba(11,35,71,0.06)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
+            <div>
+              <Text strong style={{ fontSize: 16, color: 'var(--color-text-primary)' }}>Razorpay Bank Settlements & Fee Reconciliation</Text>
+              <br />
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                Net payouts settled into your Mandal's bank account with auto-logged gateway fee expenses.
+              </Text>
+            </div>
+            <Button
+              type="primary"
+              icon={<SyncOutlined spin={syncRazorpayMutation.isPending} />}
+              loading={syncRazorpayMutation.isPending}
+              onClick={() => syncRazorpayMutation.mutate()}
+              style={{ background: '#0284C7', borderColor: '#0284C7', borderRadius: 8, fontWeight: 700 }}
+            >
+              Sync Razorpay Settlements
+            </Button>
+          </div>
+
+          <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
+            <Col xs={12} sm={6}>
+              <div style={{ background: 'var(--color-bg)', padding: '12px 14px', borderRadius: 10, border: '1px solid var(--color-border)' }}>
+                <Text type="secondary" style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>Net Bank Payouts</Text>
+                <div style={{ fontSize: 18, fontWeight: 900, color: '#0284C7', marginTop: 2 }}>
+                  ₹{(razorpayData?.summary?.total_net_payout || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                </div>
+              </div>
+            </Col>
+            <Col xs={12} sm={6}>
+              <div style={{ background: 'var(--color-bg)', padding: '12px 14px', borderRadius: 10, border: '1px solid var(--color-border)' }}>
+                <Text type="secondary" style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>Gateway Fees (2%)</Text>
+                <div style={{ fontSize: 18, fontWeight: 900, color: '#D97706', marginTop: 2 }}>
+                  ₹{(razorpayData?.summary?.total_gateway_fees || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                </div>
+              </div>
+            </Col>
+            <Col xs={12} sm={6}>
+              <div style={{ background: 'var(--color-bg)', padding: '12px 14px', borderRadius: 10, border: '1px solid var(--color-border)' }}>
+                <Text type="secondary" style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>GST Paid (18%)</Text>
+                <div style={{ fontSize: 18, fontWeight: 900, color: '#7E22CE', marginTop: 2 }}>
+                  ₹{(razorpayData?.summary?.total_gst || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                </div>
+              </div>
+            </Col>
+            <Col xs={12} sm={6}>
+              <div style={{ background: 'var(--color-bg)', padding: '12px 14px', borderRadius: 10, border: '1px solid var(--color-border)' }}>
+                <Text type="secondary" style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>Gross Collection</Text>
+                <div style={{ fontSize: 18, fontWeight: 900, color: '#059669', marginTop: 2 }}>
+                  ₹{(razorpayData?.summary?.total_gross_collection || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                </div>
+              </div>
+            </Col>
+          </Row>
+
+          <Table
+            dataSource={razorpayData?.settlements || []}
+            rowKey="id"
+            loading={isRazorpaySettlementsLoading}
+            pagination={{ pageSize: 10 }}
+            scroll={{ x: 750 }}
+            columns={[
+              {
+                title: 'Settlement ID',
+                dataIndex: 'settlement_id',
+                key: 'settlement_id',
+                render: (val: string) => <strong style={{ fontFamily: 'monospace', color: '#0284C7' }}>{val}</strong>,
+              },
+              {
+                title: 'Payout Date',
+                dataIndex: 'processed_at',
+                key: 'processed_at',
+                render: (val: string) => val ? new Date(val).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-',
+              },
+              {
+                title: 'Net Bank Payout',
+                dataIndex: 'amount',
+                key: 'amount',
+                render: (val: number) => <span style={{ fontWeight: 900, color: '#059669', fontSize: 15 }}>₹{val.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>,
+              },
+              {
+                title: 'Gateway Fee + GST',
+                key: 'fees',
+                render: (_: any, r: any) => (
+                  <span style={{ fontSize: 12, color: '#D97706', fontWeight: 700 }}>
+                    ₹{r.fees} (+ ₹{r.tax} GST)
+                  </span>
+                ),
+              },
+              {
+                title: 'Bank UTR #',
+                dataIndex: 'utr',
+                key: 'utr',
+                render: (val: string) => val ? <Tag color="blue" style={{ fontFamily: 'monospace' }}>{val}</Tag> : <Text type="secondary">Processing</Text>,
+              },
+              {
+                title: 'Status',
+                dataIndex: 'status',
+                key: 'status',
+                render: (val: string) => <Tag color={val === 'processed' ? 'success' : 'warning'} style={{ textTransform: 'uppercase', fontWeight: 800 }}>{val}</Tag>,
+              },
+              {
+                title: 'Fee Expense Entry',
+                dataIndex: 'expense_id',
+                key: 'expense_id',
+                render: (val: string) => val ? <Tag color="purple">✓ Expense Logged</Tag> : <Tag color="default">N/A</Tag>,
+              },
+            ]}
+          />
         </Card>
       ),
     },

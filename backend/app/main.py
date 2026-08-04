@@ -46,10 +46,17 @@ class CORSStaticFiles(StaticFiles):
 def create_app() -> FastAPI:
     # Ensure all models are registered and database tables created if missing
     try:
+        from sqlalchemy import text
+
         import app.models
         from app.core.database import Base
         from app.core.database import engine
         Base.metadata.create_all(bind=engine)
+        with engine.connect() as conn:
+            conn.execute(text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS razorpay_key_id VARCHAR(100);"))
+            conn.execute(text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS razorpay_key_secret VARCHAR(200);"))
+            conn.execute(text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS razorpay_webhook_secret VARCHAR(200);"))
+            conn.commit()
     except Exception as e:
         logging.getLogger("hisob.db").warning("Auto table creation check: %s", str(e))
 

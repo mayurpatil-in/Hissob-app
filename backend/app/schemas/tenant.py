@@ -38,6 +38,9 @@ class TenantBase(BaseModel):
     enable_welcome_email: bool = True
     digest_recipients: str | None = None
     ai_provider: str | None = "gemini"
+    razorpay_key_id: str | None = None
+    razorpay_key_secret: str | None = None
+    razorpay_webhook_secret: str | None = None
 
 
 class TenantCreate(TenantBase):
@@ -75,6 +78,9 @@ class TenantUpdate(BaseModel):
     enable_welcome_email: bool | None = None
     digest_recipients: str | None = None
     ai_provider: str | None = None
+    razorpay_key_id: str | None = None
+    razorpay_key_secret: str | None = None
+    razorpay_webhook_secret: str | None = None
 
 
 class TenantResponse(TenantBase):
@@ -90,5 +96,29 @@ class TenantResponse(TenantBase):
     digest_recipients: str | None = None
     created_at: datetime
     updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class TenantPublicResponse(BaseModel):
+    id: UUID
+    name: str
+    slug: str
+    email: str | None = None
+    phone: str | None = None
+    address: str | None = None
+    city: str | None = None
+    state: str | None = None
+    country: str | None = "India"
+    pincode: str | None = None
+    logo_url: str | None = None
+    qr_code_url: str | None = None
+    upi_id: str | None = None
+    website: str | None = None
+    gstin: str | None = None
+    pan: str | None = None
+    registration_number: str | None = None
+    currency: str | None = "INR"
+    razorpay_key_id: str | None = None
 
     model_config = {"from_attributes": True}

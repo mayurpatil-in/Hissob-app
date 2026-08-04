@@ -49,8 +49,7 @@ class UserInviteOutSchema(BaseModel):
     shareable_url: str | None = None
     whatsapp_link: str | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class PublicVerifyInviteSchema(BaseModel):
@@ -113,5 +112,4 @@ class EventInviteOutSchema(BaseModel):
     created_at: datetime
     rsvp_url: str | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}

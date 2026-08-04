@@ -66,6 +66,9 @@ class Tenant(Base, UUIDMixin, TimestampMixin):
     enable_welcome_email: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
     digest_recipients: Mapped[str | None] = mapped_column(Text)
     ai_provider: Mapped[str] = mapped_column(String(50), default="gemini", server_default="gemini")
+    razorpay_key_id: Mapped[str | None] = mapped_column(String(100))
+    razorpay_key_secret: Mapped[str | None] = mapped_column(String(200))
+    razorpay_webhook_secret: Mapped[str | None] = mapped_column(String(200))
 
     # Relationships
     users: Mapped[list["User"]] = relationship("User", back_populates="tenant")

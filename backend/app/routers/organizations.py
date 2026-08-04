@@ -22,6 +22,7 @@ from app.permissions.rbac import require
 from app.repositories.financial import TenantRepository
 from app.repositories.user import UserRepository
 from app.schemas.tenant import TenantCreate
+from app.schemas.tenant import TenantPublicResponse
 from app.schemas.tenant import TenantResponse
 from app.schemas.tenant import TenantUpdate
 from app.services.email_service import send_user_welcome_email
@@ -172,7 +173,7 @@ async def update_organization(
     return repo.update(tenant, update_data)
 
 
-@router.get("/public/info", response_model=TenantResponse, summary="Get Public Organization Info for Payment Page")
+@router.get("/public/info", response_model=TenantPublicResponse, summary="Get Public Organization Info for Payment Page")
 async def get_public_organization_info(
     db: Session = Depends(get_db),
 ):
@@ -182,7 +183,7 @@ async def get_public_organization_info(
     return first_tenant
 
 
-@router.get("/public/info/{slug_or_id}", response_model=TenantResponse, summary="Get Public Organization Info by Slug or ID")
+@router.get("/public/info/{slug_or_id}", response_model=TenantPublicResponse, summary="Get Public Organization Info by Slug or ID")
 async def get_public_organization_by_identifier(
     slug_or_id: str,
     db: Session = Depends(get_db),

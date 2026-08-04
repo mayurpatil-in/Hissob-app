@@ -66,6 +66,7 @@ class Settings(BaseSettings):
     # Razorpay Payment Gateway Settings
     RAZORPAY_KEY_ID: str = "rzp_test_hissob_key"
     RAZORPAY_KEY_SECRET: str = "hissob_razorpay_secret_key"
+    RAZORPAY_WEBHOOK_SECRET: str = ""
 
     def check_security(self):
         if self.SECRET_KEY in ("change-me", "secret") or self.JWT_SECRET_KEY in ("change-me-jwt", "secret"):

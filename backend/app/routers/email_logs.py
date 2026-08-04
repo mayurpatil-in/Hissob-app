@@ -36,8 +36,7 @@ class EmailLogOut(BaseModel):
     metadata_json: dict[str, Any] | None = None
     sent_at: Any
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 @router.post("/test-smtp", summary="Run Diagnostic SMTP Test Email")

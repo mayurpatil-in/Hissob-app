@@ -77,16 +77,16 @@ define(['./workbox-0d539898'], (function (workbox) { 'use strict';
    * See https://goo.gl/S9QRab
    */
   workbox.precacheAndRoute([{
-    "url": "registerSW.js",
-    "revision": "3ca0b8505b4bec776b69afdba2768812"
+    "url": "suppress-warnings.js",
+    "revision": "d41d8cd98f00b204e9800998ecf8427e"
   }, {
     "url": "index.html",
-    "revision": "0.56aicl4pnak"
+    "revision": "0.okl4r4mglkg"
   }], {});
   workbox.cleanupOutdatedCaches();
   workbox.registerRoute(new workbox.NavigationRoute(workbox.createHandlerBoundToURL("index.html"), {
     allowlist: [/^\/$/],
-    denylist: [/^\/api\//]
+    denylist: [/^\/api\//, /^\/@vite/, /^\/@react-refresh/, /^\/src\//]
   }));
   workbox.registerRoute(/^https:\/\/fonts\.googleapis\.com\/.*/i, new workbox.CacheFirst({
     "cacheName": "google-fonts",
@@ -102,5 +102,6 @@ define(['./workbox-0d539898'], (function (workbox) { 'use strict';
     })]
   }), 'GET');
   workbox.registerRoute(/.*\/api\/.*/i, new workbox.NetworkOnly(), 'GET');
+  self.__WB_DISABLE_DEV_LOGS = true;
 
 }));

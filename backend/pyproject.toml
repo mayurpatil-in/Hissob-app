@@ -37,4 +37,9 @@ dev = [
     "ruff>=0.16.1",
 ]
 
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore",
+]
+
 

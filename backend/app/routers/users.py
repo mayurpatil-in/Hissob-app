@@ -48,8 +48,7 @@ class RoleOutSchema(BaseModel):
     slug: str | None = None
     description: str | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class UserOutSchema(BaseModel):
@@ -62,8 +61,7 @@ class UserOutSchema(BaseModel):
     tenant_id: UUID | None = None
     roles: list[RoleOutSchema] = []
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 def get_or_create_role(db: Session, tenant_id: UUID | None, role_name: str) -> Role | None:

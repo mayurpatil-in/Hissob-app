@@ -15,7 +15,9 @@ import hmac
 import json
 import logging
 import uuid
+from datetime import UTC
 from datetime import date
+from datetime import datetime
 
 import httpx
 from fastapi import APIRouter
@@ -27,9 +29,13 @@ from pydantic import field_validator
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.auth.deps import get_current_active_user
 from app.core.config import settings
 from app.core.database import get_db
 from app.models.donor import Donor
+from app.models.finance import Expense
+from app.models.finance import ExpenseStatus
+from app.models.finance import OnlineSettlement
 from app.models.financial_year import FinancialYear
 from app.models.receipt import PaymentMode
 from app.models.receipt import Receipt
@@ -51,12 +57,28 @@ DEFAULT_KEY_ID = "rzp_test_hissob_key"
 DEFAULT_KEY_SECRET = "hissob_razorpay_secret_key"
 
 
-def _get_razorpay_keys():
-    """Returns (key_id, key_secret, is_demo) consistently."""
+def _get_razorpay_keys(tenant: Tenant | None = None):
+    """Returns (key_id, key_secret, is_demo) dynamically per tenant with global fallback."""
+    if tenant and tenant.razorpay_key_id and tenant.razorpay_key_secret:
+        key_id = tenant.razorpay_key_id.strip()
+        key_secret = tenant.razorpay_key_secret.strip()
+        is_demo = key_id.startswith("rzp_test_") or key_id == DEFAULT_KEY_ID
+        return key_id, key_secret, is_demo
+
     key_id = settings.RAZORPAY_KEY_ID or DEFAULT_KEY_ID
     key_secret = settings.RAZORPAY_KEY_SECRET or DEFAULT_KEY_SECRET
     is_demo = (key_id == DEFAULT_KEY_ID)
     return key_id, key_secret, is_demo
+
+
+def _get_webhook_secret(tenant: Tenant | None = None) -> str:
+    """Returns the webhook secret prioritizing tenant secret > global settings secret > key secret."""
+    if tenant and tenant.razorpay_webhook_secret and tenant.razorpay_webhook_secret.strip():
+        return tenant.razorpay_webhook_secret.strip()
+    if settings.RAZORPAY_WEBHOOK_SECRET and settings.RAZORPAY_WEBHOOK_SECRET.strip():
+        return settings.RAZORPAY_WEBHOOK_SECRET.strip()
+    _, key_secret, _ = _get_razorpay_keys(tenant)
+    return key_secret
 
 
 def _is_mock_payment(payment_id: str) -> bool:
@@ -184,9 +206,10 @@ class VerifyPaymentRequest(BaseModel):
 # ─── Endpoints ───────────────────────────────────────────────────────
 
 @router.get("/razorpay/config")
-def get_razorpay_config():
+def get_razorpay_config(slug_or_id: str | None = None, db: Session = Depends(get_db)):
     """Returns public Razorpay configuration for online donation checkout."""
-    key_id, _, is_demo = _get_razorpay_keys()
+    tenant = _resolve_tenant(slug_or_id, db)
+    key_id, _, is_demo = _get_razorpay_keys(tenant)
     return {
         "key_id": key_id,
         "enabled": True,
@@ -199,7 +222,8 @@ def get_razorpay_config():
 async def create_razorpay_order(req: CreateOrderRequest, db: Session = Depends(get_db)):
     """Creates a Razorpay Order for online payment."""
     amount_in_paise = int(round(req.amount * 100))
-    key_id, key_secret, is_demo = _get_razorpay_keys()
+    tenant = _resolve_tenant(req.slug_or_id, db)
+    key_id, key_secret, is_demo = _get_razorpay_keys(tenant)
 
     # Attempt to create Razorpay Order via official REST API
     try:
@@ -215,6 +239,7 @@ async def create_razorpay_order(req: CreateOrderRequest, db: Session = Depends(g
                         "donor_name": req.donor_name or "Donor",
                         "donor_phone": req.donor_phone or "",
                         "purpose": req.purpose or "General Donation",
+                        "slug": tenant.slug if tenant else "",
                     },
                     "payment_capture": 1,  # Auto-capture on payment
                 },
@@ -239,7 +264,7 @@ async def create_razorpay_order(req: CreateOrderRequest, db: Session = Depends(g
                 if not is_demo:
                     raise HTTPException(
                         status_code=400,
-                        detail=f"Razorpay API Error: {err_desc}. Please verify RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in backend/.env"
+                        detail=f"Razorpay API Error: {err_desc}. Please verify Razorpay API Keys in Organization Settings or backend/.env"
                     )
     except HTTPException:
         raise
@@ -261,7 +286,8 @@ async def create_razorpay_order(req: CreateOrderRequest, db: Session = Depends(g
 async def create_razorpay_payment_link(req: CreatePaymentLinkRequest, db: Session = Depends(get_db)):
     """Creates a shareable Razorpay Payment Link or instant UPI link with WhatsApp sharing."""
     amount_in_paise = int(round(req.amount * 100))
-    key_id, key_secret, is_demo = _get_razorpay_keys()
+    tenant = _resolve_tenant(req.slug_or_id, db)
+    key_id, key_secret, is_demo = _get_razorpay_keys(tenant)
 
     tenant = _resolve_tenant(req.slug_or_id, db)
 
@@ -513,12 +539,17 @@ async def verify_razorpay_payment(req: VerifyPaymentRequest, db: Session = Depen
     """Verifies Razorpay HMAC signature and generates an official donor receipt.
 
     Security:
-      - HMAC-SHA256 signature verification
+      - HMAC-SHA256 signature verification with tenant-specific keys
       - Idempotency: duplicate payment_id returns existing receipt
       - Amount verified against Razorpay server (not client-supplied value)
       - Receipt number collision protection
     """
-    key_id, key_secret, is_demo = _get_razorpay_keys()
+    # ── Resolve Tenant ──
+    tenant = _resolve_tenant(req.slug_or_id, db)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Organization tenant not found")
+
+    key_id, key_secret, is_demo = _get_razorpay_keys(tenant)
 
     is_mock_order = req.razorpay_order_id.startswith("order_test_")
     verified_amount = req.amount  # Default to client amount, overridden by server check below
@@ -572,11 +603,6 @@ async def verify_razorpay_payment(req: VerifyPaymentRequest, db: Session = Depen
             logger.warning(f"Razorpay payment verification API call failed: {e}")
             # Continue with client amount if API is unreachable (signature already verified)
 
-    # ── Resolve Tenant ──
-    tenant = _resolve_tenant(req.slug_or_id, db)
-    if not tenant:
-        raise HTTPException(status_code=404, detail="Organization tenant not found")
-
     # ── Create receipt (with idempotency and collision protection) ──
     result = _create_receipt_for_payment(
         db=db,
@@ -625,7 +651,8 @@ async def initiate_razorpay_refund(req: CreateRefundRequest, db: Session = Depen
         raise HTTPException(status_code=400, detail=f"Refund amount cannot exceed receipt amount (₹{receipt.amount})")
 
     amount_in_paise = int(round(refund_amount * 100))
-    key_id, key_secret, is_demo = _get_razorpay_keys()
+    tenant = db.query(Tenant).filter(Tenant.id == receipt.tenant_id).first()
+    key_id, key_secret, is_demo = _get_razorpay_keys(tenant)
 
     refund_id = f"rfnd_demo_{uuid.uuid4().hex[:10]}"
     refund_status = "processed"
@@ -686,9 +713,10 @@ async def initiate_razorpay_refund(req: CreateRefundRequest, db: Session = Depen
 
 
 @router.get("/razorpay/payment-status/{payment_id}")
-async def fetch_razorpay_payment_status(payment_id: str, db: Session = Depends(get_db)):
+async def fetch_razorpay_payment_status(payment_id: str, slug_or_id: str | None = None, db: Session = Depends(get_db)):
     """Fetches live payment status, payment method, fees & bank details directly from Razorpay servers."""
-    key_id, key_secret, _ = _get_razorpay_keys()
+    tenant = _resolve_tenant(slug_or_id, db)
+    key_id, key_secret, _ = _get_razorpay_keys(tenant)
 
     if _is_mock_payment(payment_id):
         return {
@@ -753,19 +781,30 @@ async def razorpay_webhook(request: Request, db: Session = Depends(get_db)):
     Configure this URL in Razorpay Dashboard → Settings → Webhooks:
       https://your-domain.com/api/v1/payments/razorpay/webhook
 
-    Security: Validates webhook signature using RAZORPAY_KEY_SECRET.
+    Security: Validates webhook signature using dedicated RAZORPAY_WEBHOOK_SECRET or tenant webhook secret.
     """
-    _, key_secret, _ = _get_razorpay_keys()
-
     # Read raw body for signature verification
     raw_body = await request.body()
     body_str = raw_body.decode("utf-8")
+
+    # Try parsing event first to extract tenant slug from payload notes if present
+    tenant = None
+    try:
+        event_data = json.loads(body_str)
+        payload = event_data.get("payload", {})
+        notes = payload.get("payment", {}).get("entity", {}).get("notes", {})
+        if notes and notes.get("slug"):
+            tenant = _resolve_tenant(notes.get("slug"), db)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON payload")
+
+    webhook_secret = _get_webhook_secret(tenant)
 
     # Verify webhook signature (X-Razorpay-Signature header)
     received_signature = request.headers.get("X-Razorpay-Signature", "")
     if received_signature:
         expected_signature = hmac.new(
-            key_secret.encode(),
+            webhook_secret.encode(),
             raw_body,
             hashlib.sha256
         ).hexdigest()
@@ -852,3 +891,232 @@ async def razorpay_webhook(request: Request, db: Session = Depends(get_db)):
 
     # Acknowledge other events without processing
     return {"status": "ok", "action": "ignored", "event": event_type}
+
+
+# ─── Razorpay Settlement & Fee Reconciliation Endpoints ──────────
+
+@router.get("/razorpay/settlements")
+async def get_razorpay_settlements(
+    slug_or_id: str | None = None,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """Returns list of synced Razorpay bank settlements with net payouts, gateway fees, and GST."""
+    tenant = _resolve_tenant(slug_or_id or (current_user.tenant_id.hex if current_user.tenant_id else None), db)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Organization tenant not found")
+
+    settlements = db.query(OnlineSettlement).filter(
+        OnlineSettlement.tenant_id == tenant.id
+    ).order_by(OnlineSettlement.created_at.desc()).all()
+
+    items = []
+    total_net = 0.0
+    total_fees = 0.0
+    total_tax = 0.0
+
+    for s in settlements:
+        net_amt = float(s.amount)
+        fee_amt = float(s.fees or 0)
+        tax_amt = float(s.tax or 0)
+        total_net += net_amt
+        total_fees += fee_amt
+        total_tax += tax_amt
+
+        items.append({
+            "id": str(s.id),
+            "settlement_id": s.settlement_id,
+            "amount": net_amt,
+            "fees": fee_amt,
+            "tax": tax_amt,
+            "gross_amount": round(net_amt + fee_amt + tax_amt, 2),
+            "utr": s.utr,
+            "status": s.status,
+            "processed_at": s.processed_at.isoformat() if s.processed_at else str(s.created_at),
+            "expense_id": str(s.expense_id) if s.expense_id else None,
+        })
+
+    return {
+        "settlements": items,
+        "summary": {
+            "total_net_payout": round(total_net, 2),
+            "total_gateway_fees": round(total_fees, 2),
+            "total_gst": round(total_tax, 2),
+            "total_gross_collection": round(total_net + total_fees + total_tax, 2),
+            "settlement_count": len(items),
+        }
+    }
+
+
+@router.post("/razorpay/sync-settlements")
+async def sync_razorpay_settlements(
+    slug_or_id: str | None = None,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    """Syncs bank settlements directly from Razorpay REST API (/v1/settlements).
+
+    Auto-reconciles net bank payouts and automatically logs an official Expense
+    record for gateway fees & GST under 'Payment Gateway Charges'.
+    """
+    tenant = _resolve_tenant(slug_or_id or (current_user.tenant_id.hex if current_user.tenant_id else None), db)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Organization tenant not found")
+
+    key_id, key_secret, is_demo = _get_razorpay_keys(tenant)
+    synced_count = 0
+    new_expenses_count = 0
+
+    # Get active financial year
+    fy = db.query(FinancialYear).filter(
+        FinancialYear.tenant_id == tenant.id,
+        FinancialYear.is_current
+    ).first()
+    if not fy:
+        fy = db.query(FinancialYear).filter(FinancialYear.tenant_id == tenant.id).order_by(FinancialYear.start_date.desc()).first()
+
+    if is_demo:
+        # Generate mock settlement for testing/demo mode if no live API keys configured
+        mock_setl_id = f"setl_demo_{date.today().strftime('%Y%m%d')}_{uuid.uuid4().hex[:4]}"
+        existing = db.query(OnlineSettlement).filter(
+            OnlineSettlement.settlement_id == mock_setl_id,
+            OnlineSettlement.tenant_id == tenant.id
+        ).first()
+
+        if not existing:
+            mock_net = 490.98
+            mock_fee = 10.02
+            mock_tax = 1.80
+            mock_utr = f"UTR{uuid.uuid4().hex[:10].upper()}"
+
+            # Create Expense record for fee accounting
+            exp = None
+            if fy:
+                exp_num = f"EXP-RZP-{mock_setl_id[-8:].upper()}"
+                exp = db.query(Expense).filter(Expense.expense_number == exp_num, Expense.tenant_id == tenant.id).first()
+                if not exp:
+                    exp = Expense(
+                        tenant_id=tenant.id,
+                        financial_year_id=fy.id,
+                        requested_by=current_user.id,
+                        expense_number=exp_num,
+                        expense_date=date.today(),
+                        category="Payment Gateway Charges",
+                        vendor_name="Razorpay Software Pvt Ltd",
+                        amount=round(mock_fee + mock_tax, 2),
+                        description=f"Razorpay Gateway Fee (₹{mock_fee:.2f}) + 18% GST (₹{mock_tax:.2f}) for Bank Settlement {mock_setl_id} (UTR: {mock_utr})",
+                        status=ExpenseStatus.PAID,
+                        paid_at=datetime.now(UTC),
+                    )
+                    db.add(exp)
+                    db.flush()
+                    new_expenses_count += 1
+
+            setl = OnlineSettlement(
+                tenant_id=tenant.id,
+                settlement_id=mock_setl_id,
+                amount=mock_net,
+                fees=mock_fee,
+                tax=mock_tax,
+                utr=mock_utr,
+                status="processed",
+                processed_at=datetime.now(UTC),
+                expense_id=exp.id if exp else None,
+            )
+            db.add(setl)
+            db.commit()
+            synced_count += 1
+
+        return {
+            "success": True,
+            "message": f"Synced {synced_count} settlement(s). Auto-logged {new_expenses_count} gateway fee expense(s).",
+            "is_mock": True,
+        }
+
+    # Real Razorpay API Sync
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(
+                "https://api.razorpay.com/v1/settlements",
+                auth=(key_id, key_secret),
+                params={"count": 50}
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                items = data.get("items", [])
+
+                for item in items:
+                    s_id = item.get("id")
+                    if not s_id:
+                        continue
+
+                    s_net = (item.get("amount") or 0) / 100.0
+                    s_fee = (item.get("fees") or 0) / 100.0
+                    s_tax = (item.get("tax") or 0) / 100.0
+                    s_utr = item.get("utr")
+                    s_status = item.get("status", "processed")
+                    created_timestamp = item.get("created_at")
+                    processed_dt = datetime.fromtimestamp(created_timestamp, tz=UTC) if created_timestamp else datetime.now(UTC)
+
+                    existing = db.query(OnlineSettlement).filter(
+                        OnlineSettlement.settlement_id == s_id,
+                        OnlineSettlement.tenant_id == tenant.id
+                    ).first()
+
+                    if not existing:
+                        # Auto-log expense for fees + tax
+                        exp = None
+                        if fy and (s_fee + s_tax) > 0:
+                            exp_num = f"EXP-RZP-{s_id[-8:].upper()}"
+                            exp = db.query(Expense).filter(Expense.expense_number == exp_num, Expense.tenant_id == tenant.id).first()
+                            if not exp:
+                                exp = Expense(
+                                    tenant_id=tenant.id,
+                                    financial_year_id=fy.id,
+                                    requested_by=current_user.id,
+                                    expense_number=exp_num,
+                                    expense_date=processed_dt.date(),
+                                    category="Payment Gateway Charges",
+                                    vendor_name="Razorpay Software Pvt Ltd",
+                                    amount=round(s_fee + s_tax, 2),
+                                    description=f"Razorpay Gateway Fee (₹{s_fee:.2f}) + 18% GST (₹{s_tax:.2f}) for Bank Settlement {s_id} (UTR: {s_utr or 'N/A'})",
+                                    status=ExpenseStatus.PAID,
+                                    paid_at=processed_dt,
+                                )
+                                db.add(exp)
+                                db.flush()
+                                new_expenses_count += 1
+
+                        setl = OnlineSettlement(
+                            tenant_id=tenant.id,
+                            settlement_id=s_id,
+                            amount=s_net,
+                            fees=s_fee,
+                            tax=s_tax,
+                            utr=s_utr,
+                            status=s_status,
+                            processed_at=processed_dt,
+                            expense_id=exp.id if exp else None,
+                        )
+                        db.add(setl)
+                        synced_count += 1
+                    else:
+                        # Update status/UTR if changed
+                        if s_utr and not existing.utr:
+                            existing.utr = s_utr
+                        existing.status = s_status
+
+                db.commit()
+                return {
+                    "success": True,
+                    "message": f"Synced {synced_count} settlement(s). Auto-logged {new_expenses_count} gateway fee expense(s).",
+                    "is_mock": False,
+                }
+            else:
+                err_desc = resp.json().get("error", {}).get("description", resp.text)
+                raise HTTPException(status_code=400, detail=f"Razorpay API Error: {err_desc}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to sync Razorpay settlements: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to query Razorpay Settlements API: {str(e)}")

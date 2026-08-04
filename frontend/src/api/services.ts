@@ -742,6 +742,32 @@ export const getRazorpayPaymentStatus = async (paymentId: string) =>
     is_mock?: boolean;
   }>(`/payments/razorpay/payment-status/${paymentId}`)).data;
 
+export const getRazorpaySettlements = async (slug?: string) =>
+  (await apiClient.get<{
+    settlements: Array<{
+      id: string;
+      settlement_id: string;
+      amount: number;
+      fees: number;
+      tax: number;
+      gross_amount: number;
+      utr?: string;
+      status: string;
+      processed_at: string;
+      expense_id?: string;
+    }>;
+    summary: {
+      total_net_payout: number;
+      total_gateway_fees: number;
+      total_gst: number;
+      total_gross_collection: number;
+      settlement_count: number;
+    };
+  }>('/payments/razorpay/settlements', { params: { slug_or_id: slug } })).data;
+
+export const syncRazorpaySettlements = async (slug?: string) =>
+  (await apiClient.post<{ success: boolean; message: string; is_mock?: boolean }>('/payments/razorpay/sync-settlements', null, { params: { slug_or_id: slug } })).data;
+
 
 
 

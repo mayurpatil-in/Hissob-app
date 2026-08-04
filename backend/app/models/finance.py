@@ -108,3 +108,19 @@ class Expense(Base, UUIDMixin, TimestampMixin, TenantMixin, SoftDeleteMixin):
 
     def __repr__(self) -> str:
         return f"<Expense {self.expense_number}>"
+
+
+class OnlineSettlement(Base, UUIDMixin, TimestampMixin, TenantMixin):
+    __tablename__ = "online_settlements"
+
+    settlement_id: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
+    amount: Mapped[float] = mapped_column(Numeric(15, 2), nullable=False)  # Net payout deposited to bank
+    fees: Mapped[float] = mapped_column(Numeric(15, 2), default=0.0)       # Razorpay gateway fees
+    tax: Mapped[float] = mapped_column(Numeric(15, 2), default=0.0)        # GST on gateway fees
+    utr: Mapped[str | None] = mapped_column(String(100))                   # Bank UTR number
+    status: Mapped[str] = mapped_column(String(50), default="processed")   # processed / partially_processed
+    processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    expense_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("expenses.id"), nullable=True)
+
+    def __repr__(self) -> str:
+        return f"<OnlineSettlement {self.settlement_id}>"

@@ -9,7 +9,7 @@ from app.models.financial_year import FinancialYear, FYStatus
 from app.models.festival import Festival, FestivalStatus
 from app.models.donor import Donor, Area
 from app.models.receipt import Receipt, ReceiptStatus, PaymentMode
-from app.models.finance import CashSettlement, SettlementStatus, Expense
+from app.models.finance import CashSettlement, SettlementStatus, Expense, OnlineSettlement
 from app.models.audit import AuditLog
 from app.models.notification import Notification
 from app.models.email_log import EmailLog
@@ -35,7 +35,7 @@ __all__ = [
     "Festival", "FestivalStatus",
     "Donor", "Area",
     "Receipt", "ReceiptStatus", "PaymentMode",
-    "CashSettlement", "SettlementStatus", "Expense",
+    "CashSettlement", "SettlementStatus", "Expense", "OnlineSettlement",
     "AuditLog",
     "Notification",
     "EmailLog",
