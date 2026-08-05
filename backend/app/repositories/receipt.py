@@ -25,8 +25,9 @@ class ReceiptRepository(BaseRepository[Receipt]):
         Acquires row-level write lock on Tenant record within active transaction.
         Formats receipt number consistently as `RC-{fy_prefix}-{number:06d}`.
         """
-        from app.models.tenant import Tenant
         import uuid
+
+        from app.models.tenant import Tenant
 
         # Acquire row-level lock on Tenant record to serialize concurrent receipt generation
         try:
