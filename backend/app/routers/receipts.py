@@ -15,6 +15,7 @@ from fastapi import status
 from pydantic import BaseModel
 from pydantic import Field
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -267,11 +268,18 @@ async def create_receipt(
         purpose=payload.purpose,
         notes=payload.notes,
     )
-    created = receipt_repo.create(receipt)
-
-    # Increment donor total donations
-    donor.total_donations += int(payload.amount)
-    db.commit()
+    try:
+        created = receipt_repo.create(receipt)
+        donor.total_donations += int(payload.amount)
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        receipt.receipt_number = receipt_repo.generate_receipt_number(current_user.tenant_id, fy.name)
+        created = receipt_repo.create(receipt)
+        donor = donor_repo.get(payload.donor_id)
+        if donor:
+            donor.total_donations += int(payload.amount)
+        db.commit()
 
     # Trigger Automated Email Delivery if donor email exists and enabled in settings
     tenant = db.get(Tenant, current_user.tenant_id)

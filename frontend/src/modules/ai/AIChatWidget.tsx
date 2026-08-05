@@ -954,7 +954,15 @@ const AIChatWidget: React.FC<Props> = ({ embedded = false }) => {
         {/* Branding & Disclaimer Footer */}
         <div style={{ textAlign: 'center', marginTop: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
           <span style={{ fontSize: 10, color: 'var(--color-text-secondary)' }}>
-            Powered by <strong style={{ color: '#0066FF', fontWeight: 700 }}>ArcNeuron.ai</strong>
+            Powered by{' '}
+            <a
+              href="https://arcneuron.ai"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: '#0066FF', fontWeight: 700, textDecoration: 'none' }}
+            >
+              ArcNeuron.ai
+            </a>
           </span>
           <span style={{ fontSize: 10, color: 'var(--color-text-secondary)' }}>•</span>
           <span style={{ fontSize: 10, color: 'var(--color-text-secondary)' }}>

@@ -483,7 +483,16 @@ const LoginPage: React.FC = () => {
 
         {/* Copyright */}
         <div className="lp-footer">
-          © {new Date().getFullYear()} ArcNeuron.ai &nbsp;•&nbsp; Designed by{' '}
+          © {new Date().getFullYear()}{' '}
+          <a
+            href="https://arcneuron.ai"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="lp-footer-link"
+          >
+            ArcNeuron.ai
+          </a>
+          &nbsp;•&nbsp; Designed by{' '}
           <a
             href="https://www.mayurpatil.in"
             target="_blank"

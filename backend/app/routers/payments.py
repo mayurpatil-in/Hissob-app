@@ -488,8 +488,10 @@ def _create_receipt_for_payment(
         elif method_lower == "bank_transfer":
             mode = PaymentMode.NEFT
 
-    # ── Generate receipt number with race condition protection ──
-    receipt_num = _generate_receipt_number_with_retry(tenant.id, db)
+    # ── Generate receipt number with row-locking sequence protection ──
+    from app.repositories.receipt import ReceiptRepository
+    receipt_repo = ReceiptRepository(db)
+    receipt_num = receipt_repo.generate_receipt_number(tenant.id, fy.name if hasattr(fy, 'name') else "2025-26")
 
     # ── Create official Receipt record ──
     receipt = Receipt(
@@ -513,8 +515,8 @@ def _create_receipt_for_payment(
         db.refresh(receipt)
     except IntegrityError:
         db.rollback()
-        # Receipt number collision — retry with new number
-        receipt.receipt_number = _generate_receipt_number_with_retry(tenant.id, db)
+        # Receipt number collision — retry with new locked sequence number
+        receipt.receipt_number = receipt_repo.generate_receipt_number(tenant.id, fy.name if hasattr(fy, 'name') else "2025-26")
         db.add(receipt)
         db.commit()
         db.refresh(receipt)
@@ -910,7 +912,11 @@ async def razorpay_webhook(request: Request, db: Session = Depends(get_db)):
 
     # Verify webhook signature (X-Razorpay-Signature header)
     received_signature = request.headers.get("X-Razorpay-Signature", "")
-    if received_signature:
+    if webhook_secret and webhook_secret not in (DEFAULT_KEY_SECRET, ""):
+        if not received_signature:
+            logger.error("Razorpay webhook rejected: Missing X-Razorpay-Signature header")
+            raise HTTPException(status_code=400, detail="Missing X-Razorpay-Signature header")
+
         expected_signature = hmac.new(
             webhook_secret.encode(),
             raw_body,
@@ -920,8 +926,16 @@ async def razorpay_webhook(request: Request, db: Session = Depends(get_db)):
         if not hmac.compare_digest(expected_signature, received_signature):
             logger.error("Razorpay webhook signature verification failed")
             raise HTTPException(status_code=400, detail="Invalid webhook signature")
-    else:
-        logger.warning("Razorpay webhook received without signature header")
+    elif received_signature:
+        expected_signature = hmac.new(
+            webhook_secret.encode(),
+            raw_body,
+            hashlib.sha256
+        ).hexdigest()
+
+        if not hmac.compare_digest(expected_signature, received_signature):
+            logger.error("Razorpay webhook signature verification failed")
+            raise HTTPException(status_code=400, detail="Invalid webhook signature")
 
     # Parse event
     try:

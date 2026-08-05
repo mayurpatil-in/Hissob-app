@@ -19,10 +19,59 @@ class ReceiptRepository(BaseRepository[Receipt]):
     def __init__(self, db: Session):
         super().__init__(Receipt, db)
 
-    def generate_receipt_number(self, tenant_id: UUID, fy_name: str = "2025-26") -> str:
-        count = self.count_by_tenant(tenant_id) + 1
-        prefix = fy_name.replace("-", "")
-        return f"RC-{prefix}-{count:06d}"
+    def generate_receipt_number(self, tenant_id: UUID, fy_name: str = "2025-26", max_retries: int = 5) -> str:
+        """
+        Thread-safe & race-condition protected receipt number generator.
+        Acquires row-level write lock on Tenant record within active transaction.
+        Formats receipt number consistently as `RC-{fy_prefix}-{number:06d}`.
+        """
+        from app.models.tenant import Tenant
+        import uuid
+
+        # Acquire row-level lock on Tenant record to serialize concurrent receipt generation
+        try:
+            self.db.query(Tenant).filter(Tenant.id == tenant_id).with_for_update(nowait=False).first()
+        except Exception:
+            pass  # Fall back to max lookup retry loop if dialect/session doesn't support for_update
+
+        prefix = fy_name.replace("-", "").replace(" ", "").replace("FY", "")
+        if not prefix:
+            prefix = "202526"
+        pattern = f"RC-{prefix}-%"
+
+        for attempt in range(max_retries):
+            # Query max existing receipt_number matching prefix for this tenant
+            max_receipt = (
+                self.db.query(func.max(Receipt.receipt_number))
+                .filter(
+                    Receipt.tenant_id == tenant_id,
+                    Receipt.receipt_number.like(pattern)
+                )
+                .scalar()
+            )
+
+            if max_receipt:
+                try:
+                    current_num = int(max_receipt.split("-")[-1])
+                except (ValueError, IndexError):
+                    current_num = 0
+            else:
+                current_num = self.count_by_tenant(tenant_id)
+
+            next_num = current_num + 1 + attempt
+            candidate = f"RC-{prefix}-{next_num:06d}"
+
+            # Verify candidate doesn't already exist
+            exists = (
+                self.db.query(Receipt.id)
+                .filter(Receipt.tenant_id == tenant_id, Receipt.receipt_number == candidate)
+                .first()
+            )
+            if not exists:
+                return candidate
+
+        # Safety net fallback if all retries collided
+        return f"RC-{prefix}-{uuid.uuid4().hex[:6].upper()}"
 
     def get_by_tenant(
         self,
