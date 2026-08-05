@@ -131,41 +131,66 @@ function formatDonorAddress(donor?: any): string {
 }
 
 /** Helper to convert image URL to base64 Data URL to prevent CORS canvas tainting on mobile */
+/** Helper to convert image URL to base64 Data URL to prevent CORS canvas tainting on mobile */
 async function imageToBase64(url: string): Promise<string> {
   if (!url || url.startsWith('data:')) return url;
-  try {
-    const response = await fetch(url);
-    if (!response.ok) return url;
-    const blob = await response.blob();
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = () => resolve(url);
-      reader.readAsDataURL(blob);
-    });
-  } catch (e) {
-    // If fetch failed due to CORS or network error, attempt Image element fallback
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => {
-        try {
-          const canvas = document.createElement('canvas');
-          canvas.width = img.naturalWidth || img.width;
-          canvas.height = img.naturalHeight || img.height;
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.drawImage(img, 0, 0);
-            resolve(canvas.toDataURL('image/png'));
-            return;
-          }
-        } catch {}
-        resolve(url);
-      };
-      img.onerror = () => resolve(url);
-      img.src = url;
-    });
+
+  const fallbackLogo = (typeof window !== 'undefined' ? window.location.origin : '') + '/hisob.png';
+
+  const tryFetchBase64 = async (targetUrl: string): Promise<string | null> => {
+    try {
+      const response = await fetch(targetUrl, { mode: 'cors' });
+      if (!response.ok) return null;
+      const blob = await response.blob();
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const res = reader.result as string;
+          resolve(res && res.startsWith('data:image') ? res : null);
+        };
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(blob);
+      });
+    } catch {
+      return null;
+    }
+  };
+
+  // 1. Try fetching target URL directly
+  const directB64 = await tryFetchBase64(url);
+  if (directB64) return directB64;
+
+  // 2. Try Image element with canvas fallback (handles cross-origin image loads if server permits)
+  const canvasB64 = await new Promise<string | null>((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth || img.width || 100;
+        canvas.height = img.naturalHeight || img.height || 100;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0);
+          const dataUrl = canvas.toDataURL('image/png');
+          resolve(dataUrl && dataUrl.length > 100 ? dataUrl : null);
+          return;
+        }
+      } catch {}
+      resolve(null);
+    };
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
+  if (canvasB64) return canvasB64;
+
+  // 3. Guaranteed Fallback: Convert local /hisob.png to base64 so receipt canvas ALWAYS renders a logo
+  if (url !== fallbackLogo) {
+    const fallbackB64 = await tryFetchBase64(fallbackLogo);
+    if (fallbackB64) return fallbackB64;
   }
+
+  return url;
 }
 
 /** Generate the full HTML content for the receipt.
@@ -181,8 +206,44 @@ export async function getReceiptHtmlContent(receipt: PrintReceiptData, fallbackO
     }
   }
   const orgName = orgData?.name || fallbackOrgName;
-  let logoUrl = orgData?.logo_url ? import.meta.env.VITE_API_URL?.replace('/api/v1', '') + orgData.logo_url : 'https://cdn-icons-png.flaticon.com/512/103/103328.png';
-  let qrCodeUrl = orgData?.qr_code_url ? import.meta.env.VITE_API_URL?.replace('/api/v1', '') + orgData.qr_code_url : null;
+
+  // Build clean API host & logo URL
+  const apiEnv = import.meta.env.VITE_API_URL || '';
+  let apiHost = '';
+  if (apiEnv.startsWith('http://') || apiEnv.startsWith('https://')) {
+    try {
+      const u = new URL(apiEnv);
+      apiHost = u.origin;
+    } catch {}
+  }
+  if (!apiHost && typeof window !== 'undefined') {
+    apiHost = window.location.origin;
+  }
+
+  const defaultFallbackLogo = (typeof window !== 'undefined' ? window.location.origin : '') + '/hisob.png';
+
+  let logoUrl = defaultFallbackLogo;
+  if (orgData?.logo_url && typeof orgData.logo_url === 'string' && orgData.logo_url.trim()) {
+    const rawLogo = orgData.logo_url.trim();
+    if (rawLogo.startsWith('http://') || rawLogo.startsWith('https://') || rawLogo.startsWith('data:')) {
+      logoUrl = rawLogo;
+    } else {
+      const path = rawLogo.startsWith('/') ? rawLogo : '/' + rawLogo;
+      logoUrl = apiHost + path;
+    }
+  }
+
+  let qrCodeUrl: string | null = null;
+  if (orgData?.qr_code_url && typeof orgData.qr_code_url === 'string' && orgData.qr_code_url.trim()) {
+    const rawQr = orgData.qr_code_url.trim();
+    if (rawQr.startsWith('http://') || rawQr.startsWith('https://') || rawQr.startsWith('data:')) {
+      qrCodeUrl = rawQr;
+    } else {
+      const path = rawQr.startsWith('/') ? rawQr : '/' + rawQr;
+      qrCodeUrl = apiHost + path;
+    }
+  }
+
   let verifyQrUrl = receipt.id ? await QRCode.toDataURL(window.location.origin + '/verify/' + receipt.id, { margin: 1, width: 150 }).catch(() => null) : null;
   const upiId = orgData?.upi_id || '8275831212@upi';
   let defaultUpiQrUrl = await QRCode.toDataURL(`upi://pay?pa=${upiId}&pn=${orgName}&am=${receipt.amount}`, { margin: 1, width: 150 }).catch(() => '');
